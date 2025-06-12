@@ -2,9 +2,6 @@ import discord
 from discord.ext import commands
 import random
 import re
-from typing import Optional
-from utils.permissions import is_fixer
-from cogs.dm_handling import DMHandler
 
 class RollSystem(commands.Cog):
     def __init__(self, bot):
@@ -62,13 +59,13 @@ class RollSystem(commands.Cog):
         await channel.send(result)
 
         # Log to DM thread if actual DM, or if relayed with original_sender
-        if isinstance(channel, discord.DMChannel):
+        if isinstance(channel, discord.DMChannel) and not original_sender:
             thread = await self.bot.get_cog('DMHandler').get_or_create_dm_thread(author)
             if isinstance(thread, discord.abc.Messageable):
                 await thread.send(
                     f"📥 **{author.display_name} used:** `!roll {dice}`\n\n{result}"
                 )
-        elif original_sender and isinstance(channel, discord.DMChannel):
+        elif original_sender:
             thread = await self.bot.get_cog('DMHandler').get_or_create_dm_thread(author)
             if isinstance(thread, discord.abc.Messageable):
                 await thread.send(

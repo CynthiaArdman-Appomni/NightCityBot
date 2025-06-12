@@ -1,6 +1,6 @@
 from typing import Optional, List
 import discord
-from utils.constants import TRAUMA_ROLE_COSTS
+from NightCityBot.utils.constants import TRAUMA_ROLE_COSTS
 import config
 
 
