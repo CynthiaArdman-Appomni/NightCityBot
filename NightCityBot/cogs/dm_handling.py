@@ -188,6 +188,12 @@ class DMHandler(commands.Cog):
             await ctx.send('❌ Cannot DM user (Privacy Settings).')
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+            admin = self.bot.get_cog('Admin')
+            if admin:
+                await admin.log_audit(ctx.author, f"❌ Failed DM: Recipient: {user} (Privacy settings).")
+>>>>>>> theirs
 =======
             admin = self.bot.get_cog('Admin')
             if admin:
