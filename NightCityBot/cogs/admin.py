@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from typing import Optional
 import config
-from utils.permissions import is_fixer
+from NightCityBot.utils.permissions import is_fixer
 
 
 class Admin(commands.Cog):
@@ -114,8 +114,9 @@ class Admin(commands.Cog):
     async def on_command_error(self, ctx, error):
         """Global error handler for commands."""
         if isinstance(error, commands.CommandNotFound):
+            # Ignore unknown commands so other bots using `!` don't spam the audit log
             await ctx.send("❌ Unknown command.")
-            await self.log_audit(ctx.author, f"❌ Unknown command: {ctx.message.content}")
+            return
         elif isinstance(error, commands.CheckFailure):
             await ctx.send("❌ Permission denied.")
             await self.log_audit(ctx.author, f"❌ Permission denied: {ctx.message.content}")
