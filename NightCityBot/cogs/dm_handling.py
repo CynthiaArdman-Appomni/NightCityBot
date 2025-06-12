@@ -139,9 +139,15 @@ class DMHandler(commands.Cog):
                 raise ValueError("User fetch returned None.")
         except discord.NotFound:
             await ctx.send("❌ Could not resolve user.")
+            admin = self.bot.get_cog('Admin')
+            if admin:
+                await admin.log_audit(ctx.author, "❌ Failed DM: Could not resolve user.")
             return
         except Exception as e:
             await ctx.send(f"⚠️ Unexpected error: {str(e)}")
+            admin = self.bot.get_cog('Admin')
+            if admin:
+                await admin.log_audit(ctx.author, f"⚠️ Exception in DM: {str(e)}")
             return
 
         file_links = [attachment.url for attachment in ctx.message.attachments]
@@ -181,3 +187,9 @@ class DMHandler(commands.Cog):
 
         except discord.Forbidden:
             await ctx.send('❌ Cannot DM user (Privacy Settings).')
+<<<<<<< ours
+=======
+            admin = self.bot.get_cog('Admin')
+            if admin:
+                await admin.log_audit(ctx.author, f"❌ Failed DM: Recipient: {user} (Privacy settings).")
+>>>>>>> theirs
