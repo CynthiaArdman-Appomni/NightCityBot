@@ -6,6 +6,7 @@ from pathlib import Path
 import json
 from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.utils.constants import (
+import os
     ROLE_COSTS_BUSINESS,
     ROLE_COSTS_HOUSING,
     BASELINE_LIVING_COST,

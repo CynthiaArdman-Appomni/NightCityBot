@@ -195,6 +195,8 @@ class DMHandler(commands.Cog):
 
         except discord.Forbidden:
             await ctx.send('❌ Cannot DM user (Privacy Settings).')
+
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(ctx.author, f"❌ Failed DM: Recipient: {user} (Privacy settings).")
+
