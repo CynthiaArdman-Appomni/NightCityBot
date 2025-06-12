@@ -1,6 +1,7 @@
+import re
 import discord
 from discord.ext import commands
-from typing import Optional, List
+from typing import Optional, List, cast
 from utils.permissions import is_fixer
 from utils.helpers import build_channel_name
 import config
