@@ -27,11 +27,25 @@ class RollSystem(commands.Cog):
                 await ctx.message.delete()
             except Exception as e:
                 print(f"[WARN] Couldn't delete relayed !roll command: {e}")
-            await self.loggable_roll(roller, ctx.channel, dice, original_sender=original_sender)
+            await self.loggable_roll(
+                roller,
+                ctx.channel,
+                dice,
+                original_sender=original_sender,
+                log_user=ctx.author,
+            )
         else:
-            await self.loggable_roll(roller, ctx.channel, dice)
+            await self.loggable_roll(roller, ctx.channel, dice, log_user=ctx.author)
 
-    async def loggable_roll(self, author, channel, dice: str, *, original_sender=None):
+    async def loggable_roll(
+        self,
+        author,
+        channel,
+        dice: str,
+        *,
+        original_sender=None,
+        log_user=None,
+    ):
         pattern = r'(?:(\d*)d)?(\d+)([+-]\d+)?'
         m = re.fullmatch(pattern, dice.replace(' ', ''))
         if not m:
@@ -58,15 +72,18 @@ class RollSystem(commands.Cog):
 
         await channel.send(result)
 
+        # Determine which user's thread should receive the log
+        log_target = log_user or author
+
         # Log to DM thread if actual DM, or if relayed with original_sender
         if isinstance(channel, discord.DMChannel) and not original_sender:
-            thread = await self.bot.get_cog('DMHandler').get_or_create_dm_thread(author)
+            thread = await self.bot.get_cog('DMHandler').get_or_create_dm_thread(log_target)
             if isinstance(thread, discord.abc.Messageable):
                 await thread.send(
-                    f"📥 **{author.display_name} used:** `!roll {dice}`\n\n{result}"
+                    f"📥 **{log_target.display_name} used:** `!roll {dice}`\n\n{result}"
                 )
         elif original_sender:
-            thread = await self.bot.get_cog('DMHandler').get_or_create_dm_thread(author)
+            thread = await self.bot.get_cog('DMHandler').get_or_create_dm_thread(log_target)
             if isinstance(thread, discord.abc.Messageable):
                 await thread.send(
                     f"📤 **{original_sender.display_name} rolled as {author.display_name}** → `!roll {dice}`\n\n{result}"

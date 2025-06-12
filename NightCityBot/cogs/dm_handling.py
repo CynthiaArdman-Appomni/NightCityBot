@@ -198,4 +198,3 @@ class DMHandler(commands.Cog):
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(ctx.author, f"❌ Failed DM: Recipient: {user} (Privacy settings).")
-
