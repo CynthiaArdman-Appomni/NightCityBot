@@ -2,6 +2,9 @@ import discord
 from discord.ext import commands
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict
+from pathlib import Path
+import json
+import os
 from utils.permissions import is_fixer
 from utils.constants import (
     ROLE_COSTS_BUSINESS,
@@ -113,5 +116,322 @@ class Economy(commands.Cog):
 
         await ctx.send(f"✅ Business opening logged! ({len(this_month_opens) + 1}/4 this month)")
 
-    # Add other economy-related commands (collect_rent, collect_housing, etc.)
-    # [Rest of the economy commands would go here]
+    async def deduct_flat_fee(self, member: discord.Member, cash: int, bank: int, log: List[str], amount: int = BASELINE_LIVING_COST) -> tuple[bool, int, int]:
+        total = (cash or 0) + (bank or 0)
+        if total < amount:
+            log.append(f"❌ Insufficient funds for flat fee deduction (${amount}). Current balance: ${total}.")
+            return False, cash, bank
+
+        deduct_cash = min(cash, amount)
+        deduct_bank = amount - deduct_cash
+        payload: Dict[str, int] = {}
+        if deduct_cash > 0:
+            payload["cash"] = -deduct_cash
+        if deduct_bank > 0:
+            payload["bank"] = -deduct_bank
+
+        success = await self.unbelievaboat.update_balance(member.id, payload, reason="Flat Monthly Fee")
+        if success:
+            cash -= deduct_cash
+            bank -= deduct_bank
+            log.append(f"💸 Deducted flat monthly fee of ${amount} (Cash: ${deduct_cash}, Bank: ${deduct_bank}).")
+        else:
+            log.append("❌ Failed to deduct flat monthly fee.")
+
+        return success, cash, bank
+
+    async def process_housing_rent(
+            self,
+            member: discord.Member,
+            roles: List[str],
+            cash: int,
+            bank: int,
+            log: List[str],
+            rent_log_channel: Optional[discord.TextChannel],
+            eviction_channel: Optional[discord.TextChannel]
+    ) -> tuple[int, int]:
+        housing_total = 0
+        for role in roles:
+            if "Housing Tier" in role:
+                amount = ROLE_COSTS_HOUSING.get(role, 0)
+                housing_total += amount
+                log.append(f"🔎 Housing Role {role} → Rent: ${amount}")
+
+        if housing_total == 0:
+            return cash, bank
+
+        total = (cash or 0) + (bank or 0)
+        if total < housing_total:
+            log.append(f"❌ Cannot pay housing rent of ${housing_total}. Would result in negative balance.")
+            if eviction_channel:
+                await eviction_channel.send(
+                    f"🚨 <@{member.id}> — Housing Rent due: ${housing_total} — **FAILED** (insufficient funds) 🚨\n## You have **7 days** to pay or face eviction."
+                )
+            log.append(f"⚠️ Housing rent skipped for <@{member.id}> due to insufficient funds.")
+            return cash, bank
+
+        deduct_cash = min(cash, housing_total)
+        deduct_bank = housing_total - deduct_cash
+        payload: Dict[str, int] = {}
+        if deduct_cash > 0:
+            payload["cash"] = -deduct_cash
+        if deduct_bank > 0:
+            payload["bank"] = -deduct_bank
+
+        success = await self.unbelievaboat.update_balance(member.id, payload, reason="Housing Rent")
+        if success:
+            cash -= deduct_cash
+            bank -= deduct_bank
+            log.append(f"🧮 Subtracted housing rent ${housing_total} — ${deduct_cash} from cash, ${deduct_bank} from bank.")
+            log.append(f"📈 Balance after housing rent — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}")
+            log.append("✅ Housing Rent collection completed. Notice Sent to #rent")
+            if rent_log_channel:
+                await rent_log_channel.send(f"✅ <@{member.id}> — Housing Rent paid: ${housing_total}")
+        else:
+            log.append("❌ Failed to deduct housing rent despite having sufficient funds.")
+        return cash, bank
+
+    async def process_business_rent(
+            self,
+            member: discord.Member,
+            roles: List[str],
+            cash: int,
+            bank: int,
+            log: List[str],
+            rent_log_channel: Optional[discord.TextChannel],
+            eviction_channel: Optional[discord.TextChannel]
+    ) -> tuple[int, int]:
+        business_total = 0
+        for role in roles:
+            if "Business Tier" in role:
+                amount = ROLE_COSTS_BUSINESS.get(role, 0)
+                business_total += amount
+                log.append(f"🔎 Business Role {role} → Rent: ${amount}")
+
+        if business_total == 0:
+            return cash, bank
+
+        total = (cash or 0) + (bank or 0)
+        if total < business_total:
+            log.append(f"❌ Cannot pay business rent of ${business_total}. Would result in negative balance.")
+            if eviction_channel:
+                await eviction_channel.send(
+                    f"🚨 <@{member.id}> — Business Rent due: ${business_total} — **FAILED** (insufficient funds) 🚨\n## You have **7 days** to pay or face eviction."
+                )
+            log.append(f"⚠️ Business rent skipped for <@{member.id}> due to insufficient funds.")
+            return cash, bank
+
+        deduct_cash = min(cash, business_total)
+        deduct_bank = business_total - deduct_cash
+        payload: Dict[str, int] = {}
+        if deduct_cash > 0:
+            payload["cash"] = -deduct_cash
+        if deduct_bank > 0:
+            payload["bank"] = -deduct_bank
+
+        success = await self.unbelievaboat.update_balance(member.id, payload, reason="Business Rent")
+        if success:
+            cash -= deduct_cash
+            bank -= deduct_bank
+            log.append(f"🧮 Subtracted business rent ${business_total} — ${deduct_cash} from cash, ${deduct_bank} from bank.")
+            log.append(f"📈 Balance after business rent — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}")
+            log.append("✅ Business Rent collection completed. Notice Sent to #rent")
+            if rent_log_channel:
+                await rent_log_channel.send(f"✅ <@{member.id}> — Business Rent paid: ${business_total}")
+        else:
+            log.append("❌ Failed to deduct business rent despite having sufficient funds.")
+        return cash, bank
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def collect_housing(self, ctx, user: discord.Member):
+        """Manually collect housing rent from a single user"""
+        log: List[str] = [f"🏠 Manual Housing Rent Collection for <@{user.id}>"]
+        rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
+        eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
+
+        role_names = [r.name for r in user.roles]
+        log.append(f"🧾 Roles: {role_names}")
+
+        balance_data = await self.unbelievaboat.get_balance(user.id)
+        if not balance_data:
+            log.append("❌ Could not fetch balance.")
+            await ctx.send("\n".join(log))
+            return
+
+        cash = balance_data["cash"]
+        bank = balance_data["bank"]
+        total = (cash or 0) + (bank or 0)
+        log.append(f"💵 Balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: ${total:,}")
+
+        cash, bank = await self.process_housing_rent(user, role_names, cash, bank, log, rent_log_channel, eviction_channel)
+
+        final = await self.unbelievaboat.get_balance(user.id)
+        if final:
+            final_cash = final.get("cash", 0)
+            final_bank = final.get("bank", 0)
+            final_total = final_cash + final_bank
+            log.append(f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}")
+
+        await ctx.send("\n".join(log))
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def collect_business(self, ctx, user: discord.Member):
+        """Manually collect business rent from a single user"""
+        log: List[str] = [f"🏢 Manual Business Rent Collection for <@{user.id}>"]
+        rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
+        eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
+
+        role_names = [r.name for r in user.roles]
+        log.append(f"🧾 Roles: {role_names}")
+
+        balance_data = await self.unbelievaboat.get_balance(user.id)
+        if not balance_data:
+            log.append("❌ Could not fetch balance.")
+            await ctx.send("\n".join(log))
+            return
+
+        cash = balance_data["cash"]
+        bank = balance_data["bank"]
+        total = (cash or 0) + (bank or 0)
+        log.append(f"💵 Balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: ${total:,}")
+
+        cash, bank = await self.process_business_rent(user, role_names, cash, bank, log, rent_log_channel, eviction_channel)
+
+        final = await self.unbelievaboat.get_balance(user.id)
+        if final:
+            final_cash = final.get("cash", 0)
+            final_bank = final.get("bank", 0)
+            final_total = final_cash + final_bank
+            log.append(f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}")
+
+        await ctx.send("\n".join(log))
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def collect_trauma(self, ctx, user: discord.Member):
+        """Manually collect Trauma Team subscription"""
+        log: List[str] = [f"💊 Manual Trauma Team Subscription Processing for <@{user.id}>"]
+        balance_data = await self.unbelievaboat.get_balance(user.id)
+        if not balance_data:
+            log.append("❌ Could not fetch balance.")
+            await ctx.send("\n".join(log))
+            return
+
+        cash = balance_data["cash"]
+        bank = balance_data["bank"]
+        total = (cash or 0) + (bank or 0)
+        log.append(f"💵 Balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: ${total:,}")
+
+        await self.trauma_service.process_trauma_team_payment(user, log=log)
+
+        final = await self.unbelievaboat.get_balance(user.id)
+        if final:
+            final_cash = final.get("cash", 0)
+            final_bank = final.get("bank", 0)
+            final_total = final_cash + final_bank
+            log.append(f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}")
+
+        await ctx.send("\n".join(log))
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def collect_rent(self, ctx, *, target_user: Optional[discord.Member] = None):
+        """Global or per-member rent collection."""
+        await ctx.send("🚦 Starting rent collection...")
+
+        if not target_user:
+            if Path(config.OPEN_LOG_FILE).exists():
+                business_open_log = await load_json_file(config.OPEN_LOG_FILE, default={})
+                backup = f"open_history_{datetime.utcnow():%B_%Y}.json"
+                Path(config.OPEN_LOG_FILE).rename(backup)
+            else:
+                business_open_log = {}
+
+            await save_json_file(config.OPEN_LOG_FILE, {})
+        else:
+            if Path(config.OPEN_LOG_FILE).exists():
+                business_open_log = await load_json_file(config.OPEN_LOG_FILE, default={})
+            else:
+                business_open_log = {}
+
+        if not target_user and Path(config.LAST_RENT_FILE).exists():
+            with open(config.LAST_RENT_FILE) as f:
+                last_run = datetime.fromisoformat(json.load(f)["last_run"])
+            if datetime.utcnow() - last_run < timedelta(days=30):
+                await ctx.send("⚠️ Rent already collected in the last 30 days.")
+                return
+        if not target_user:
+            with open(config.LAST_RENT_FILE, "w") as f:
+                json.dump({"last_run": datetime.utcnow().isoformat()}, f)
+
+        members_to_process: List[discord.Member] = []
+        for m in ctx.guild.members:
+            if target_user and m.id == target_user.id:
+                members_to_process = [m]
+                break
+            if not target_user and any("Tier" in r.name for r in m.roles):
+                members_to_process.append(m)
+        if not members_to_process:
+            await ctx.send("❌ No matching members found.")
+            return
+
+        eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
+        rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
+
+        for member in members_to_process:
+            try:
+                log: List[str] = [f"🔍 **Working on:** <@{member.id}>"]
+
+                role_names = [r.name for r in member.roles]
+                app_roles = [r for r in role_names if "Tier" in r]
+                log.append(f"🏷️ Detected roles: {', '.join(app_roles) or 'None'}")
+
+                bal = await self.unbelievaboat.get_balance(member.id)
+                if not bal:
+                    log.append("⚠️ Could not fetch balance.")
+                    await ctx.send("\n".join(log))
+                    continue
+                cash, bank = bal["cash"], bal["bank"]
+                log.append(f"💵 Starting balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}")
+
+                base_ok, cash, bank = await self.deduct_flat_fee(member, cash, bank, log, BASELINE_LIVING_COST)
+                if not base_ok:
+                    if eviction_channel:
+                        await eviction_channel.send(
+                            f"⚠️ <@{member.id}> could not pay baseline living cost (${BASELINE_LIVING_COST})."
+                        )
+                    log.append("❌ Skipping remaining rent steps.")
+                    await ctx.send("\n".join(log))
+                    continue
+
+                try:
+                    new_cash, new_bank = await self.apply_passive_income(member, app_roles, business_open_log, log)
+                    if new_cash is not None and new_bank is not None:
+                        cash, bank = new_cash, new_bank
+                    else:
+                        log.append("⚠️ Passive income failed to return balance. Using previous state.")
+                except RuntimeError as err:
+                    log.append(f"❌ {err}")
+                    await ctx.send("\n".join(log))
+                    continue
+
+                cash, bank = await self.process_housing_rent(member, app_roles, cash, bank, log, rent_log_channel, eviction_channel)
+                cash, bank = await self.process_business_rent(member, app_roles, cash, bank, log, rent_log_channel, eviction_channel)
+
+                await self.trauma_service.process_trauma_team_payment(member, log=log)
+
+                final = await self.unbelievaboat.get_balance(member.id)
+                if final:
+                    cash = final.get("cash", 0)
+                    bank = final.get("bank", 0)
+
+                log.append(f"📊 Final balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}")
+
+                await ctx.send("\n".join(log))
+
+            except Exception as e:
+                await ctx.send(f"❌ Error processing <@{member.id}>: `{e}`")
+
+        await ctx.send("✅ Rent collection completed.")
