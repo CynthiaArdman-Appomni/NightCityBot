@@ -88,4 +88,3 @@ class RollSystem(commands.Cog):
                 await thread.send(
                     f"📤 **{original_sender.display_name} rolled as {author.display_name}** → `!roll {dice}`\n\n{result}"
                 )
-
