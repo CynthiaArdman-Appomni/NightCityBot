@@ -2,10 +2,9 @@ import discord
 from discord.ext import commands
 from discord.abc import Messageable
 from typing import Union, Dict
-import json
 import config
-from utils.permissions import is_fixer
-from utils.helpers import load_json_file, save_json_file
+from NightCityBot.utils.permissions import is_fixer
+from NightCityBot.utils.helpers import load_json_file, save_json_file
 
 
 class DMHandler(commands.Cog):
@@ -32,6 +31,15 @@ class DMHandler(commands.Cog):
                 return thread
             except discord.NotFound:
                 pass  # Thread was deleted, create new one
+
+        # Look for an existing thread if it's not in the cache
+        expected_name = f"{user.name}-{user.id}".replace(" ", "-").lower()[:100]
+        if isinstance(log_channel, (discord.TextChannel, discord.ForumChannel)):
+            for t in log_channel.threads:
+                if t.name == expected_name:
+                    self.dm_threads[user_id] = t.id
+                    await save_json_file(config.THREAD_MAP_FILE, self.dm_threads)
+                    return t
 
         thread_name = f"{user.name}-{user.id}".replace(" ", "-").lower()[:100]
 
@@ -139,9 +147,15 @@ class DMHandler(commands.Cog):
                 raise ValueError("User fetch returned None.")
         except discord.NotFound:
             await ctx.send("❌ Could not resolve user.")
+            admin = self.bot.get_cog('Admin')
+            if admin:
+                await admin.log_audit(ctx.author, "❌ Failed DM: Could not resolve user.")
             return
         except Exception as e:
             await ctx.send(f"⚠️ Unexpected error: {str(e)}")
+            admin = self.bot.get_cog('Admin')
+            if admin:
+                await admin.log_audit(ctx.author, f"⚠️ Exception in DM: {str(e)}")
             return
 
         file_links = [attachment.url for attachment in ctx.message.attachments]
@@ -181,3 +195,6 @@ class DMHandler(commands.Cog):
 
         except discord.Forbidden:
             await ctx.send('❌ Cannot DM user (Privacy Settings).')
+            admin = self.bot.get_cog('Admin')
+            if admin:
+                await admin.log_audit(ctx.author, f"❌ Failed DM: Recipient: {user} (Privacy settings).")
