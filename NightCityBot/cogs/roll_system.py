@@ -10,6 +10,7 @@ class RollSystem(commands.Cog):
     @commands.command()
     async def roll(self, ctx, *, dice: str):
         original_sender = getattr(ctx, "original_author", None)
+        skip_log = getattr(ctx, "skip_dm_log", False)
 
         # Extract user mention if present
         match = re.search(r"(?:<@!?)?([0-9]{15,20})>?", dice)
@@ -33,9 +34,16 @@ class RollSystem(commands.Cog):
                 dice,
                 original_sender=original_sender,
                 log_user=ctx.author,
+                skip_log=skip_log,
             )
         else:
-            await self.loggable_roll(roller, ctx.channel, dice, log_user=ctx.author)
+            await self.loggable_roll(
+                roller,
+                ctx.channel,
+                dice,
+                log_user=ctx.author,
+                skip_log=skip_log,
+            )
 
     async def loggable_roll(
         self,
@@ -45,6 +53,7 @@ class RollSystem(commands.Cog):
         *,
         original_sender=None,
         log_user=None,
+        skip_log=False,
     ):
         pattern = r'(?:(\d*)d)?(\d+)([+-]\d+)?'
         m = re.fullmatch(pattern, dice.replace(' ', ''))
@@ -76,6 +85,8 @@ class RollSystem(commands.Cog):
         log_target = log_user or author
 
         # Log to DM thread if actual DM, or if relayed with original_sender
+        if skip_log:
+            return
         if isinstance(channel, discord.DMChannel) and not original_sender:
             thread = await self.bot.get_cog('DMHandler').get_or_create_dm_thread(log_target)
             if isinstance(thread, discord.abc.Messageable):

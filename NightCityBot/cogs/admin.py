@@ -46,6 +46,7 @@ class Admin(commands.Cog):
                 fake_ctx.channel = dest_channel
                 fake_ctx.author = ctx.author
                 setattr(fake_ctx, "original_author", ctx.author)
+                setattr(fake_ctx, "skip_dm_log", True)
 
                 await self.bot.invoke(fake_ctx)
                 await ctx.send(f"✅ Executed `{command_text}` in {dest_channel.mention}.")

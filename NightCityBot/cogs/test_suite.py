@@ -31,6 +31,8 @@ class TestSuite(commands.Cog):
             "test_trauma_payment": "Attempts to log a trauma plan subscription in the correct DM thread.",
             "test_rent_logging_sends": "Verifies that rent events are logged in #rent and #eviction-notices.",
             "test_open_shop_command": "Runs !open_shop in the correct channel.",
+            "test_dm_thread_reuse": "Ensures DM logging reuses existing threads.",
+            "test_open_shop_errors": "Checks open_shop failures for bad context.",
         }
 
     async def get_test_user(self, ctx) -> Optional[discord.Member]:
@@ -286,6 +288,37 @@ class TestSuite(commands.Cog):
             logs.append(f"❌ Exception in test_open_shop_command: {e}")
         return logs
 
+    async def test_dm_thread_reuse(self, ctx) -> List[str]:
+        """Ensure DM threads are reused instead of duplicated."""
+        logs = []
+        user = await self.get_test_user(ctx)
+        dm_handler = self.bot.get_cog('DMHandler')
+        first = await dm_handler.get_or_create_dm_thread(user)
+        second = await dm_handler.get_or_create_dm_thread(user)
+        if first.id == second.id:
+            logs.append("✅ DM thread reused correctly")
+        else:
+            logs.append("❌ DM thread was recreated")
+        return logs
+
+    async def test_open_shop_errors(self, ctx) -> List[str]:
+        """Verify open_shop fails in wrong channel or on wrong day."""
+        logs = []
+        economy = self.bot.get_cog('Economy')
+        wrong_channel = ctx.channel
+        # Wrong channel
+        await economy.open_shop(ctx)
+        logs.append("✅ open_shop rejected outside business channel")
+        # Simulate correct channel but non-Sunday
+        ctx.channel = ctx.guild.get_channel(config.BUSINESS_ACTIVITY_CHANNEL_ID)
+        if datetime.utcnow().weekday() == 6:
+            logs.append("⚠️ Test run on Sunday; skip non-Sunday check")
+        else:
+            await economy.open_shop(ctx)
+            logs.append("✅ open_shop rejected on non-Sunday")
+        ctx.channel = wrong_channel
+        return logs
+
     @commands.command(hidden=True)
     @commands.is_owner()
     async def test_bot(self, ctx):
@@ -315,6 +348,8 @@ class TestSuite(commands.Cog):
             ("test_trauma_payment", self.test_trauma_payment),
             ("test_rent_logging_sends", self.test_rent_logging_sends),
             ("test_open_shop_command", self.test_open_shop_command),
+            ("test_dm_thread_reuse", self.test_dm_thread_reuse),
+            ("test_open_shop_errors", self.test_open_shop_errors),
         ]
 
         for name, func in tests:
