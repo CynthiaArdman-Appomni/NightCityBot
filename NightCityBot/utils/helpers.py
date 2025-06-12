@@ -1,11 +1,9 @@
 from typing import Optional, List
 import re
 from datetime import datetime
-import discord
 from pathlib import Path
 import json
 import aiofiles
-import config
 
 def build_channel_name(usernames, max_length=100):
     """Builds a Discord channel name for a group RP."""

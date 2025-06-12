@@ -4,19 +4,19 @@ from datetime import datetime, timedelta
 from typing import Optional, List, Dict
 from pathlib import Path
 import json
+from NightCityBot.utils.permissions import is_fixer
+from NightCityBot.utils.constants import (
 import os
-from utils.permissions import is_fixer
-from utils.constants import (
     ROLE_COSTS_BUSINESS,
     ROLE_COSTS_HOUSING,
     BASELINE_LIVING_COST,
     TIER_0_INCOME_SCALE,
     OPEN_PERCENT
 )
-from utils.helpers import load_json_file, save_json_file
+from NightCityBot.utils.helpers import load_json_file, save_json_file
 import config
-from services.unbelievaboat import UnbelievaBoatAPI
-from services.trauma_team import TraumaTeamService
+from NightCityBot.services.unbelievaboat import UnbelievaBoatAPI
+from NightCityBot.services.trauma_team import TraumaTeamService
 
 
 class Economy(commands.Cog):

@@ -2,8 +2,8 @@ import re
 import discord
 from discord.ext import commands
 from typing import Optional, List, cast
-from utils.permissions import is_fixer
-from utils.helpers import build_channel_name
+from NightCityBot.utils.permissions import is_fixer
+from NightCityBot.utils.helpers import build_channel_name
 import config
 
 

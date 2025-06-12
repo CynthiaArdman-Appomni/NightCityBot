@@ -1,13 +1,13 @@
 import discord
 from discord.ext import commands
 import config
-from utils.permissions import is_fixer
-from cogs.dm_handling import DMHandler
-from cogs.economy import Economy
-from cogs.rp_manager import RPManager
-from cogs.roll_system import RollSystem
-from cogs.admin import Admin
-from cogs.test_suite import TestSuite
+from NightCityBot.utils.permissions import is_fixer
+from NightCityBot.cogs.dm_handling import DMHandler
+from NightCityBot.cogs.economy import Economy
+from NightCityBot.cogs.rp_manager import RPManager
+from NightCityBot.cogs.roll_system import RollSystem
+from NightCityBot.cogs.admin import Admin
+from NightCityBot.cogs.test_suite import TestSuite
 from flask import Flask
 from threading import Thread
 
@@ -34,6 +34,15 @@ class NightCityBot(commands.Bot):
         await self.add_cog(RollSystem(self))
         await self.add_cog(Admin(self))
         await self.add_cog(TestSuite(self))
+
+    async def on_message(self, message: discord.Message):
+        dm_handler = self.get_cog('DMHandler')
+        if dm_handler and isinstance(message.channel, discord.Thread):
+            if message.channel.id in getattr(dm_handler, 'dm_threads', {}).values():
+                # Let DMHandler process without invoking commands to avoid duplicates
+                return
+
+        await self.process_commands(message)
 
     async def on_ready(self):
         print(f"✅ {self.user.name} is running!")

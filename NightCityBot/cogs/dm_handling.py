@@ -3,8 +3,8 @@ from discord.ext import commands
 from discord.abc import Messageable
 from typing import Union, Dict
 import config
-from utils.permissions import is_fixer
-from utils.helpers import load_json_file, save_json_file
+from NightCityBot.utils.permissions import is_fixer
+from NightCityBot.utils.helpers import load_json_file, save_json_file
 
 
 class DMHandler(commands.Cog):
@@ -31,6 +31,15 @@ class DMHandler(commands.Cog):
                 return thread
             except discord.NotFound:
                 pass  # Thread was deleted, create new one
+
+        # Look for an existing thread if it's not in the cache
+        expected_name = f"{user.name}-{user.id}".replace(" ", "-").lower()[:100]
+        if isinstance(log_channel, (discord.TextChannel, discord.ForumChannel)):
+            for t in log_channel.threads:
+                if t.name == expected_name:
+                    self.dm_threads[user_id] = t.id
+                    await save_json_file(config.THREAD_MAP_FILE, self.dm_threads)
+                    return t
 
         thread_name = f"{user.name}-{user.id}".replace(" ", "-").lower()[:100]
 
@@ -186,21 +195,8 @@ class DMHandler(commands.Cog):
 
         except discord.Forbidden:
             await ctx.send('❌ Cannot DM user (Privacy Settings).')
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-=======
+
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(ctx.author, f"❌ Failed DM: Recipient: {user} (Privacy settings).")
->>>>>>> theirs
-=======
-            admin = self.bot.get_cog('Admin')
-            if admin:
-                await admin.log_audit(ctx.author, f"❌ Failed DM: Recipient: {user} (Privacy settings).")
->>>>>>> theirs
-=======
-            admin = self.bot.get_cog('Admin')
-            if admin:
-                await admin.log_audit(ctx.author, f"❌ Failed DM: Recipient: {user} (Privacy settings).")
->>>>>>> theirs
+

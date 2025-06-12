@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from typing import Optional
 import config
-from utils.permissions import is_fixer
+from NightCityBot.utils.permissions import is_fixer
 
 
 class Admin(commands.Cog):

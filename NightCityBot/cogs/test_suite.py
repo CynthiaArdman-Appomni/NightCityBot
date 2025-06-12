@@ -3,11 +3,18 @@ from discord.ext import commands
 import time
 from datetime import datetime
 import os
+import sys
+from pathlib import Path
+
+# Ensure the project root is on the path for `import config` and utility modules
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 from typing import List, Dict, Optional
 from unittest.mock import AsyncMock, MagicMock
 import config
-from utils.permissions import is_fixer
-from utils.constants import ROLE_COSTS_BUSINESS, ROLE_COSTS_HOUSING
+from NightCityBot.utils.permissions import is_fixer
+from NightCityBot.utils.constants import ROLE_COSTS_BUSINESS, ROLE_COSTS_HOUSING
 
 class TestSuite(commands.Cog):
     def __init__(self, bot):
