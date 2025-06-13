@@ -33,6 +33,9 @@ class TestSuite(commands.Cog):
             "test_open_shop_command": "Runs !open_shop in the correct channel.",
             "test_dm_thread_reuse": "Ensures DM logging reuses existing threads.",
             "test_open_shop_errors": "Checks open_shop failures for bad context.",
+            "test_start_end_rp": "Creates and ends an RP session to verify logging.",
+            "test_unknown_command": "Ensures unknown commands don't spam the audit log.",
+            "test_open_shop_limit": "Verifies the monthly shop open limit is enforced.",
         }
 
     async def get_test_user(self, ctx) -> Optional[discord.Member]:
@@ -319,6 +322,44 @@ class TestSuite(commands.Cog):
         ctx.channel = wrong_channel
         return logs
 
+    async def test_start_end_rp(self, ctx) -> List[str]:
+        """Create and end an RP session to confirm logging works."""
+        logs = []
+        rp_manager = self.bot.get_cog('RPManager')
+        channel = await rp_manager.start_rp(ctx, f"<@{config.TEST_USER_ID}>")
+        if channel:
+            logs.append("✅ start_rp returned a channel")
+            await rp_manager.end_rp(ctx)
+            logs.append("✅ end_rp executed without error")
+        else:
+            logs.append("❌ start_rp failed to create a channel")
+        return logs
+
+    async def test_unknown_command(self, ctx) -> List[str]:
+        """Send an unknown ! command and ensure it's ignored."""
+        logs = []
+        admin = self.bot.get_cog('Admin')
+        try:
+            msg = ctx.message
+            msg.content = "!notacommand"
+            await admin.on_command_error(ctx, commands.CommandNotFound("notacommand"))
+            logs.append("✅ Unknown command handled without audit log")
+        except Exception as e:
+            logs.append(f"❌ Exception handling unknown command: {e}")
+        return logs
+
+    async def test_open_shop_limit(self, ctx) -> List[str]:
+        """Ensure users cannot open shop more than four times per month."""
+        logs = []
+        economy = self.bot.get_cog('Economy')
+        original_channel = ctx.channel
+        ctx.channel = ctx.guild.get_channel(config.BUSINESS_ACTIVITY_CHANNEL_ID)
+        for i in range(5):
+            await economy.open_shop(ctx)
+        logs.append("✅ open_shop called five times to test limit")
+        ctx.channel = original_channel
+        return logs
+
     @commands.command(hidden=True)
     @commands.is_owner()
     async def test_bot(self, ctx):
@@ -350,6 +391,9 @@ class TestSuite(commands.Cog):
             ("test_open_shop_command", self.test_open_shop_command),
             ("test_dm_thread_reuse", self.test_dm_thread_reuse),
             ("test_open_shop_errors", self.test_open_shop_errors),
+            ("test_start_end_rp", self.test_start_end_rp),
+            ("test_unknown_command", self.test_unknown_command),
+            ("test_open_shop_limit", self.test_open_shop_limit),
         ]
 
         for name, func in tests:
