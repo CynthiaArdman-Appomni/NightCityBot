@@ -25,3 +25,4 @@ BASELINE_LIVING_COST = 500
 # Passive income scales
 TIER_0_INCOME_SCALE = {1: 150, 2: 250, 3: 350, 4: 500}
 OPEN_PERCENT = {0: 0, 1: 0.25, 2: 0.4, 3: 0.6, 4: 0.8}
+ATTEND_REWARD = 250
