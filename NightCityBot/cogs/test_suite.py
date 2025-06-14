@@ -40,6 +40,7 @@ class TestSuite(commands.Cog):
             "test_cyberware_costs": "Ensures cyberware medication costs scale and cap correctly.",
             "test_loa_commands": "Runs start_loa and end_loa commands.",
             "test_checkup_command": "Runs the ripperdoc !checkup command.",
+
         }
 
     async def get_test_user(self, ctx) -> Optional[discord.Member]:
