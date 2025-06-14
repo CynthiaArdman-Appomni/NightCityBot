@@ -17,22 +17,27 @@ def build_channel_name(usernames, max_length=100):
 
     return re.sub(r"[^a-z0-9\-]", "", simple_name.lower())
 
-async def load_json_file(file_path: Path, default=None):
-    """Safely load a JSON file with fallback to default value."""
+async def load_json_file(file_path: Path | str, default=None):
+    """Safely load a JSON file with fallback to default value.
+
+    `file_path` can be either a :class:`pathlib.Path` or a string path.
+    """
+    path = Path(file_path)
     try:
-        if file_path.exists():
-            async with aiofiles.open(file_path, 'r') as f:
+        if path.exists():
+            async with aiofiles.open(path, 'r') as f:
                 return json.loads(await f.read())
     except Exception as e:
-        print(f"Error loading {file_path.name}: {e}")
+        print(f"Error loading {path.name}: {e}")
     return default if default is not None else {}
 
-async def save_json_file(file_path: Path, data):
+async def save_json_file(file_path: Path | str, data):
     """Safely save data to a JSON file."""
+    path = Path(file_path)
     try:
-        async with aiofiles.open(file_path, 'w') as f:
+        async with aiofiles.open(path, 'w') as f:
             await f.write(json.dumps(data, indent=2))
         return True
     except Exception as e:
-        print(f"Error saving {file_path.name}: {e}")
+        print(f"Error saving {path.name}: {e}")
         return False
