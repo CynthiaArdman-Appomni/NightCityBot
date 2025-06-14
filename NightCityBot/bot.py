@@ -8,6 +8,8 @@ from NightCityBot.cogs.rp_manager import RPManager
 from NightCityBot.cogs.roll_system import RollSystem
 from NightCityBot.cogs.admin import Admin
 from NightCityBot.cogs.test_suite import TestSuite
+from NightCityBot.cogs.cyberware import CyberwareManager
+from NightCityBot.cogs.loa import LOA
 from flask import Flask
 from threading import Thread
 
@@ -32,6 +34,8 @@ class NightCityBot(commands.Bot):
         await self.add_cog(Economy(self))
         await self.add_cog(RPManager(self))
         await self.add_cog(RollSystem(self))
+        await self.add_cog(CyberwareManager(self))
+        await self.add_cog(LOA(self))
         await self.add_cog(Admin(self))
         await self.add_cog(TestSuite(self))
 

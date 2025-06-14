@@ -15,6 +15,10 @@ class TraumaTeamService:
             log: Optional[List[str]] = None
     ) -> None:
         """Process Trauma Team subscription payment for a member."""
+        if any(r.id == config.LOA_ROLE_ID for r in member.roles):
+            if log is not None:
+                log.append("🛑 Skipping Trauma payment due to LOA.")
+            return
         trauma_channel = self.bot.get_channel(config.TRAUMA_FORUM_CHANNEL_ID)
         if not isinstance(trauma_channel, discord.ForumChannel):
             if log is not None:
