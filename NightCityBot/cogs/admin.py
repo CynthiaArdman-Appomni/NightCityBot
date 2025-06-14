@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from typing import Optional
 import config
-from utils.permissions import is_fixer
+from NightCityBot.utils.permissions import is_fixer
 
 
 class Admin(commands.Cog):
@@ -46,6 +46,7 @@ class Admin(commands.Cog):
                 fake_ctx.channel = dest_channel
                 fake_ctx.author = ctx.author
                 setattr(fake_ctx, "original_author", ctx.author)
+                setattr(fake_ctx, "skip_dm_log", True)
 
                 await self.bot.invoke(fake_ctx)
                 await ctx.send(f"✅ Executed `{command_text}` in {dest_channel.mention}.")
@@ -84,9 +85,30 @@ class Admin(commands.Cog):
             value=(
                 "Everyone pays a **$500/month** baseline fee for survival (food, water, etc).\n"
                 "Even if you don't have a house or business — you're still eating Prepack.\n\n"
-                "`!open_shop`\n"
-                "→ Shop owners log up to 4 openings/month (Sundays only).\n"
-                "→ Increases passive income if you're active."
+                "`!open_shop` — Sundays only\n"
+                "→ Log up to 4 openings per month. Each opening grants an immediate cash payout based on your business tier.\n"
+                "→ Requires a Business role.\n"
+                "`!attend` — Sundays only\n"
+                "→ Verified players earn $250 every week they attend."
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="🦾 Cyberware Maintenance",
+            value=(
+                "Players with cyberware roles receive a **Checkup** role every Monday. Remove it after your in-game check-up.\n"
+                "If you still have the role the following week, immunosuppressant costs double each week. They start at about $15 for Medium, $40 for High, and $80 for Extreme.\n"
+                "Costs cap after roughly 8 weeks at $2,000 / $5,000 / $10,000 respectively."
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="🏖️ Leave of Absence",
+            value=(
+                "Use `!start_loa` to pause housing rent, baseline fees, Trauma Team, and cyberware costs.\n"
+                "`!end_loa` when you return. Business rent still applies."
             ),
             inline=False
         )
@@ -105,7 +127,16 @@ class Admin(commands.Cog):
             color=discord.Color.purple()
         )
 
-        # Add fixer help fields...
+        embed.add_field(
+            name="🏖️ LOA Commands",
+            value=(
+                "`!start_loa [@user]` — Put yourself or another user on leave.\n"
+                "`!end_loa [@user]` — End leave for yourself or another user."
+            ),
+            inline=False,
+        )
+
+        # Add other fixer help fields...
 
         embed.set_footer(text="Fixer tools by MedusaCascade | v1.2")
         await ctx.send(embed=embed)
@@ -114,8 +145,9 @@ class Admin(commands.Cog):
     async def on_command_error(self, ctx, error):
         """Global error handler for commands."""
         if isinstance(error, commands.CommandNotFound):
+            # Ignore unknown commands so other bots using `!` don't spam the audit log
             await ctx.send("❌ Unknown command.")
-            await self.log_audit(ctx.author, f"❌ Unknown command: {ctx.message.content}")
+            return
         elif isinstance(error, commands.CheckFailure):
             await ctx.send("❌ Permission denied.")
             await self.log_audit(ctx.author, f"❌ Permission denied: {ctx.message.content}")
