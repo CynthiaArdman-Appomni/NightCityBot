@@ -40,5 +40,4 @@ async def save_json_file(file_path: Path | str, data):
         return True
     except Exception as e:
         print(f"Error saving {file_path.name}: {e}")
-
         return False

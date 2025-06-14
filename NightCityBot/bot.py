@@ -1,5 +1,13 @@
 import discord
 from discord.ext import commands
+import os
+import sys
+
+# Ensure the package root is on the path when executed as a script
+package_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if package_root not in sys.path:
+    sys.path.insert(0, package_root)
+
 import config
 from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.cogs.dm_handling import DMHandler
