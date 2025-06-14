@@ -25,7 +25,6 @@ def is_fixer():
 
     return commands.check(predicate)
 
-
 def is_ripperdoc():
     """Check that the command author has the Ripperdoc role."""
 
