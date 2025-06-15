@@ -335,7 +335,6 @@ class TestSuite(commands.Cog):
             ctx.channel = wrong_channel
             ctx.author = original_author
         return logs
-        return logs
 
     async def test_cyberware_costs(self, ctx) -> List[str]:
         """Verify cyberware medication cost escalation."""
@@ -388,6 +387,7 @@ class TestSuite(commands.Cog):
         member.display_name = "TestUser"
         member.roles = [discord.Object(id=config.CYBER_CHECKUP_ROLE_ID)]
         member.remove_roles = AsyncMock()
+
         with patch('discord.Guild.get_role', return_value=discord.Object(id=config.CYBER_CHECKUP_ROLE_ID)):
             await cyber.checkup.callback(cyber, ctx, member)
         self.assert_send(logs, member.remove_roles, "remove_roles")
