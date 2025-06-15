@@ -86,7 +86,11 @@ class RPManager(commands.Cog):
         """Archives and ends an RP session."""
         log_channel = channel.guild.get_channel(config.GROUP_AUDIT_LOG_CHANNEL_ID)
         if not isinstance(log_channel, discord.ForumChannel):
-            await channel.send("⚠️ Logging failed: audit log channel is not a ForumChannel.")
+            await channel.send(
+                "⚠️ Logging failed: audit log channel is not a ForumChannel. "
+                "Deleting session without logging."
+            )
+            await channel.delete(reason="RP session ended without log channel")
             return
 
         participants = channel.name.replace("text-rp-", "").split("-")

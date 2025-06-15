@@ -35,7 +35,7 @@ class TestSuite(commands.Cog):
             "test_open_shop_errors": "Checks open_shop failures for bad context.",
             "test_start_end_rp": "Creates and ends an RP session to verify logging.",
             "test_unknown_command": "Ensures unknown commands don't spam the audit log.",
-            "test_open_shop_limit": "Verifies the monthly shop open limit is enforced.",
+            "test_open_shop_daily_limit": "Ensures !open_shop can't run twice on the same Sunday.",
             "test_attend_command": "Runs !attend and verifies weekly/Sunday restrictions.",
             "test_cyberware_costs": "Ensures cyberware medication costs scale and cap correctly.",
             "test_loa_commands": "Runs start_loa and end_loa commands.",
@@ -492,15 +492,37 @@ class TestSuite(commands.Cog):
             logs.append(f"❌ Exception handling unknown command: {e}")
         return logs
 
-    async def test_open_shop_limit(self, ctx) -> List[str]:
-        """Ensure users cannot open shop more than four times per month."""
+    async def test_open_shop_daily_limit(self, ctx) -> List[str]:
+        """Ensure users can't log a business opening twice on the same day."""
         logs = []
         economy = self.bot.get_cog('Economy')
         original_channel = ctx.channel
         ctx.channel = ctx.guild.get_channel(config.BUSINESS_ACTIVITY_CHANNEL_ID)
-        for i in range(5):
+
+        storage = {}
+
+        async def fake_load(*_, **__):
+            return storage.get("data", {})
+
+        async def fake_save(path, *, data):
+            storage["data"] = data
+
+        sunday = datetime(2025, 6, 15)
+        with (
+            patch("NightCityBot.cogs.economy.datetime") as mock_dt,
+            patch("NightCityBot.cogs.economy.load_json_file", new=fake_load),
+            patch("NightCityBot.cogs.economy.save_json_file", new=fake_save),
+            patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock()),
+        ):
+            mock_dt.utcnow.return_value = sunday
+            mock_dt.fromisoformat = datetime.fromisoformat
             await economy.open_shop(ctx)
-        logs.append("✅ open_shop called five times to test limit")
+        await economy.open_shop(ctx)
+        msg = ctx.send.call_args_list[-1][0][0]
+        if "already logged a business opening today" in msg:
+            logs.append("✅ open_shop rejected when used twice")
+        else:
+            logs.append("❌ open_shop did not enforce daily limit")
         ctx.channel = original_channel
         return logs
 
@@ -537,7 +559,7 @@ class TestSuite(commands.Cog):
             ("test_open_shop_errors", self.test_open_shop_errors),
             ("test_start_end_rp", self.test_start_end_rp),
             ("test_unknown_command", self.test_unknown_command),
-            ("test_open_shop_limit", self.test_open_shop_limit),
+            ("test_open_shop_daily_limit", self.test_open_shop_daily_limit),
             ("test_attend_command", self.test_attend_command),
             ("test_cyberware_costs", self.test_cyberware_costs),
             ("test_loa_commands", self.test_loa_commands),

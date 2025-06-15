@@ -26,6 +26,9 @@ class Economy(commands.Cog):
         self.unbelievaboat = UnbelievaBoatAPI(config.UNBELIEVABOAT_API_TOKEN)
         self.trauma_service = TraumaTeamService(bot)
 
+    def cog_unload(self):
+        self.bot.loop.create_task(self.unbelievaboat.close())
+
     def calculate_passive_income(self, role: str, open_count: int) -> int:
         """Calculate passive income based on role and number of shop opens."""
         if role == "Business Tier 0":
@@ -111,12 +114,9 @@ class Economy(commands.Cog):
             await ctx.send("❌ You've already logged a business opening today.")
             return
 
-        if len(this_month_opens) >= 4:
-            await ctx.send("❌ You've already used all 4 business posts for this month.")
-            return
-
-        open_count_before = len(this_month_opens)
-        open_count_after = open_count_before + 1
+        open_count_before = min(len(this_month_opens), 4)
+        open_count_after = min(open_count_before + 1, 4)
+        open_count_total = len(this_month_opens) + 1
 
         all_opens.append(now_str)
         data[user_id] = all_opens
@@ -137,9 +137,9 @@ class Economy(commands.Cog):
 
         if reward > 0:
             await self.unbelievaboat.update_balance(ctx.author.id, {"cash": reward}, reason="Business activity reward")
-            await ctx.send(f"✅ Business opening logged! You earned ${reward}. ({open_count_after}/4 this month)")
+            await ctx.send(f"✅ Business opening logged! You earned ${reward}. ({open_count_total} this month)")
         else:
-            await ctx.send(f"✅ Business opening logged! ({open_count_after}/4 this month)")
+            await ctx.send(f"✅ Business opening logged! ({open_count_total} this month)")
 
     @commands.command()
     async def attend(self, ctx):
