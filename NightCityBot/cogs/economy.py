@@ -496,5 +496,7 @@ class Economy(commands.Cog):
             except Exception as e:
                 await ctx.send(f"❌ Error processing <@{member.id}>: `{e}`")
 
+
         await ctx.send("✅ Rent collection completed.")
+
 

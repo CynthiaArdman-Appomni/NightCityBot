@@ -11,7 +11,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 from typing import List, Dict, Optional
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 import config
 from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.utils.constants import ROLE_COSTS_BUSINESS, ROLE_COSTS_HOUSING
@@ -40,7 +40,6 @@ class TestSuite(commands.Cog):
             "test_cyberware_costs": "Ensures cyberware medication costs scale and cap correctly.",
             "test_loa_commands": "Runs start_loa and end_loa commands.",
             "test_checkup_command": "Runs the ripperdoc !checkup command.",
-
         }
 
     async def get_test_user(self, ctx) -> Optional[discord.Member]:
@@ -275,11 +274,18 @@ class TestSuite(commands.Cog):
         logs = []
         economy = self.bot.get_cog('Economy')
         try:
-            ctx.author.roles = [discord.Object(id=config.VERIFIED_ROLE_ID)]
-            await economy.attend(ctx)
+            original_author = ctx.author
+            mock_author = MagicMock(spec=discord.Member)
+            mock_author.id = original_author.id
+            mock_author.roles = [discord.Object(id=config.VERIFIED_ROLE_ID)]
+            ctx.author = mock_author
+            with patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock()):
+                await economy.attend(ctx)
             logs.append("✅ attend command executed")
         except Exception as e:
             logs.append(f"❌ Exception in test_attend_command: {e}")
+        finally:
+            ctx.author = original_author
         return logs
 
     async def test_dm_thread_reuse(self, ctx) -> List[str]:
@@ -300,25 +306,34 @@ class TestSuite(commands.Cog):
         logs = []
         economy = self.bot.get_cog('Economy')
         wrong_channel = ctx.channel
-        # Wrong channel
-        await economy.open_shop(ctx)
-        logs.append("✅ open_shop rejected outside business channel")
-        # Simulate correct channel without business role
-        ctx.channel = ctx.guild.get_channel(config.BUSINESS_ACTIVITY_CHANNEL_ID)
-        ctx.author.roles = []
-        await economy.open_shop(ctx)
-        logs.append("✅ open_shop rejected without business role")
-        # Simulate correct channel but non-Sunday
-        ctx.channel = ctx.guild.get_channel(config.BUSINESS_ACTIVITY_CHANNEL_ID)
-        role = MagicMock()
-        role.name = "Business Tier 1"
-        ctx.author.roles = [role]
-        if datetime.utcnow().weekday() == 6:
-            logs.append("⚠️ Test run on Sunday; skip non-Sunday check")
-        else:
+        with patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock()):
+            # Wrong channel
             await economy.open_shop(ctx)
-            logs.append("✅ open_shop rejected on non-Sunday")
-        ctx.channel = wrong_channel
+            logs.append("✅ open_shop rejected outside business channel")
+
+            ctx.channel = ctx.guild.get_channel(config.BUSINESS_ACTIVITY_CHANNEL_ID)
+            original_author = ctx.author
+            mock_author = MagicMock(spec=discord.Member)
+            mock_author.id = original_author.id
+
+            # Simulate no business role
+            mock_author.roles = []
+            ctx.author = mock_author
+            await economy.open_shop(ctx)
+            logs.append("✅ open_shop rejected without business role")
+
+            # Simulate non-Sunday with business role
+            role = MagicMock()
+            role.name = "Business Tier 1"
+            mock_author.roles = [role]
+            if datetime.utcnow().weekday() == 6:
+                logs.append("⚠️ Test run on Sunday; skip non-Sunday check")
+            else:
+                await economy.open_shop(ctx)
+                logs.append("✅ open_shop rejected on non-Sunday")
+
+            ctx.channel = wrong_channel
+            ctx.author = original_author
         return logs
 
     async def test_cyberware_costs(self, ctx) -> List[str]:
@@ -346,13 +361,19 @@ class TestSuite(commands.Cog):
         if not loa:
             logs.append("❌ LOA cog not loaded")
             return logs
-        ctx.author.add_roles = AsyncMock()
-        ctx.author.remove_roles = AsyncMock()
-        ctx.guild.get_role = MagicMock(return_value=discord.Object(id=config.LOA_ROLE_ID))
-        await loa.start_loa(ctx)
-        await loa.end_loa(ctx)
-        self.assert_called(logs, ctx.author.add_roles, "add_roles")
-        self.assert_called(logs, ctx.author.remove_roles, "remove_roles")
+        original_author = ctx.author
+        mock_author = MagicMock(spec=discord.Member)
+        mock_author.id = original_author.id
+        mock_author.roles = []
+        mock_author.add_roles = AsyncMock()
+        mock_author.remove_roles = AsyncMock()
+        ctx.author = mock_author
+        with patch('discord.Guild.get_role', return_value=discord.Object(id=config.LOA_ROLE_ID)):
+            await loa.start_loa(ctx)
+            await loa.end_loa(ctx)
+        self.assert_send(logs, mock_author.add_roles, "add_roles")
+        self.assert_send(logs, mock_author.remove_roles, "remove_roles")
+        ctx.author = original_author
         return logs
 
     async def test_checkup_command(self, ctx) -> List[str]:
@@ -366,9 +387,9 @@ class TestSuite(commands.Cog):
         member.display_name = "TestUser"
         member.roles = [discord.Object(id=config.CYBER_CHECKUP_ROLE_ID)]
         member.remove_roles = AsyncMock()
-        ctx.guild.get_role = MagicMock(return_value=discord.Object(id=config.CYBER_CHECKUP_ROLE_ID))
-        await cyber.checkup.callback(cyber, ctx, member)
-        self.assert_called(logs, member.remove_roles, "remove_roles")
+        with patch('discord.Guild.get_role', return_value=discord.Object(id=config.CYBER_CHECKUP_ROLE_ID)):
+            await cyber.checkup.callback(cyber, ctx, member)
+        self.assert_send(logs, member.remove_roles, "remove_roles")
         return logs
 
     async def test_start_end_rp(self, ctx) -> List[str]:
