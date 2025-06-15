@@ -113,7 +113,11 @@ class Admin(commands.Cog):
             inline=False
         )
 
-        # Add other help fields...
+        embed.add_field(
+            name="🦾 Ripperdoc",
+            value="`!checkup @user` — Remove the weekly cyberware checkup role.",
+            inline=False,
+        )
 
         embed.set_footer(text="Use !roll, pay your rent, stay alive.")
         await ctx.send(embed=embed)
@@ -136,7 +140,46 @@ class Admin(commands.Cog):
             inline=False,
         )
 
-        # Add other fixer help fields...
+        embed.add_field(
+            name="✉️ Messaging Tools",
+            value=(
+                "`!dm @user <text>` — Send an anonymous DM to a user. Use `!roll` inside to relay a roll.\n"
+                "`!post <channel|thread> <message>` — Post or run a command in another location."
+            ),
+            inline=False,
+        )
+
+        embed.add_field(
+            name="📑 RP Management",
+            value=(
+                "`!start_rp @users` — Create a private RP channel for the listed users.\n"
+                "`!end_rp` — Archive and delete the current RP session."
+            ),
+            inline=False,
+        )
+
+        embed.add_field(
+            name="💵 Rent Commands",
+            value=(
+                "`!collect_rent [@user]` — Run monthly rent collection globally or for one user.\n"
+                "`!collect_housing @user` — Charge housing rent immediately.\n"
+                "`!collect_business @user` — Charge business rent immediately.\n"
+                "`!collect_trauma @user` — Process Trauma Team subscription."
+            ),
+            inline=False,
+        )
+
+        embed.add_field(
+            name="🦾 Ripperdoc",
+            value="`!checkup @user` — Remove the weekly cyberware checkup role.",
+            inline=False,
+        )
+
+        embed.add_field(
+            name="🧪 Testing",
+            value="`!test_bot [tests]` — Run self-tests (bot owner only).",
+            inline=False,
+        )
 
         embed.set_footer(text="Fixer tools by MedusaCascade | v1.2")
         await ctx.send(embed=embed)
