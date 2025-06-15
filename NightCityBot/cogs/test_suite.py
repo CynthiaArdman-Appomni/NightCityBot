@@ -504,8 +504,10 @@ class TestSuite(commands.Cog):
         async def fake_load(*_, **__):
             return storage.get("data", {})
 
-        async def fake_save(path, *, data):
+        async def fake_save(path, data):
             storage["data"] = data
+
+        ctx.send = AsyncMock()
 
         sunday = datetime(2025, 6, 15)
         with (
@@ -517,7 +519,7 @@ class TestSuite(commands.Cog):
             mock_dt.utcnow.return_value = sunday
             mock_dt.fromisoformat = datetime.fromisoformat
             await economy.open_shop(ctx)
-        await economy.open_shop(ctx)
+            await economy.open_shop(ctx)
         msg = ctx.send.call_args_list[-1][0][0]
         if "already logged a business opening today" in msg:
             logs.append("✅ open_shop rejected when used twice")
@@ -528,8 +530,13 @@ class TestSuite(commands.Cog):
 
     @commands.command(hidden=True)
     @commands.is_owner()
-    async def test_bot(self, ctx):
-        """Run all bot tests."""
+    async def test_bot(self, ctx, *test_names: str):
+        """Run bot self tests.
+
+        If no ``test_names`` are given all tests are executed. You can specify
+        one or more test method names to only run those tests, e.g.
+        ``!test_bot test_rolls test_bonus_rolls``.
+        """
         start = time.time()
         all_logs = []
 
@@ -541,7 +548,14 @@ class TestSuite(commands.Cog):
         output_channel = ctx.channel
         ctx.message.attachments = []
 
-        await output_channel.send(f"🧪 Running full self-test on user <@{config.TEST_USER_ID}>...")
+        if test_names:
+            await output_channel.send(
+                f"🧪 Running selected tests on <@{config.TEST_USER_ID}>: {', '.join(test_names)}"
+            )
+        else:
+            await output_channel.send(
+                f"🧪 Running full self-test on user <@{config.TEST_USER_ID}>..."
+            )
 
         tests = [
             ("test_dm_roll_relay", self.test_dm_roll_relay),
@@ -565,6 +579,23 @@ class TestSuite(commands.Cog):
             ("test_loa_commands", self.test_loa_commands),
             ("test_checkup_command", self.test_checkup_command),
         ]
+        tests_dict = dict(tests)
+
+        if test_names:
+            filtered = []
+            unknown = []
+            for name in test_names:
+                if name in tests_dict:
+                    filtered.append((name, tests_dict[name]))
+                else:
+                    unknown.append(name)
+            if unknown:
+                await output_channel.send(
+                    f"⚠️ Unknown tests: {', '.join(unknown)}"
+                )
+            tests = filtered
+            if not tests:
+                return
 
         for name, func in tests:
             await output_channel.send(f"🧪 `{name}` — {self.test_descriptions.get(name, 'No description.')}")
@@ -593,8 +624,9 @@ class TestSuite(commands.Cog):
         failed = sum(1 for r in all_logs if "❌" in r)
         duration = time.time() - start
 
+        title = "🧪 Full Bot Self-Test Summary" if not test_names else "🧪 Selected Test Summary"
         embed = discord.Embed(
-            title="🧪 Full Bot Self-Test Summary",
+            title=title,
             color=discord.Color.green() if failed == 0 else discord.Color.red()
         )
         embed.add_field(
