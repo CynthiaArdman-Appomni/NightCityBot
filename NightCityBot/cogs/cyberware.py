@@ -58,7 +58,9 @@ class CyberwareManager(commands.Cog):
         high_role = guild.get_role(config.CYBER_HIGH_ROLE_ID)
         extreme_role = guild.get_role(config.CYBER_EXTREME_ROLE_ID)
         loa_role = guild.get_role(config.LOA_ROLE_ID)
-        rent_channel = guild.get_channel(config.RENT_LOG_CHANNEL_ID)
+        log_channel = guild.get_channel(
+            getattr(config, "RIPPERDOC_LOG_CHANNEL_ID", config.RENT_LOG_CHANNEL_ID)
+        )
 
         for member in guild.members:
             if loa_role and loa_role in member.roles:
@@ -93,18 +95,26 @@ class CyberwareManager(commands.Cog):
             # User kept the checkup role for another week → charge them
             weeks += 1
             cost = self.calculate_cost(role_level, weeks)
-            success = await self.unbelievaboat.update_balance(
-                member.id, {"cash": -cost}, reason="Cyberware medication"
-            )
-            if rent_channel:
-                if success:
-                    await rent_channel.send(
-                        f"✅ Deducted ${cost} for cyberware meds from <@{member.id}> (week {weeks})."
+            balance = await self.unbelievaboat.get_balance(member.id)
+            total = (balance.get("cash", 0) if balance else 0) + (balance.get("bank", 0) if balance else 0)
+            if balance and total < cost:
+                if log_channel:
+                    await log_channel.send(
+                        f"🚨 <@{member.id}> cannot pay ${cost} for immunosuppressants and is in danger of cyberpsychosis."
                     )
-                else:
-                    await rent_channel.send(
-                        f"❌ Could not deduct ${cost} from <@{member.id}> for cyberware meds."
-                    )
+            else:
+                success = await self.unbelievaboat.update_balance(
+                    member.id, {"cash": -cost}, reason="Cyberware medication"
+                )
+                if log_channel:
+                    if success:
+                        await log_channel.send(
+                            f"✅ Deducted ${cost} for cyberware meds from <@{member.id}> (week {weeks})."
+                        )
+                    else:
+                        await log_channel.send(
+                            f"❌ Could not deduct ${cost} from <@{member.id}> for cyberware meds."
+                        )
 
             self.data[user_id] = weeks
 
@@ -126,3 +136,15 @@ class CyberwareManager(commands.Cog):
 
         await member.remove_roles(role, reason="Cyberware check-up completed")
         await ctx.send(f"✅ Removed checkup role from {member.display_name}.")
+
+
+        log_channel = ctx.guild.get_channel(
+            getattr(config, "RIPPERDOC_LOG_CHANNEL_ID", config.RENT_LOG_CHANNEL_ID)
+        )
+        if log_channel:
+            await log_channel.send(
+                f"Ripperdoc {ctx.author.display_name} did a checkup on {member.display_name}"
+            )
+
+        self.data[str(member.id)] = 0
+        await save_json_file(Path(config.CYBERWARE_LOG_FILE), self.data)

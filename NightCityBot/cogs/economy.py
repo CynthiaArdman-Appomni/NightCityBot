@@ -159,19 +159,9 @@ class Economy(commands.Cog):
         data = await load_json_file(config.ATTEND_LOG_FILE, default={})
 
         all_logs = data.get(user_id, [])
-        this_month = [
-            datetime.fromisoformat(ts)
-            for ts in all_logs
-            if datetime.fromisoformat(ts).month == now.month and
-               datetime.fromisoformat(ts).year == now.year
-        ]
-
-        if any(ts.date() == now.date() for ts in this_month):
-            await ctx.send("❌ You've already logged attendance today.")
-            return
-
-        if len(this_month) >= 4:
-            await ctx.send("❌ You've already recorded attendance 4 times this month.")
+        parsed = [datetime.fromisoformat(ts) for ts in all_logs]
+        if parsed and (now - max(parsed)).days < 7:
+            await ctx.send("❌ You've already logged attendance this week.")
             return
 
         all_logs.append(now_str)
@@ -180,7 +170,7 @@ class Economy(commands.Cog):
 
         reward = ATTEND_REWARD
         await self.unbelievaboat.update_balance(ctx.author.id, {"cash": reward}, reason="Attendance reward")
-        await ctx.send(f"✅ Attendance logged! You received ${reward}. ({len(this_month)+1}/4 this month)")
+        await ctx.send(f"✅ Attendance logged! You received ${reward}.")
 
     async def deduct_flat_fee(self, member: discord.Member, cash: int, bank: int, log: List[str], amount: int = BASELINE_LIVING_COST) -> tuple[bool, int, int]:
         total = (cash or 0) + (bank or 0)

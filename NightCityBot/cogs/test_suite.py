@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import sys
 from pathlib import Path
@@ -36,7 +36,7 @@ class TestSuite(commands.Cog):
             "test_start_end_rp": "Creates and ends an RP session to verify logging.",
             "test_unknown_command": "Ensures unknown commands don't spam the audit log.",
             "test_open_shop_limit": "Verifies the monthly shop open limit is enforced.",
-            "test_attend_command": "Runs !attend to award weekly attendance cash.",
+            "test_attend_command": "Runs !attend and verifies weekly/Sunday restrictions.",
             "test_cyberware_costs": "Ensures cyberware medication costs scale and cap correctly.",
             "test_loa_commands": "Runs start_loa and end_loa commands.",
             "test_checkup_command": "Runs the ripperdoc !checkup command.",
@@ -278,22 +278,75 @@ class TestSuite(commands.Cog):
         return logs
 
     async def test_attend_command(self, ctx) -> List[str]:
-        """Test the attend reward command."""
+        """Test the attend reward command and its restrictions."""
         logs = []
         economy = self.bot.get_cog('Economy')
-        try:
-            original_author = ctx.author
-            mock_author = MagicMock(spec=discord.Member)
-            mock_author.id = original_author.id
-            mock_author.roles = [discord.Object(id=config.VERIFIED_ROLE_ID)]
-            ctx.author = mock_author
-            with patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock()):
-                await economy.attend(ctx)
-            logs.append("✅ attend command executed")
-        except Exception as e:
-            logs.append(f"❌ Exception in test_attend_command: {e}")
-        finally:
-            ctx.author = original_author
+        original_author = ctx.author
+        mock_author = MagicMock(spec=discord.Member)
+        mock_author.id = original_author.id
+        mock_author.roles = [discord.Object(id=config.VERIFIED_ROLE_ID)]
+        ctx.author = mock_author
+        ctx.send = AsyncMock()
+
+        # Non-Sunday should be rejected
+        monday = datetime(2025, 6, 16)
+        with (
+            patch("NightCityBot.cogs.economy.datetime") as mock_dt,
+            patch("NightCityBot.cogs.economy.load_json_file", new=AsyncMock(return_value={})),
+            patch("NightCityBot.cogs.economy.save_json_file", new=AsyncMock()),
+        ):
+            mock_dt.utcnow.return_value = monday
+            mock_dt.fromisoformat = datetime.fromisoformat
+            await economy.attend(ctx)
+            msg = ctx.send.await_args[0][0]
+            if "only be logged on Sundays" in msg:
+                logs.append("✅ attend rejected on non-Sunday")
+            else:
+                logs.append("❌ attend did not reject non-Sunday")
+        ctx.send.reset_mock()
+
+        # Already attended this week should be rejected
+        sunday = datetime(2025, 6, 15)
+        prev = sunday - timedelta(days=3)
+        with (
+            patch("NightCityBot.cogs.economy.datetime") as mock_dt,
+            patch(
+                "NightCityBot.cogs.economy.load_json_file",
+                new=AsyncMock(return_value={str(mock_author.id): [prev.isoformat()]}),
+            ),
+            patch("NightCityBot.cogs.economy.save_json_file", new=AsyncMock()),
+        ):
+            mock_dt.utcnow.return_value = sunday
+            mock_dt.fromisoformat = datetime.fromisoformat
+            await economy.attend(ctx)
+            msg = ctx.send.await_args[0][0]
+            if "already logged attendance this week" in msg:
+                logs.append("✅ attend rejected when used twice")
+            else:
+                logs.append("❌ attend did not enforce weekly limit")
+        ctx.send.reset_mock()
+
+        # Success when a week has passed
+        prev2 = sunday - timedelta(days=7)
+        with (
+            patch("NightCityBot.cogs.economy.datetime") as mock_dt,
+            patch(
+                "NightCityBot.cogs.economy.load_json_file",
+                new=AsyncMock(return_value={str(mock_author.id): [prev2.isoformat()]}),
+            ),
+            patch("NightCityBot.cogs.economy.save_json_file", new=AsyncMock()),
+            patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock()),
+        ):
+            mock_dt.utcnow.return_value = sunday
+            mock_dt.fromisoformat = datetime.fromisoformat
+            await economy.attend(ctx)
+            msg = ctx.send.await_args[0][0]
+            if "Attendance logged" in msg:
+                logs.append("✅ attend succeeded after cooldown")
+            else:
+                logs.append("❌ attend did not succeed after cooldown")
+
+        ctx.author = original_author
         return logs
 
     async def test_dm_thread_reuse(self, ctx) -> List[str]:
@@ -397,9 +450,20 @@ class TestSuite(commands.Cog):
         member.display_name = "TestUser"
         member.roles = [discord.Object(id=config.CYBER_CHECKUP_ROLE_ID)]
         member.remove_roles = AsyncMock()
-        with patch('discord.Guild.get_role', return_value=discord.Object(id=config.CYBER_CHECKUP_ROLE_ID)):
+        log_channel = MagicMock()
+        log_channel.send = AsyncMock()
+        with (
+            patch("discord.Guild.get_role", return_value=discord.Object(id=config.CYBER_CHECKUP_ROLE_ID)),
+            patch("discord.Guild.get_channel", return_value=log_channel),
+            patch("NightCityBot.cogs.cyberware.save_json_file", new=AsyncMock()),
+        ):
             await cyber.checkup.callback(cyber, ctx, member)
         self.assert_send(logs, member.remove_roles, "remove_roles")
+        self.assert_send(logs, log_channel.send, "log_channel.send")
+        if cyber.data.get(str(member.id), 0) == 0:
+            logs.append("✅ checkup streak reset")
+        else:
+            logs.append("❌ checkup streak not reset")
         return logs
 
     async def test_start_end_rp(self, ctx) -> List[str]:
