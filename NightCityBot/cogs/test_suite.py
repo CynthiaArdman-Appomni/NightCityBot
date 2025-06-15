@@ -49,13 +49,13 @@ class TestSuite(commands.Cog):
             user = await ctx.guild.fetch_member(config.TEST_USER_ID)
         return user
 
-    def assert_send(self, logs: List[str], mock_obj, label: str) -> None:
-        """Assert that send was called on a mock object."""
+    def assert_called(self, logs: List[str], mock_obj, label: str) -> None:
+        """Assert that an awaited call was made on the given mock."""
         try:
-            mock_obj.send.assert_awaited()
-            logs.append(f"✅ {label}.send was called")
+            mock_obj.assert_awaited()
+            logs.append(f"✅ {label} was called")
         except AssertionError:
-            logs.append(f"❌ {label}.send was not called")
+            logs.append(f"❌ {label} was not called")
 
     async def test_dm_roll_relay(self, ctx) -> List[str]:
         """Test relaying roll commands through DMs."""
@@ -387,7 +387,6 @@ class TestSuite(commands.Cog):
         member.display_name = "TestUser"
         member.roles = [discord.Object(id=config.CYBER_CHECKUP_ROLE_ID)]
         member.remove_roles = AsyncMock()
-
         with patch('discord.Guild.get_role', return_value=discord.Object(id=config.CYBER_CHECKUP_ROLE_ID)):
             await cyber.checkup.callback(cyber, ctx, member)
         self.assert_send(logs, member.remove_roles, "remove_roles")
