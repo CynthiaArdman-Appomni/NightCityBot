@@ -497,4 +497,3 @@ class Economy(commands.Cog):
                 await ctx.send(f"❌ Error processing <@{member.id}>: `{e}`")
 
         await ctx.send("✅ Rent collection completed.")
-
