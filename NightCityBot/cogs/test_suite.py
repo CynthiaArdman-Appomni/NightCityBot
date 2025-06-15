@@ -536,8 +536,9 @@ class TestSuite(commands.Cog):
         If no ``test_names`` are given all tests are executed. You can specify
         one or more test method names to only run those tests, e.g.
         ``!test_bot test_rolls test_bonus_rolls``.
-        A ``-silent`` flag can be provided to send output via DM instead of the
-        current channel.
+        A ``-silent`` flag can be provided to send only a final summary via DM
+        instead of the current channel. Use ``-verbose`` to print detailed logs
+        for each test.
         """
         start = time.time()
         all_logs = []
@@ -545,9 +546,13 @@ class TestSuite(commands.Cog):
         # Create a reusable RP channel for tests
         test_names = list(test_names)
         silent = False
+        verbose = False
         if "-silent" in test_names:
             test_names.remove("-silent")
             silent = True
+        if "-verbose" in test_names:
+            test_names.remove("-verbose")
+            verbose = True
 
         output_channel = ctx.channel
         if silent:
@@ -619,9 +624,10 @@ class TestSuite(commands.Cog):
 
         try:
             for name, func in tests:
-                await output_channel.send(
-                    f"🧪 `{name}` — {self.test_descriptions.get(name, 'No description.')}"
-                )
+                if verbose:
+                    await output_channel.send(
+                        f"🧪 `{name}` — {self.test_descriptions.get(name, 'No description.')}"
+                    )
                 try:
                     logs = await func(ctx)
                 except Exception as e:
@@ -630,17 +636,18 @@ class TestSuite(commands.Cog):
                 all_logs.extend(logs)
                 all_logs.append("────────────")
 
-            # Send results in chunks
-            current_chunk = ""
-            for line in all_logs:
-                line = str(line)
-                if len(current_chunk) + len(line) + 1 > 1900:
+            if verbose:
+                # Send results in chunks
+                current_chunk = ""
+                for line in all_logs:
+                    line = str(line)
+                    if len(current_chunk) + len(line) + 1 > 1900:
+                        await output_channel.send(f"```\n{current_chunk.strip()}\n```")
+                        current_chunk = line
+                    else:
+                        current_chunk += line + "\n"
+                if current_chunk:
                     await output_channel.send(f"```\n{current_chunk.strip()}\n```")
-                    current_chunk = line
-                else:
-                    current_chunk += line + "\n"
-            if current_chunk:
-                await output_channel.send(f"```\n{current_chunk.strip()}\n```")
 
             # Summary embed
             passed = sum(1 for r in all_logs if "✅" in r)
