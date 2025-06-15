@@ -536,17 +536,30 @@ class TestSuite(commands.Cog):
         If no ``test_names`` are given all tests are executed. You can specify
         one or more test method names to only run those tests, e.g.
         ``!test_bot test_rolls test_bonus_rolls``.
+        A ``-silent`` flag can be provided to send output via DM instead of the
+        current channel.
         """
         start = time.time()
         all_logs = []
 
         # Create a reusable RP channel for tests
-        rp_manager = self.bot.get_cog('RPManager')
-        rp_channel = await rp_manager.start_rp(ctx, f"<@{config.TEST_USER_ID}>")
-        ctx.test_rp_channel = rp_channel
+        test_names = list(test_names)
+        silent = False
+        if "-silent" in test_names:
+            test_names.remove("-silent")
+            silent = True
 
         output_channel = ctx.channel
+        if silent:
+            output_channel = await ctx.author.create_dm()
+            await ctx.send("🧪 Running tests in silent mode. Results will be sent via DM.")
+
         ctx.message.attachments = []
+
+        rp_required_tests = {
+            "test_post_executes_command",
+            "test_post_roll_execution",
+        }
 
         if test_names:
             await output_channel.send(
@@ -597,46 +610,55 @@ class TestSuite(commands.Cog):
             if not tests:
                 return
 
-        for name, func in tests:
-            await output_channel.send(f"🧪 `{name}` — {self.test_descriptions.get(name, 'No description.')}")
-            try:
-                logs = await func(ctx)
-            except Exception as e:
-                logs = [f"❌ Exception in `{name}`: {e}"]
-            all_logs.append(f"{name} — {self.test_descriptions.get(name, '')}")
-            all_logs.extend(logs)
-            all_logs.append("────────────")
+        rp_manager = self.bot.get_cog('RPManager')
+        rp_channel = None
+        needs_rp = (not test_names) or any(name in rp_required_tests for name, _ in tests)
+        if needs_rp:
+            rp_channel = await rp_manager.start_rp(ctx, f"<@{config.TEST_USER_ID}>")
+        ctx.test_rp_channel = rp_channel
 
-        # Send results in chunks
-        current_chunk = ""
-        for line in all_logs:
-            line = str(line)
-            if len(current_chunk) + len(line) + 1 > 1900:
+        try:
+            for name, func in tests:
+                await output_channel.send(
+                    f"🧪 `{name}` — {self.test_descriptions.get(name, 'No description.')}"
+                )
+                try:
+                    logs = await func(ctx)
+                except Exception as e:
+                    logs = [f"❌ Exception in `{name}`: {e}"]
+                all_logs.append(f"{name} — {self.test_descriptions.get(name, '')}")
+                all_logs.extend(logs)
+                all_logs.append("────────────")
+
+            # Send results in chunks
+            current_chunk = ""
+            for line in all_logs:
+                line = str(line)
+                if len(current_chunk) + len(line) + 1 > 1900:
+                    await output_channel.send(f"```\n{current_chunk.strip()}\n```")
+                    current_chunk = line
+                else:
+                    current_chunk += line + "\n"
+            if current_chunk:
                 await output_channel.send(f"```\n{current_chunk.strip()}\n```")
-                current_chunk = line
-            else:
-                current_chunk += line + "\n"
-        if current_chunk:
-            await output_channel.send(f"```\n{current_chunk.strip()}\n```")
 
-        # Summary embed
-        passed = sum(1 for r in all_logs if "✅" in r)
-        failed = sum(1 for r in all_logs if "❌" in r)
-        duration = time.time() - start
+            # Summary embed
+            passed = sum(1 for r in all_logs if "✅" in r)
+            failed = sum(1 for r in all_logs if "❌" in r)
+            duration = time.time() - start
 
-        title = "🧪 Full Bot Self-Test Summary" if not test_names else "🧪 Selected Test Summary"
-        embed = discord.Embed(
-            title=title,
-            color=discord.Color.green() if failed == 0 else discord.Color.red()
-        )
-        embed.add_field(
-            name="Result",
-            value=f"✅ Passed: {passed}\n❌ Failed: {failed}",
-            inline=False
-        )
-        embed.set_footer(text=f"⏱️ Completed in {duration:.2f}s")
-        await output_channel.send(embed=embed)
-
-        # Cleanup test channel
-        if ctx.test_rp_channel:
-            await rp_manager.end_rp_session(ctx.test_rp_channel)
+            title = "🧪 Full Bot Self-Test Summary" if not test_names else "🧪 Selected Test Summary"
+            embed = discord.Embed(
+                title=title,
+                color=discord.Color.green() if failed == 0 else discord.Color.red()
+            )
+            embed.add_field(
+                name="Result",
+                value=f"✅ Passed: {passed}\n❌ Failed: {failed}",
+                inline=False
+            )
+            embed.set_footer(text=f"⏱️ Completed in {duration:.2f}s")
+            await output_channel.send(embed=embed)
+        finally:
+            if ctx.test_rp_channel:
+                await rp_manager.end_rp_session(ctx.test_rp_channel)
