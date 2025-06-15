@@ -39,5 +39,5 @@ async def save_json_file(file_path: Path | str, data):
             await f.write(json.dumps(data, indent=2))
         return True
     except Exception as e:
-        print(f"Error saving {file_path.name}: {e}")
+        print(f"Error saving {path.name}: {e}")
         return False
