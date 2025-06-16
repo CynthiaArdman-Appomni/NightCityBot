@@ -1,3 +1,4 @@
+import logging
 import discord
 from discord.ext import commands
 from typing import Optional
@@ -8,11 +9,13 @@ from typing import Optional
 
 def get_loa_role(guild: discord.Guild) -> Optional[discord.abc.Snowflake]:
     """Return the LOA role from ``guild`` if it exists."""
-    print(f"[DEBUG] Fetching LOA role {config.LOA_ROLE_ID} from guild {guild}")
+    logger.debug("Fetching LOA role %s from guild %s", config.LOA_ROLE_ID, guild)
     return discord.Guild.get_role(guild, config.LOA_ROLE_ID)
 
 import config
 from NightCityBot.utils.permissions import is_fixer
+
+logger = logging.getLogger(__name__)
 
 
 class LOA(commands.Cog):
@@ -33,7 +36,7 @@ class LOA(commands.Cog):
             await ctx.send("⚠️ The LOA system is currently disabled.")
             return
         guild = ctx.guild
-        print(f"[DEBUG] start_loa invoked by {ctx.author} for {member or ctx.author}")
+        logger.debug("start_loa invoked by %s for %s", ctx.author, member or ctx.author)
         loa_role = self.get_loa_role(guild)
         if loa_role is None:
             await ctx.send("⚠️ LOA role is not configured.")
@@ -50,7 +53,7 @@ class LOA(commands.Cog):
             return
 
         await target.add_roles(loa_role, reason="LOA start")
-        print(f"[DEBUG] LOA role added to {target}")
+        logger.debug("LOA role added to %s", target)
         if target == ctx.author:
             await ctx.send("✅ You are now on LOA.")
         else:
@@ -64,7 +67,7 @@ class LOA(commands.Cog):
             await ctx.send("⚠️ The LOA system is currently disabled.")
             return
         guild = ctx.guild
-        print(f"[DEBUG] end_loa invoked by {ctx.author} for {member or ctx.author}")
+        logger.debug("end_loa invoked by %s for %s", ctx.author, member or ctx.author)
         loa_role = self.get_loa_role(guild)
         if loa_role is None:
             await ctx.send("⚠️ LOA role is not configured.")
@@ -81,7 +84,7 @@ class LOA(commands.Cog):
             return
 
         await target.remove_roles(loa_role, reason="LOA end")
-        print(f"[DEBUG] LOA role removed from {target}")
+        logger.debug("LOA role removed from %s", target)
         if target == ctx.author:
             await ctx.send("✅ Your LOA has ended.")
         else:
