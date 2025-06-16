@@ -35,7 +35,9 @@ class LOA(commands.Cog):
         """Wrapper around :func:`get_loa_role` for backwards compatibility."""
         return get_loa_role(guild)
 
-    @commands.command()
+    @commands.command(
+        aliases=["startloa", "loa_start", "loastart"]
+    )
     async def start_loa(self, ctx, member: Optional[discord.Member] = None):
         """Start a leave of absence. Fixers may specify a member."""
         control = self.bot.get_cog('SystemControl')
@@ -70,7 +72,9 @@ class LOA(commands.Cog):
         else:
             await ctx.send(f"✅ {target.display_name} is now on LOA.")
 
-    @commands.command()
+    @commands.command(
+        aliases=["endloa", "loa_end", "loaend"]
+    )
     async def end_loa(self, ctx, member: Optional[discord.Member] = None):
         """End a leave of absence. Fixers may specify a member."""
         control = self.bot.get_cog('SystemControl')

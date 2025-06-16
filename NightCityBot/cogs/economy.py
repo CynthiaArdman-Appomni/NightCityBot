@@ -80,7 +80,7 @@ class Economy(commands.Cog):
             return current["cash"], current["bank"]
         return None, None
 
-    @commands.command()
+    @commands.command(aliases=["openshop"])
     @commands.has_permissions(send_messages=True)
     async def open_shop(self, ctx):
         """Log a business opening and grant income immediately."""
@@ -306,7 +306,7 @@ class Economy(commands.Cog):
             log.append("❌ Failed to deduct business rent despite having sufficient funds.")
         return cash, bank
 
-    @commands.command()
+    @commands.command(aliases=["collecthousing"])
     @commands.has_permissions(administrator=True)
     async def collect_housing(self, ctx, user: discord.Member):
         """Manually collect housing rent from a single user"""
@@ -339,7 +339,7 @@ class Economy(commands.Cog):
 
         await ctx.send("\n".join(log))
 
-    @commands.command()
+    @commands.command(aliases=["collectbusiness"])
     @commands.has_permissions(administrator=True)
     async def collect_business(self, ctx, user: discord.Member):
         """Manually collect business rent from a single user"""
@@ -372,7 +372,7 @@ class Economy(commands.Cog):
 
         await ctx.send("\n".join(log))
 
-    @commands.command()
+    @commands.command(aliases=["collecttrauma"])
     @commands.has_permissions(administrator=True)
     async def collect_trauma(self, ctx, user: discord.Member):
         """Manually collect Trauma Team subscription"""
@@ -399,7 +399,7 @@ class Economy(commands.Cog):
 
         await ctx.send("\n".join(log))
 
-    @commands.command()
+    @commands.command(aliases=["collectrent"])
     @commands.has_permissions(administrator=True)
     async def collect_rent(self, ctx, *, target_user: Optional[discord.Member] = None):
         """Global or per-member rent collection."""
