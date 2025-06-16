@@ -35,6 +35,7 @@ TEST_MODULES = {
     "test_start_rp_multi": "Starts RP with two users and ends it.",
     "test_cyberware_weekly": "Simulates the weekly cyberware task.",
     "test_loa_fixer_other": "Fixer starts and ends LOA for another user.",
+    "test_loa_id_check": "Handles LOA with distinct role instances sharing an ID.",
     "test_roll_as_user": "Rolls on behalf of another user.",
 }
 
