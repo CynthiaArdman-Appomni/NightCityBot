@@ -114,42 +114,49 @@ class RPManager(commands.Cog):
         logger.debug("end_rp_session started for channel %s", channel)
         log_channel = channel.guild.get_channel(config.GROUP_AUDIT_LOG_CHANNEL_ID)
         logger.debug("audit channel resolved as %s", log_channel)
-        if not isinstance(log_channel, discord.ForumChannel):
-            await channel.send(
-                "⚠️ Logging failed: audit log channel is not a ForumChannel. "
-                "Deleting session without logging."
+        try:
+            if not isinstance(log_channel, discord.ForumChannel):
+                await channel.send(
+                    "⚠️ Logging failed: audit log channel is not a ForumChannel. "
+                    "Deleting session without logging."
+                )
+                logger.debug(
+                    "audit channel invalid, deleting channel %s without logging",
+                    channel,
+                )
+                await channel.delete(reason="RP session ended without log channel")
+                return
+
+            participants = channel.name.replace("text-rp-", "").split("-")
+            thread_name = "GroupRP-" + "-".join(participants)
+
+            logger.debug("creating log thread %s in %s", thread_name, log_channel)
+            created = await log_channel.create_thread(
+                name=thread_name,
+                content=f"📘 RP log for `{channel.name}`"
             )
-            logger.debug("audit channel invalid, deleting channel %s without logging", channel)
-            await channel.delete(reason="RP session ended without log channel")
-            return
 
-        participants = channel.name.replace("text-rp-", "").split("-")
-        thread_name = "GroupRP-" + "-".join(participants)
+            log_thread = created.thread if hasattr(created, "thread") else created
+            log_thread = cast(discord.Thread, log_thread)
 
-        logger.debug("creating log thread %s in %s", thread_name, log_channel)
-        created = await log_channel.create_thread(
-            name=thread_name,
-            content=f"📘 RP log for `{channel.name}`"
-        )
+            async for msg in channel.history(limit=None, oldest_first=True):
+                ts = msg.created_at.strftime("%Y-%m-%d %H:%M:%S")
+                content = msg.content or "*(No text content)*"
+                entry = f"[{ts}] 📥 **Received from {msg.author.display_name}**:\n{content}"
 
-        log_thread = created.thread if hasattr(created, "thread") else created
-        log_thread = cast(discord.Thread, log_thread)
+                if msg.attachments:
+                    for attachment in msg.attachments:
+                        entry += f"\n📎 Attachment: {attachment.url}"
 
-        async for msg in channel.history(limit=None, oldest_first=True):
-            ts = msg.created_at.strftime("%Y-%m-%d %H:%M:%S")
-            content = msg.content or "*(No text content)*"
-            entry = f"[{ts}] 📥 **Received from {msg.author.display_name}**:\n{content}"
+                if len(entry) <= 2000:
+                    await log_thread.send(entry)
+                else:
+                    chunks = [entry[i:i + 1990] for i in range(0, len(entry), 1990)]
+                    for chunk in chunks:
+                        await log_thread.send(chunk)
 
-            if msg.attachments:
-                for attachment in msg.attachments:
-                    entry += f"\n📎 Attachment: {attachment.url}"
-
-            if len(entry) <= 2000:
-                await log_thread.send(entry)
-            else:
-                chunks = [entry[i:i + 1990] for i in range(0, len(entry), 1990)]
-                for chunk in chunks:
-                    await log_thread.send(chunk)
-
-        logger.debug("deleting RP channel %s after logging", channel)
-        await channel.delete(reason="RP session ended and logged.")
+            logger.debug("deleting RP channel %s after logging", channel)
+            await channel.delete(reason="RP session ended and logged.")
+        except Exception as e:
+            logger.exception("Failed to end RP session: %s", e)
+            await channel.send(f"⚠️ Error ending RP: {e}")
