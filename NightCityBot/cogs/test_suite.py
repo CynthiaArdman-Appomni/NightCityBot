@@ -177,6 +177,12 @@ class TestSuite(commands.Cog):
         finally:
             if ctx.test_rp_channel:
                 await rp_manager.end_rp_session(ctx.test_rp_channel)
+            for ch in ctx.guild.text_channels:
+                if ch.name.startswith("text-rp-") and ch != ctx.test_rp_channel:
+                    try:
+                        await rp_manager.end_rp_session(ch)
+                    except Exception:
+                        pass
 
     @commands.command(hidden=True, name="test__bot")
     @commands.is_owner()

@@ -214,6 +214,10 @@ class Economy(commands.Cog):
             rent_log_channel: Optional[discord.TextChannel],
             eviction_channel: Optional[discord.TextChannel]
     ) -> tuple[int, int]:
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('housing_rent'):
+            log.append('⚠️ Housing rent system disabled.')
+            return cash, bank
         housing_total = 0
         for role in roles:
             if "Housing Tier" in role:
@@ -265,6 +269,10 @@ class Economy(commands.Cog):
             rent_log_channel: Optional[discord.TextChannel],
             eviction_channel: Optional[discord.TextChannel]
     ) -> tuple[int, int]:
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('business_rent'):
+            log.append('⚠️ Business rent system disabled.')
+            return cash, bank
         business_total = 0
         for role in roles:
             if "Business Tier" in role:
@@ -310,6 +318,10 @@ class Economy(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def collect_housing(self, ctx, user: discord.Member):
         """Manually collect housing rent from a single user"""
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('housing_rent'):
+            await ctx.send('⚠️ The housing_rent system is currently disabled.')
+            return
         log: List[str] = [f"🏠 Manual Housing Rent Collection for <@{user.id}>"]
         rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
         eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
@@ -343,6 +355,10 @@ class Economy(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def collect_business(self, ctx, user: discord.Member):
         """Manually collect business rent from a single user"""
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('business_rent'):
+            await ctx.send('⚠️ The business_rent system is currently disabled.')
+            return
         log: List[str] = [f"🏢 Manual Business Rent Collection for <@{user.id}>"]
         rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
         eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
@@ -376,6 +392,10 @@ class Economy(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def collect_trauma(self, ctx, user: discord.Member):
         """Manually collect Trauma Team subscription"""
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('trauma_team'):
+            await ctx.send('⚠️ The trauma_team system is currently disabled.')
+            return
         log: List[str] = [f"💊 Manual Trauma Team Subscription Processing for <@{user.id}>"]
         balance_data = await self.unbelievaboat.get_balance(user.id)
         if not balance_data:
