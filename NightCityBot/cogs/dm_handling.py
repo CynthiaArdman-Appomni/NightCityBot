@@ -229,7 +229,6 @@ class DMHandler(commands.Cog):
 
         try:
             await user.send(content=dm_content)
-            await ctx.send(f'✅ DM sent anonymously to {user.display_name}.')
 
             thread = await self.get_or_create_dm_thread(user)
             if isinstance(thread, (discord.Thread, discord.TextChannel)):
@@ -238,6 +237,10 @@ class DMHandler(commands.Cog):
                 )
             else:
                 print(f"[ERROR] Cannot log DM — thread type is {type(thread)}")
+
+            admin = self.bot.get_cog('Admin')
+            if admin:
+                await admin.log_audit(ctx.author, f"✅ DM sent anonymously to {user.display_name}.")
 
         except discord.Forbidden:
             await ctx.send('❌ Cannot DM user (Privacy Settings).')

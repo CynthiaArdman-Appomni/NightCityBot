@@ -4,6 +4,7 @@ import time
 import asyncio
 import sys
 from pathlib import Path
+import logging
 
 # Ensure the project root is on the path for `import config` and utility modules
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -14,6 +15,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import config
 
 from NightCityBot import tests
+
+logger = logging.getLogger(__name__)
 
 class TestSuite(commands.Cog):
     def __init__(self, bot):
@@ -176,13 +179,15 @@ class TestSuite(commands.Cog):
             await output_channel.send(embed=embed)
         finally:
             if ctx.test_rp_channel:
+                logger.debug("Cleaning up test RP channel %s", ctx.test_rp_channel)
                 await rp_manager.end_rp_session(ctx.test_rp_channel)
             for ch in ctx.guild.text_channels:
                 if ch.name.startswith("text-rp-") and ch != ctx.test_rp_channel:
                     try:
+                        logger.debug("Cleaning residual RP channel %s", ch)
                         await rp_manager.end_rp_session(ch)
                     except Exception:
-                        pass
+                        logger.exception("Failed to clean RP channel %s", ch)
 
     @commands.command(hidden=True, name="test__bot")
     @commands.is_owner()

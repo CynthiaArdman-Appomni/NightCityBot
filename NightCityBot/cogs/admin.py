@@ -3,6 +3,7 @@ from discord.ext import commands
 from typing import Optional
 import config
 from NightCityBot.utils.permissions import is_fixer
+from NightCityBot.utils import constants
 
 
 class Admin(commands.Cog):
@@ -49,10 +50,10 @@ class Admin(commands.Cog):
                 setattr(fake_ctx, "skip_dm_log", True)
 
                 await self.bot.invoke(fake_ctx)
-                await ctx.send(f"✅ Executed `{command_text}` in {dest_channel.mention}.")
+                await self.log_audit(ctx.author, f"✅ Executed `{command_text}` in {dest_channel.mention}.")
             else:
                 await dest_channel.send(content=message, files=files)
-                await ctx.send(f"✅ Posted anonymously to {dest_channel.mention}.")
+                await self.log_audit(ctx.author, f"✅ Posted anonymously to {dest_channel.mention}.")
         else:
             await ctx.send("❌ Provide a message or attachment.")
 
@@ -192,7 +193,11 @@ class Admin(commands.Cog):
     async def on_command_error(self, ctx, error):
         """Global error handler for commands."""
         if isinstance(error, commands.CommandNotFound):
-            # Ignore unknown commands so other bots using `!` don't spam the audit log
+            # Ignore specific economy bot commands entirely
+            cmd = ctx.message.content.lstrip(self.bot.command_prefix).split()[0].lower()
+            if cmd in constants.UNBELIEVABOAT_COMMANDS:
+                return
+            # Otherwise show a basic notice but do not audit
             await ctx.send("❌ Unknown command.")
             return
         elif isinstance(error, commands.CheckFailure):

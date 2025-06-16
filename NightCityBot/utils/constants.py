@@ -26,3 +26,13 @@ BASELINE_LIVING_COST = 500
 TIER_0_INCOME_SCALE = {1: 150, 2: 250, 3: 350, 4: 500}
 OPEN_PERCENT = {0: 0, 1: 0.25, 2: 0.4, 3: 0.6, 4: 0.8}
 ATTEND_REWARD = 250
+
+# Commands from UnbelievaBoat to ignore in unknown command handler
+UNBELIEVABOAT_COMMANDS = {
+    "bal", "balance", "cash", "work", "slut", "crime", "add-money",
+    "send-money", "remove-money", "rob", "dep", "deposit", "withdraw",
+    "with", "daily", "weekly", "monthly", "pay", "send", "beg", "search",
+    "slots", "blackjack", "roulette", "coinflip", "cf", "dice", "shop", "buy",
+    "rich", "leaderboard", "lb"
+}
+
