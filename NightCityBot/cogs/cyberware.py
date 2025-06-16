@@ -159,7 +159,7 @@ class CyberwareManager(commands.Cog):
         self.data[str(member.id)] = 0
         await save_json_file(Path(config.CYBERWARE_LOG_FILE), self.data)
 
-    @commands.command()
+    @commands.command(aliases=["weekswithoutcheckup"])
     @commands.check_any(is_ripperdoc(), is_fixer())
     async def weeks_without_checkup(self, ctx, member: discord.Member):
         """Show how many weeks a member has gone without a checkup."""

@@ -50,7 +50,7 @@ class TestSuite(commands.Cog):
         except AssertionError:
             logs.append(f"❌ {label} was not called")
 
-    @commands.command(hidden=True)
+    @commands.command(hidden=True, aliases=["testbot"])
     @commands.is_owner()
     async def test_bot(self, ctx, *test_names: str):
         """Run bot self tests."""

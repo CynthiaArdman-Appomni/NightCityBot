@@ -11,7 +11,9 @@ class RPManager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.command(
+        aliases=["startrp", "rp_start", "rpstart"]
+    )
     @commands.has_permissions(administrator=True)
     async def start_rp(self, ctx, *user_identifiers: str):
         """Starts a private RP channel for the mentioned users."""
@@ -40,7 +42,9 @@ class RPManager(commands.Cog):
         await ctx.send(f"✅ RP channel created: {channel.mention}")
         return channel
 
-    @commands.command()
+    @commands.command(
+        aliases=["endrp", "rp_end", "rpend"]
+    )
     @is_fixer()
     async def end_rp(self, ctx):
         """Ends the RP session in the current channel."""

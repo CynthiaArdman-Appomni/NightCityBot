@@ -35,7 +35,7 @@ class SystemControl(commands.Cog):
         await save_json_file(Path(config.SYSTEM_STATUS_FILE), self.status)
         return True
 
-    @commands.command()
+    @commands.command(aliases=["enablesystem"])
     @commands.has_permissions(administrator=True)
     async def enable_system(self, ctx, system: str):
         """Enable a disabled system."""
@@ -45,7 +45,7 @@ class SystemControl(commands.Cog):
             return
         await ctx.send(f"✅ Enabled {system} system.")
 
-    @commands.command()
+    @commands.command(aliases=["disablesystem"])
     @commands.has_permissions(administrator=True)
     async def disable_system(self, ctx, system: str):
         """Disable an active system."""
@@ -55,7 +55,7 @@ class SystemControl(commands.Cog):
             return
         await ctx.send(f"✅ Disabled {system} system.")
 
-    @commands.command(name="system_status")
+    @commands.command(name="system_status", aliases=["systemstatus"])
     @commands.has_permissions(administrator=True)
     async def system_status(self, ctx):
         """Show current system enablement."""

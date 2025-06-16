@@ -115,7 +115,10 @@ class Admin(commands.Cog):
 
         embed.add_field(
             name="🦾 Ripperdoc",
-            value="`!checkup @user` — Remove the weekly cyberware checkup role.",
+            value=(
+                "`!checkup @user` — Remove the weekly cyberware checkup role.\n"
+                "`!weeks_without_checkup @user` — Show checkup streak."
+            ),
             inline=False,
         )
 
@@ -129,15 +132,6 @@ class Admin(commands.Cog):
             title="🛠️ NCRP Bot — Fixer & Admin Help",
             description="Advanced commands for messaging, RP management, rent, and testing.",
             color=discord.Color.purple()
-        )
-
-        embed.add_field(
-            name="🏖️ LOA Commands",
-            value=(
-                "`!start_loa [@user]` — Put yourself or another user on leave.\n"
-                "`!end_loa [@user]` — End leave for yourself or another user."
-            ),
-            inline=False,
         )
 
         embed.add_field(
@@ -165,6 +159,16 @@ class Admin(commands.Cog):
                 "`!collect_housing @user` — Charge housing rent immediately.\n"
                 "`!collect_business @user` — Charge business rent immediately.\n"
                 "`!collect_trauma @user` — Process Trauma Team subscription."
+            ),
+            inline=False,
+        )
+
+        embed.add_field(
+            name="⚙️ System Control",
+            value=(
+                "`!enable_system <name>` — Turn a system on.\n"
+                "`!disable_system <name>` — Turn a system off.\n"
+                "`!system_status` — Show current system states."
             ),
             inline=False,
         )
