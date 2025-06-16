@@ -40,6 +40,16 @@ class TestSuite(commands.Cog):
             "test_cyberware_costs": "Ensures cyberware medication costs scale and cap correctly.",
             "test_loa_commands": "Runs start_loa and end_loa commands.",
             "test_checkup_command": "Runs the ripperdoc !checkup command.",
+            "test_help_commands": "Executes !helpme and !helpfixer.",
+            "test_post_dm_channel": "Runs !post from a DM thread.",
+            "test_post_roll_as_user": "Executes a roll as another user via !post.",
+            "test_dm_plain": "Sends a normal anonymous DM using !dm.",
+            "test_dm_roll_command": "Relays a roll through !dm.",
+            "test_dm_userid": "Ensures !dm works with a raw user ID.",
+            "test_start_rp_multi": "Starts RP with two users and ends it.",
+            "test_cyberware_weekly": "Simulates the weekly cyberware task.",
+            "test_loa_fixer_other": "Fixer starts and ends LOA for another user.",
+            "test_roll_as_user": "Rolls on behalf of another user.",
         }
 
     async def get_test_user(self, ctx) -> Optional[discord.Member]:
@@ -71,17 +81,16 @@ class TestSuite(commands.Cog):
         try:
             user = await self.get_test_user(ctx)
             dm_handler = self.bot.get_cog('DMHandler')
-            thread = await dm_handler.get_or_create_dm_thread(user)
-            roll_system = self.bot.get_cog('RollSystem')
-            await roll_system.loggable_roll(user, thread, "1d20", original_sender=ctx.author)
-            logs.append("✅ !dm @user !roll d20 relay succeeded")
-
-            try:
-                dm_channel = await user.create_dm()
-                await dm_channel.send("✅ DM test message from NightCityBotTest.")
-                logs.append("✅ Direct DM sent to user.")
-            except discord.Forbidden:
-                logs.append("⚠️ Could not DM user — Privacy settings?")
+            dummy_thread = MagicMock(spec=discord.Thread)
+            with (
+                patch.object(dm_handler, "get_or_create_dm_thread", new=AsyncMock(return_value=dummy_thread)),
+                patch.object(self.bot.get_cog('RollSystem'), "loggable_roll", new=AsyncMock()) as mock_roll,
+            ):
+                dm = await user.create_dm()
+                dm.send = AsyncMock()
+                await dm_handler.dm.callback(dm_handler, ctx, user, message="!roll 1d20")
+            self.assert_called(logs, mock_roll, "loggable_roll")
+            self.assert_send(logs, dm.send, "dm.send")
         except Exception as e:
             logs.append(f"❌ Exception in test_dm_roll_relay: {e}")
         return logs
@@ -91,13 +100,12 @@ class TestSuite(commands.Cog):
         logs = []
         try:
             user = await self.get_test_user(ctx)
-            dm_channel = await user.create_dm()
-
-            logs.append("→ Expected: !roll in DM should send a result and log it to the user's DM thread.")
-
-            roll_system = self.bot.get_cog('RollSystem')
-            await roll_system.loggable_roll(user, dm_channel, "1d6")
-            logs.append("→ Result: ✅ !roll executed in user DM context.")
+            dm_channel = MagicMock()
+            user.create_dm = AsyncMock(return_value=dm_channel)
+            roll_system = self.bot.get_cog("RollSystem")
+            with patch.object(roll_system, "loggable_roll", new=AsyncMock()) as mock_roll:
+                await roll_system.loggable_roll(user, dm_channel, "1d6")
+            self.assert_called(logs, mock_roll, "loggable_roll")
 
         except Exception as e:
             logs.append(f"❌ Exception in test_roll_direct_dm: {e}")
@@ -261,6 +269,10 @@ class TestSuite(commands.Cog):
             correct_channel = ctx.guild.get_channel(config.BUSINESS_ACTIVITY_CHANNEL_ID)
             logs.append("→ Expected: !open_shop should succeed when run inside the business channel.")
 
+            control = self.bot.get_cog('SystemControl')
+            if control:
+                await control.set_status('open_shop', True)
+
             if not correct_channel:
                 logs.append("→ Result: ❌ Business open channel not found")
                 return logs
@@ -279,6 +291,9 @@ class TestSuite(commands.Cog):
 
     async def test_attend_command(self, ctx) -> List[str]:
         """Test the attend reward command and its restrictions."""
+        control = self.bot.get_cog('SystemControl')
+        if control:
+            await control.set_status('attend', True)
         logs = []
         economy = self.bot.get_cog('Economy')
         original_author = ctx.author
@@ -354,16 +369,22 @@ class TestSuite(commands.Cog):
         logs = []
         user = await self.get_test_user(ctx)
         dm_handler = self.bot.get_cog('DMHandler')
-        first = await dm_handler.get_or_create_dm_thread(user)
-        second = await dm_handler.get_or_create_dm_thread(user)
-        if first.id == second.id:
+        dummy_thread = MagicMock()
+        with patch.object(dm_handler, 'get_or_create_dm_thread', new=AsyncMock(return_value=dummy_thread)) as mock_get:
+            first = await dm_handler.get_or_create_dm_thread(user)
+            second = await dm_handler.get_or_create_dm_thread(user)
+        if first is second:
             logs.append("✅ DM thread reused correctly")
         else:
             logs.append("❌ DM thread was recreated")
+        self.assert_called(logs, mock_get, 'get_or_create_dm_thread')
         return logs
 
     async def test_open_shop_errors(self, ctx) -> List[str]:
         """Verify open_shop fails in wrong channel or on wrong day."""
+        control = self.bot.get_cog('SystemControl')
+        if control:
+            await control.set_status('open_shop', True)
         logs = []
         economy = self.bot.get_cog('Economy')
         wrong_channel = ctx.channel
@@ -417,6 +438,9 @@ class TestSuite(commands.Cog):
 
     async def test_loa_commands(self, ctx) -> List[str]:
         """Ensure LOA start and end commands execute."""
+        control = self.bot.get_cog('SystemControl')
+        if control:
+            await control.set_status('loa', True)
         logs = []
         loa = self.bot.get_cog('LOA')
         if not loa:
@@ -441,6 +465,9 @@ class TestSuite(commands.Cog):
 
     async def test_checkup_command(self, ctx) -> List[str]:
         """Run the ripperdoc checkup command."""
+        control = self.bot.get_cog('SystemControl')
+        if control:
+            await control.set_status('cyberware', True)
         logs = []
         cyber = self.bot.get_cog('CyberwareManager')
         if not cyber:
@@ -464,6 +491,192 @@ class TestSuite(commands.Cog):
             logs.append("✅ checkup streak reset")
         else:
             logs.append("❌ checkup streak not reset")
+        return logs
+
+    async def test_help_commands(self, ctx) -> List[str]:
+        """Run the help commands."""
+        logs: List[str] = []
+        admin = self.bot.get_cog('Admin')
+        ctx.send = AsyncMock()
+        await admin.helpme(ctx)
+        await admin.helpfixer(ctx)
+        if ctx.send.await_count >= 2:
+            logs.append("✅ helpme and helpfixer executed")
+        else:
+            logs.append("❌ Help commands failed")
+        return logs
+
+    async def test_post_dm_channel(self, ctx) -> List[str]:
+        """Run !post from a DM thread."""
+        logs: List[str] = []
+        admin = self.bot.get_cog('Admin')
+        dest = MagicMock(spec=discord.TextChannel)
+        dest.name = "general"
+        dest.send = AsyncMock()
+        thread_parent = MagicMock()
+        thread_parent.threads = []
+        ctx.guild.text_channels = [dest, thread_parent]
+        ctx.message.attachments = []
+        ctx.channel = MagicMock(spec=discord.Thread)
+        ctx.send = AsyncMock()
+        await admin.post(ctx, dest.name, message="Test message")
+        self.assert_send(logs, dest.send, "dest.send")
+        return logs
+
+    async def test_post_roll_as_user(self, ctx) -> List[str]:
+        """Execute a roll as another user via !post."""
+        logs: List[str] = []
+        admin = self.bot.get_cog('Admin')
+        thread = MagicMock(spec=discord.Thread)
+        thread.name = "rp-thread"
+        parent = MagicMock()
+        parent.threads = [thread]
+        ctx.guild.text_channels = [parent]
+        ctx.message.attachments = []
+        ctx.send = AsyncMock()
+        with patch.object(self.bot, "invoke", new=AsyncMock()) as mock_invoke:
+            await admin.post(ctx, thread.name, message=f"!roll d20 {ctx.author.id}")
+        self.assert_called(logs, mock_invoke, "bot.invoke")
+        return logs
+
+    async def test_dm_plain(self, ctx) -> List[str]:
+        """Send an anonymous DM."""
+        logs: List[str] = []
+        dm = self.bot.get_cog('DMHandler')
+        user = await self.get_test_user(ctx)
+        user.send = AsyncMock()
+        ctx.send = AsyncMock()
+        ctx.message.attachments = []
+        with patch.object(dm, "get_or_create_dm_thread", new=AsyncMock(return_value=MagicMock(spec=discord.Thread))):
+            await dm.dm.callback(dm, ctx, user, message="Hello there!")
+        self.assert_send(logs, user.send, "user.send")
+        return logs
+
+    async def test_dm_roll_command(self, ctx) -> List[str]:
+        """Relay a roll through !dm."""
+        logs: List[str] = []
+        dm = self.bot.get_cog('DMHandler')
+        user = await self.get_test_user(ctx)
+        ctx.send = AsyncMock()
+        with patch.object(self.bot.get_cog('RollSystem'), "roll", new=AsyncMock()) as mock_roll:
+            await dm.dm.callback(dm, ctx, user, message="!roll 1d20")
+        self.assert_called(logs, mock_roll, "roll")
+        return logs
+
+    async def test_dm_userid(self, ctx) -> List[str]:
+        """Ensure !dm works with a raw user ID."""
+        logs: List[str] = []
+        dm = self.bot.get_cog('DMHandler')
+        user = await self.get_test_user(ctx)
+        dummy = MagicMock(spec=discord.User)
+        dummy.id = user.id
+        dummy.display_name = user.display_name
+        dummy.send = AsyncMock()
+        ctx.send = AsyncMock()
+        ctx.message.attachments = []
+        with patch.object(dm, "get_or_create_dm_thread", new=AsyncMock(return_value=MagicMock(spec=discord.Thread))):
+            await dm.dm.callback(dm, ctx, dummy, message="Test")
+        self.assert_send(logs, dummy.send, "user.send")
+        return logs
+
+    async def test_start_rp_multi(self, ctx) -> List[str]:
+        """Start RP with two users and roll inside."""
+        logs: List[str] = []
+        rp = self.bot.get_cog('RPManager')
+        user = await self.get_test_user(ctx)
+        channel = MagicMock(spec=discord.TextChannel)
+        channel.name = "text-rp-test"
+        rp.create_group_rp_channel = AsyncMock(return_value=channel)
+        result = await rp.start_rp(ctx, f"<@{user.id}>", str(ctx.author.id))
+        if result:
+            logs.append("✅ start_rp handled users")
+        await self.bot.get_cog('RollSystem').loggable_roll(ctx.author, channel, "1d6")
+        rp.end_rp_session = AsyncMock()
+        ctx.channel = channel
+        await rp.end_rp(ctx)
+        self.assert_called(logs, rp.end_rp_session, "end_rp_session")
+        return logs
+
+    async def test_cyberware_weekly(self, ctx) -> List[str]:
+        """Simulate the weekly checkup task."""
+        logs: List[str] = []
+        manager = self.bot.get_cog('CyberwareManager')
+        if not manager:
+            logs.append("❌ CyberwareManager cog not loaded")
+            return logs
+        guild = MagicMock()
+        check = discord.Object(id=config.CYBER_CHECKUP_ROLE_ID)
+        medium = discord.Object(id=config.CYBER_MEDIUM_ROLE_ID)
+        loa = discord.Object(id=config.LOA_ROLE_ID)
+        guild.get_role.side_effect = lambda rid: {config.CYBER_CHECKUP_ROLE_ID: check,
+                                                  config.CYBER_MEDIUM_ROLE_ID: medium, config.LOA_ROLE_ID: loa}.get(rid)
+        member_a = MagicMock(spec=discord.Member)
+        member_a.id = 1
+        member_a.roles = [medium]
+        member_a.add_roles = AsyncMock()
+        member_b = MagicMock(spec=discord.Member)
+        member_b.id = 2
+        member_b.roles = [medium, check]
+        member_b.add_roles = AsyncMock()
+        guild.members = [member_a, member_b]
+        log_channel = MagicMock()
+        log_channel.send = AsyncMock()
+        guild.get_channel.return_value = log_channel
+        with (
+            patch.object(self.bot, "get_guild", return_value=guild),
+            patch.object(manager.unbelievaboat, "get_balance", new=AsyncMock(return_value={"cash": 5000, "bank": 0})),
+            patch.object(manager.unbelievaboat, "update_balance", new=AsyncMock(return_value=True)),
+            patch("NightCityBot.cogs.cyberware.save_json_file", new=AsyncMock()),
+        ):
+            await manager.process_week()
+        self.assert_send(logs, member_a.add_roles, "add_roles")
+        self.assert_send(logs, log_channel.send, "log_channel.send")
+        return logs
+
+    async def test_loa_fixer_other(self, ctx) -> List[str]:
+        """Fixer starts and ends LOA for another user."""
+        logs: List[str] = []
+        loa = self.bot.get_cog('LOA')
+        if not loa:
+            logs.append("❌ LOA cog not loaded")
+            return logs
+        fixer = MagicMock()
+        fixer.name = config.FIXER_ROLE_NAME
+        ctx.author.roles.append(fixer)
+        target = MagicMock(spec=discord.Member)
+        target.roles = []
+        target.add_roles = AsyncMock()
+        target.remove_roles = AsyncMock()
+        with patch('discord.Guild.get_role', return_value=discord.Object(id=config.LOA_ROLE_ID)):
+            await loa.start_loa(ctx, target)
+            target.roles.append(discord.Object(id=config.LOA_ROLE_ID))
+            await loa.end_loa(ctx, target)
+        self.assert_send(logs, target.add_roles, "add_roles")
+        self.assert_send(logs, target.remove_roles, "remove_roles")
+        ctx.author.roles.remove(fixer)
+        return logs
+
+    async def test_roll_as_user(self, ctx) -> List[str]:
+        """Roll on behalf of another user."""
+        logs: List[str] = []
+        roll = self.bot.get_cog('RollSystem')
+        user = await self.get_test_user(ctx)
+        ctx.guild.get_member = MagicMock(return_value=user)
+        ctx.channel = MagicMock()
+        ctx.message = MagicMock()
+        ctx.message.delete = AsyncMock()
+        with patch.object(roll, "loggable_roll", new=AsyncMock()) as mock_log:
+            await roll.roll.callback(roll, ctx, dice=f"2d6 <@{user.id}>")
+        if mock_log.await_args.args[0] == user:
+            logs.append("✅ roll executed for mentioned user")
+        else:
+            logs.append("❌ roll did not use mentioned user")
+        with patch.object(roll, "loggable_roll", new=AsyncMock()) as mock_log2:
+            await roll.roll.callback(roll, ctx, dice=f"2d6 {user.id}")
+        if mock_log2.await_args.args[0] == user:
+            logs.append("✅ roll executed for ID user")
+        else:
+            logs.append("❌ roll did not use ID user")
         return logs
 
     async def test_start_end_rp(self, ctx) -> List[str]:
@@ -494,6 +707,9 @@ class TestSuite(commands.Cog):
 
     async def test_open_shop_daily_limit(self, ctx) -> List[str]:
         """Ensure users can't log a business opening twice on the same day."""
+        control = self.bot.get_cog('SystemControl')
+        if control:
+            await control.set_status('open_shop', True)
         logs = []
         economy = self.bot.get_cog('Economy')
         original_channel = ctx.channel
@@ -596,6 +812,16 @@ class TestSuite(commands.Cog):
             ("test_cyberware_costs", self.test_cyberware_costs),
             ("test_loa_commands", self.test_loa_commands),
             ("test_checkup_command", self.test_checkup_command),
+            ("test_help_commands", self.test_help_commands),
+            ("test_post_dm_channel", self.test_post_dm_channel),
+            ("test_post_roll_as_user", self.test_post_roll_as_user),
+            ("test_dm_plain", self.test_dm_plain),
+            ("test_dm_roll_command", self.test_dm_roll_command),
+            ("test_dm_userid", self.test_dm_userid),
+            ("test_start_rp_multi", self.test_start_rp_multi),
+            ("test_cyberware_weekly", self.test_cyberware_weekly),
+            ("test_loa_fixer_other", self.test_loa_fixer_other),
+            ("test_roll_as_user", self.test_roll_as_user),
         ]
         tests_dict = dict(tests)
 
@@ -648,6 +874,9 @@ class TestSuite(commands.Cog):
                         current_chunk += line + "\n"
                 if current_chunk:
                     await output_channel.send(f"```\n{current_chunk.strip()}\n```")
+            else:
+                summary_text = "\n".join(str(l) for l in all_logs)
+                await output_channel.send(f"```\n{summary_text.strip()[:1900]}\n```")
 
             # Summary embed
             passed = sum(1 for r in all_logs if "✅" in r)

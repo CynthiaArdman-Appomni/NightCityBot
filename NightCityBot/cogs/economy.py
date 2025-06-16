@@ -84,6 +84,10 @@ class Economy(commands.Cog):
     @commands.has_permissions(send_messages=True)
     async def open_shop(self, ctx):
         """Log a business opening and grant income immediately."""
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('open_shop'):
+            await ctx.send("⚠️ The open_shop system is currently disabled.")
+            return
         if ctx.channel.id != config.BUSINESS_ACTIVITY_CHANNEL_ID:
             await ctx.send("❌ You can only log business openings in the designated business activity channel.")
             return
@@ -144,6 +148,10 @@ class Economy(commands.Cog):
     @commands.command()
     async def attend(self, ctx):
         """Log attendance for players with the verified role and award cash."""
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('attend'):
+            await ctx.send("⚠️ The attend system is currently disabled.")
+            return
         if not any(r.id == config.VERIFIED_ROLE_ID for r in ctx.author.roles):
             await ctx.send("❌ You must be verified to use this command.")
             return

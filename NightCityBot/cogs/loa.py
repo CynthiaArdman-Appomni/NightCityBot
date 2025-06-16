@@ -18,6 +18,10 @@ class LOA(commands.Cog):
     @commands.command()
     async def start_loa(self, ctx, member: Optional[discord.Member] = None):
         """Start a leave of absence. Fixers may specify a member."""
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('loa'):
+            await ctx.send("⚠️ The LOA system is currently disabled.")
+            return
         guild = ctx.guild
         loa_role = self.get_loa_role(guild)
         if loa_role is None:
@@ -42,6 +46,10 @@ class LOA(commands.Cog):
     @commands.command()
     async def end_loa(self, ctx, member: Optional[discord.Member] = None):
         """End a leave of absence. Fixers may specify a member."""
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('loa'):
+            await ctx.send("⚠️ The LOA system is currently disabled.")
+            return
         guild = ctx.guild
         loa_role = self.get_loa_role(guild)
         if loa_role is None:

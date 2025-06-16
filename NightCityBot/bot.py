@@ -18,6 +18,7 @@ from NightCityBot.cogs.admin import Admin
 from NightCityBot.cogs.test_suite import TestSuite
 from NightCityBot.cogs.cyberware import CyberwareManager
 from NightCityBot.cogs.loa import LOA
+from NightCityBot.cogs.system_control import SystemControl
 from flask import Flask
 from threading import Thread
 
@@ -39,6 +40,7 @@ class NightCityBot(commands.Bot):
     async def setup_hook(self):
         # Load all cogs
         await self.add_cog(DMHandler(self))
+        await self.add_cog(SystemControl(self))
         await self.add_cog(Economy(self))
         await self.add_cog(RPManager(self))
         await self.add_cog(RollSystem(self))

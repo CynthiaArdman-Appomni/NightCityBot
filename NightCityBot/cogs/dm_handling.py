@@ -107,6 +107,23 @@ class DMHandler(commands.Cog):
                     pass
                 return
 
+            # Handle start-rp command relay
+            if message.content.strip().lower().startswith("!start-rp"):
+                rp_cog = self.bot.get_cog('RPManager')
+                if rp_cog:
+                    args_str = message.content.strip()[len("!start-rp"):].strip()
+                    if args_str:
+                        args = args_str.split()
+                    else:
+                        args = [f"<@{target_user.id}>"]
+                    ctx = await self.bot.get_context(message)
+                    await rp_cog.start_rp(ctx, *args)
+                try:
+                    await message.delete()
+                except Exception:
+                    pass
+                return
+
             # Handle normal message relay
             files = [await a.to_file() for a in message.attachments]
             await target_user.send(content=message.content or None, files=files)

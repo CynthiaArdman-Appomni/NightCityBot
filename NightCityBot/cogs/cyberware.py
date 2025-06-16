@@ -7,7 +7,7 @@ from pathlib import Path
 import config
 from NightCityBot.utils.helpers import load_json_file, save_json_file
 from NightCityBot.services.unbelievaboat import UnbelievaBoatAPI
-from NightCityBot.utils.permissions import is_ripperdoc
+from NightCityBot.utils.permissions import is_ripperdoc, is_fixer
 
 MAX_COST = {
     "medium": 2000,
@@ -43,12 +43,18 @@ class CyberwareManager(commands.Cog):
     @tasks.loop(hours=24)
     async def weekly_check(self):
         """Run every day and trigger processing each Saturday."""
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('cyberware'):
+            return
         if datetime.utcnow().weekday() != 5:  # Saturday
             return
         await self.process_week()
 
     async def process_week(self):
         """Apply weekly check-up logic and deduct medication costs."""
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('cyberware'):
+            return
         guild = self.bot.get_guild(config.GUILD_ID)
         if not guild:
             return
@@ -124,6 +130,10 @@ class CyberwareManager(commands.Cog):
     @is_ripperdoc()
     async def checkup(self, ctx, member: discord.Member):
         """Remove the weekly cyberware checkup role from a member."""
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('cyberware'):
+            await ctx.send("⚠️ The cyberware system is currently disabled.")
+            return
         guild = ctx.guild
         role = guild.get_role(config.CYBER_CHECKUP_ROLE_ID)
         if role is None:
@@ -148,3 +158,10 @@ class CyberwareManager(commands.Cog):
 
         self.data[str(member.id)] = 0
         await save_json_file(Path(config.CYBERWARE_LOG_FILE), self.data)
+
+    @commands.command()
+    @commands.check_any(is_ripperdoc(), is_fixer())
+    async def weeks_without_checkup(self, ctx, member: discord.Member):
+        """Show how many weeks a member has gone without a checkup."""
+        weeks = self.data.get(str(member.id), 0)
+        await ctx.send(f"{member.display_name} has gone {weeks} week(s) without a checkup.")
