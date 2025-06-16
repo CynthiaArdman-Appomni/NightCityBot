@@ -2,7 +2,6 @@ from typing import List
 import discord
 from unittest.mock import AsyncMock, MagicMock, patch
 import config
-from NightCityBot.utils.constants import ROLE_COSTS_BUSINESS, ROLE_COSTS_HOUSING
 
 async def run(suite, ctx) -> List[str]:
     """Fixer starts and ends LOA for another user."""
@@ -20,7 +19,9 @@ async def run(suite, ctx) -> List[str]:
     target.remove_roles = AsyncMock()
     loa_role = MagicMock(spec=discord.Role)
     loa_role.id = config.LOA_ROLE_ID
-    with patch.object(ctx.guild, 'get_role', return_value=loa_role):
+    # Patch the get_role method at the class level to avoid issues with
+    # Discord's read-only attributes when ctx.guild is a real Guild instance.
+    with patch('discord.Guild.get_role', return_value=loa_role):
         await loa.start_loa.callback(loa, ctx, target)
         target.roles.append(loa_role)
         await loa.end_loa.callback(loa, ctx, target)
