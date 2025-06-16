@@ -13,11 +13,13 @@ async def run(suite, ctx) -> List[str]:
     channel.name = "text-rp-test"
     rp.create_group_rp_channel = AsyncMock(return_value=channel)
     result = await rp.start_rp(ctx, f"<@{user.id}>", str(ctx.author.id))
+    suite.debug(logs, f"start_rp_multi created: {getattr(result, 'name', None)}")
     if result:
         logs.append("✅ start_rp handled users")
     await suite.bot.get_cog('RollSystem').loggable_roll(ctx.author, channel, "1d6")
     rp.end_rp_session = AsyncMock()
     ctx.channel = channel
     await rp.end_rp(ctx)
+    suite.debug(logs, "end_rp called in multi")
     suite.assert_called(logs, rp.end_rp_session, "end_rp_session")
     return logs
