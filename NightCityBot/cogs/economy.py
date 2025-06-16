@@ -408,8 +408,13 @@ class Economy(commands.Cog):
         if not target_user:
             if Path(config.OPEN_LOG_FILE).exists():
                 business_open_log = await load_json_file(config.OPEN_LOG_FILE, default={})
-                backup = f"open_history_{datetime.utcnow():%B_%Y}.json"
-                Path(config.OPEN_LOG_FILE).rename(backup)
+                backup_base = f"open_history_{datetime.utcnow():%B_%Y}.json"
+                backup_path = Path(backup_base)
+                counter = 1
+                while backup_path.exists():
+                    backup_path = Path(f"{backup_base}_{counter}")
+                    counter += 1
+                Path(config.OPEN_LOG_FILE).rename(backup_path)
             else:
                 business_open_log = {}
 
