@@ -10,6 +10,11 @@ async def run(suite, ctx) -> List[str]:
     if not loa:
         logs.append("❌ LOA cog not loaded")
         return logs
+    original_author = ctx.author
+    mock_author = MagicMock(spec=discord.Member)
+    mock_author.id = original_author.id
+    mock_author.roles = []
+    ctx.author = mock_author
     fixer = MagicMock()
     fixer.name = config.FIXER_ROLE_NAME
     ctx.author.roles.append(fixer)
@@ -28,4 +33,5 @@ async def run(suite, ctx) -> List[str]:
     suite.assert_send(logs, target.add_roles, "add_roles")
     suite.assert_send(logs, target.remove_roles, "remove_roles")
     ctx.author.roles.remove(fixer)
+    ctx.author = original_author
     return logs
