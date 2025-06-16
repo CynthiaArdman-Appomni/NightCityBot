@@ -21,6 +21,7 @@ TEST_MODULES = {
     "test_open_shop_errors": "Checks open_shop failures for bad context.",
     "test_start_end_rp": "Creates and ends an RP session to verify logging.",
     "test_unknown_command": "Ensures unknown commands don't spam the audit log.",
+    "test_ignore_unbelievaboat": "Ignores UnbelievaBoat economy commands.",
     "test_open_shop_daily_limit": "Ensures !open_shop can't run twice on the same Sunday.",
     "test_attend_command": "Runs !attend and verifies weekly/Sunday restrictions.",
     "test_cyberware_costs": "Ensures cyberware medication costs scale and cap correctly.",

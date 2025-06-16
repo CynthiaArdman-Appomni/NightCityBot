@@ -1,10 +1,13 @@
 import re
+import logging
 import discord
 from discord.ext import commands
 from typing import Optional, List, cast
 from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.utils.helpers import build_channel_name
 import config
+
+logger = logging.getLogger(__name__)
 
 
 class RPManager(commands.Cog):
@@ -73,6 +76,7 @@ class RPManager(commands.Cog):
             return
 
         await ctx.send("📝 Ending RP session, logging contents and deleting channel...")
+        logger.debug("end_rp invoked by %s in %s", ctx.author, channel)
         await self.end_rp_session(channel)
 
     async def create_group_rp_channel(
@@ -107,18 +111,22 @@ class RPManager(commands.Cog):
 
     async def end_rp_session(self, channel: discord.TextChannel):
         """Archives and ends an RP session."""
+        logger.debug("end_rp_session started for channel %s", channel)
         log_channel = channel.guild.get_channel(config.GROUP_AUDIT_LOG_CHANNEL_ID)
+        logger.debug("audit channel resolved as %s", log_channel)
         if not isinstance(log_channel, discord.ForumChannel):
             await channel.send(
                 "⚠️ Logging failed: audit log channel is not a ForumChannel. "
                 "Deleting session without logging."
             )
+            logger.debug("audit channel invalid, deleting channel %s without logging", channel)
             await channel.delete(reason="RP session ended without log channel")
             return
 
         participants = channel.name.replace("text-rp-", "").split("-")
         thread_name = "GroupRP-" + "-".join(participants)
 
+        logger.debug("creating log thread %s in %s", thread_name, log_channel)
         created = await log_channel.create_thread(
             name=thread_name,
             content=f"📘 RP log for `{channel.name}`"
@@ -143,4 +151,5 @@ class RPManager(commands.Cog):
                 for chunk in chunks:
                     await log_thread.send(chunk)
 
+        logger.debug("deleting RP channel %s after logging", channel)
         await channel.delete(reason="RP session ended and logged.")
