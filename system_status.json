@@ -2,5 +2,9 @@
   "cyberware": true,
   "attend": true,
   "open_shop": true,
-  "loa": true
+  "loa": true,
+  "housing_rent": true,
+  "business_rent": true,
+  "trauma_team": true,
+  "dm": true
 }

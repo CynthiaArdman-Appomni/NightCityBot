@@ -69,6 +69,10 @@ class DMHandler(commands.Cog):
         if message.author == self.bot.user or message.author.bot:
             return
 
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('dm'):
+            return
+
         # Handle relay from Fixer DM-forum threads
         if isinstance(message.channel, discord.Thread):
             await self.handle_thread_message(message)
@@ -90,6 +94,10 @@ class DMHandler(commands.Cog):
             target_user = await self.bot.fetch_user(int(uid))
             if not target_user:
                 return
+
+            if message.content.strip().startswith("!"):
+                ctx = await self.bot.get_context(message)
+
 
             # Handle roll command relay
             if message.content.strip().lower().startswith("!roll"):
@@ -124,6 +132,20 @@ class DMHandler(commands.Cog):
                     pass
                 return
 
+            if message.content.strip().startswith("!"):
+                ctx = await self.bot.get_context(message)
+                admin = self.bot.get_cog('Admin')
+                async def audit_send(content=None, **kwargs):
+                    if admin and content:
+                        await admin.log_audit(message.author, content)
+                ctx.send = audit_send
+                await self.bot.invoke(ctx)
+                try:
+                    await message.delete()
+                except Exception:
+                    pass
+                return
+
             # Handle normal message relay
             files = [await a.to_file() for a in message.attachments]
             await target_user.send(content=message.content or None, files=files)
@@ -138,6 +160,9 @@ class DMHandler(commands.Cog):
 
     async def handle_dm_message(self, message: discord.Message):
         """Handle incoming DMs from users."""
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('dm'):
+            return
         try:
             thread = await self.get_or_create_dm_thread(message.author)
             msg_target: Messageable = thread
@@ -159,6 +184,10 @@ class DMHandler(commands.Cog):
     @is_fixer()
     async def dm(self, ctx, user: discord.User, *, message=None):
         """Send an anonymous DM to a user."""
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('dm'):
+            await ctx.send("⚠️ The dm system is currently disabled.")
+            return
         try:
             if not user:
                 raise ValueError("User fetch returned None.")

@@ -11,6 +11,25 @@ class RPManager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.author == self.bot.user or message.author.bot:
+            return
+        if isinstance(message.channel, discord.TextChannel) and message.channel.name.startswith("text-rp-"):
+            if message.content.strip().startswith("!"):
+                ctx = await self.bot.get_context(message)
+                admin = self.bot.get_cog('Admin')
+                async def audit_send(content=None, **kwargs):
+                    if admin and content:
+                        await admin.log_audit(message.author, content)
+                ctx.send = audit_send
+                await self.bot.invoke(ctx)
+                try:
+                    await message.delete()
+                except Exception:
+                    pass
+                return
+
     @commands.command(
         aliases=["startrp", "rp_start", "rpstart"]
     )

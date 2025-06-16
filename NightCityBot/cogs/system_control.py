@@ -4,7 +4,16 @@ from pathlib import Path
 import config
 from NightCityBot.utils.helpers import load_json_file, save_json_file
 
-SYSTEMS = ["cyberware", "attend", "open_shop", "loa"]
+SYSTEMS = [
+    "cyberware",
+    "attend",
+    "open_shop",
+    "loa",
+    "housing_rent",
+    "business_rent",
+    "trauma_team",
+    "dm",
+]
 
 class SystemControl(commands.Cog):
     """Enable or disable major bot systems."""
