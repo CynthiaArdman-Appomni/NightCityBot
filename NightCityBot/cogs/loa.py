@@ -33,7 +33,8 @@ class LOA(commands.Cog):
             await ctx.send("❌ Permission denied.")
             return
 
-        if loa_role in target.roles:
+        # Compare by ID to avoid issues with mocked Role equality
+        if any(r.id == loa_role.id for r in target.roles):
             await ctx.send(f"{target.display_name} is already on LOA.")
             return
 
@@ -61,7 +62,8 @@ class LOA(commands.Cog):
             await ctx.send("❌ Permission denied.")
             return
 
-        if loa_role not in target.roles:
+        # Compare by ID to avoid issues with mocked Role equality
+        if not any(r.id == loa_role.id for r in target.roles):
             await ctx.send(f"{target.display_name} is not currently on LOA.")
             return
 
