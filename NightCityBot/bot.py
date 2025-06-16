@@ -56,6 +56,10 @@ class NightCityBot(commands.Bot):
                 # Let DMHandler process without invoking commands to avoid duplicates
                 return
 
+        if isinstance(message.channel, discord.TextChannel) and message.channel.name.startswith("text-rp-"):
+            # RPManager handles command invocation for text RP channels
+            return
+
         await self.process_commands(message)
 
     async def on_ready(self):
