@@ -13,9 +13,10 @@ async def run(suite, ctx) -> List[str]:
         dummy_thread = MagicMock(spec=discord.Thread)
         dm_channel = MagicMock(spec=discord.DMChannel)
         dm_channel.send = AsyncMock()
+        roll_cog = suite.bot.get_cog('RollSystem')
         with (
             patch.object(dm_handler, "get_or_create_dm_thread", new=AsyncMock(return_value=dummy_thread)),
-            patch.object(suite.bot.get_cog('RollSystem'), "loggable_roll", new=AsyncMock()) as mock_roll,
+            patch.object(roll_cog, "loggable_roll", wraps=roll_cog.loggable_roll) as mock_roll,
             patch.object(discord.Member, "create_dm", new=AsyncMock(return_value=dm_channel)),
         ):
             await dm_handler.dm.callback(dm_handler, ctx, user, message="!roll 1d20")
