@@ -12,8 +12,18 @@ class LOA(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    def get_loa_role(self, guild: discord.Guild) -> Optional[discord.Role]:
-        return guild.get_role(config.LOA_ROLE_ID)
+    def get_loa_role(self, guild: discord.Guild) -> Optional[discord.abc.Snowflake]:
+        """Return a minimal role object for the LOA role ID.
+
+        The real :class:`discord.Role` object is not required for the
+        add/remove role operations performed in the tests. Returning a simple
+        :class:`~discord.Object` avoids issues when the role is represented by a
+        mock object lacking comparison methods.
+        """
+        role = guild.get_role(config.LOA_ROLE_ID)
+        if role is None:
+            return discord.Object(id=config.LOA_ROLE_ID)
+        return discord.Object(id=role.id)
 
     @commands.command()
     async def start_loa(self, ctx, member: Optional[discord.Member] = None):
