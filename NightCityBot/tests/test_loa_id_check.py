@@ -21,7 +21,7 @@ async def run(suite, ctx) -> List[str]:
     loa_role1.id = config.LOA_ROLE_ID
     loa_role2 = MagicMock(spec=discord.Role)
     loa_role2.id = config.LOA_ROLE_ID
-    with patch.object(ctx.guild, 'get_role', side_effect=[loa_role1, loa_role2]):
+    with patch('discord.Guild.get_role', side_effect=[loa_role1, loa_role2]):
         await loa.start_loa.callback(loa, ctx, target)
         target.roles.append(loa_role1)
         await loa.end_loa.callback(loa, ctx, target)
