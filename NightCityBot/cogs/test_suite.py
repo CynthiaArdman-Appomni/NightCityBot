@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import time
+import asyncio
 import sys
 from pathlib import Path
 
@@ -167,3 +168,18 @@ class TestSuite(commands.Cog):
         finally:
             if ctx.test_rp_channel:
                 await rp_manager.end_rp_session(ctx.test_rp_channel)
+
+    @commands.command(hidden=True, name="test__bot")
+    @commands.is_owner()
+    async def test__bot(self, ctx, *patterns: str):
+        """Run the self tests through PyTest."""
+        import pytest
+        await ctx.send("🧪 Running tests with PyTest...")
+        args = ["-q", str(Path(__file__).resolve().parents[1] / "tests")]
+        if patterns:
+            args.extend(["-k", " or ".join(patterns)])
+        result = await asyncio.to_thread(pytest.main, args)
+        if result == 0:
+            await ctx.send("✅ PyTest finished successfully.")
+        else:
+            await ctx.send(f"❌ PyTest exited with code {result}.")

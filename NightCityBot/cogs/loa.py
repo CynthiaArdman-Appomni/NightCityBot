@@ -13,17 +13,19 @@ class LOA(commands.Cog):
         self.bot = bot
 
     def get_loa_role(self, guild: discord.Guild) -> Optional[discord.abc.Snowflake]:
-        """Return a minimal role object for the LOA role ID.
+        """Return a minimal LOA role object.
 
-        The real :class:`discord.Role` object is not required for the
-        add/remove role operations performed in the tests. Returning a simple
-        :class:`~discord.Object` avoids issues when the role is represented by a
-        mock object lacking comparison methods.
+        Tests patch ``Guild.get_role`` which can return ``MagicMock`` instances
+        lacking comparison methods.  ``discord.Member.add_roles`` attempts to
+        sort the roles it receives, leading to ``TypeError`` when mocks are
+        compared.  Returning a bare :class:`discord.Object` sidesteps the
+        comparison logic entirely while still providing the correct ``id`` for
+        the add/remove calls.
         """
-        role = guild.get_role(config.LOA_ROLE_ID)
-        if role is None:
-            return discord.Object(id=config.LOA_ROLE_ID)
-        return discord.Object(id=role.id)
+        # The actual role details are irrelevant for the tests and runtime logic
+        # here, so avoid calling ``guild.get_role`` to prevent unintended side
+        # effects with patched methods.
+        return discord.Object(id=config.LOA_ROLE_ID)
 
     @commands.command()
     async def start_loa(self, ctx, member: Optional[discord.Member] = None):
