@@ -1,5 +1,6 @@
 from typing import List
 import discord
+import os
 from unittest.mock import AsyncMock, MagicMock, patch
 import config
 from NightCityBot.utils.constants import ROLE_COSTS_BUSINESS, ROLE_COSTS_HOUSING

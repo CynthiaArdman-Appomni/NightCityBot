@@ -18,9 +18,11 @@ async def run(suite, ctx) -> List[str]:
     target.roles = []
     target.add_roles = AsyncMock()
     target.remove_roles = AsyncMock()
-    with patch('discord.Guild.get_role', return_value=discord.Object(id=config.LOA_ROLE_ID)):
+    loa_role = MagicMock(spec=discord.Role)
+    loa_role.id = config.LOA_ROLE_ID
+    with patch('discord.Guild.get_role', return_value=loa_role):
         await loa.start_loa(ctx, target)
-        target.roles.append(discord.Object(id=config.LOA_ROLE_ID))
+        target.roles.append(loa_role)
         await loa.end_loa(ctx, target)
     suite.assert_send(logs, target.add_roles, "add_roles")
     suite.assert_send(logs, target.remove_roles, "remove_roles")
