@@ -2,6 +2,15 @@ import discord
 from discord.ext import commands
 from typing import Optional
 
+# ----------------------------------------------------------------------------
+# Helpers
+# ----------------------------------------------------------------------------
+
+def get_loa_role(guild: discord.Guild) -> Optional[discord.abc.Snowflake]:
+    """Return the LOA role from ``guild`` if it exists."""
+    print(f"[DEBUG] Fetching LOA role {config.LOA_ROLE_ID} from guild {guild}")
+    return discord.Guild.get_role(guild, config.LOA_ROLE_ID)
+
 import config
 from NightCityBot.utils.permissions import is_fixer
 
@@ -13,19 +22,8 @@ class LOA(commands.Cog):
         self.bot = bot
 
     def get_loa_role(self, guild: discord.Guild) -> Optional[discord.abc.Snowflake]:
-        """Return a minimal LOA role object.
-
-        Tests patch ``Guild.get_role`` which can return ``MagicMock`` instances
-        lacking comparison methods.  ``discord.Member.add_roles`` attempts to
-        sort the roles it receives, leading to ``TypeError`` when mocks are
-        compared.  Returning a bare :class:`discord.Object` sidesteps the
-        comparison logic entirely while still providing the correct ``id`` for
-        the add/remove calls.
-        """
-        # The actual role details are irrelevant for the tests and runtime logic
-        # here, so avoid calling ``guild.get_role`` to prevent unintended side
-        # effects with patched methods.
-        return discord.Object(id=config.LOA_ROLE_ID)
+        """Wrapper around :func:`get_loa_role` for backwards compatibility."""
+        return get_loa_role(guild)
 
     @commands.command()
     async def start_loa(self, ctx, member: Optional[discord.Member] = None):
@@ -35,6 +33,7 @@ class LOA(commands.Cog):
             await ctx.send("⚠️ The LOA system is currently disabled.")
             return
         guild = ctx.guild
+        print(f"[DEBUG] start_loa invoked by {ctx.author} for {member or ctx.author}")
         loa_role = self.get_loa_role(guild)
         if loa_role is None:
             await ctx.send("⚠️ LOA role is not configured.")
@@ -51,6 +50,7 @@ class LOA(commands.Cog):
             return
 
         await target.add_roles(loa_role, reason="LOA start")
+        print(f"[DEBUG] LOA role added to {target}")
         if target == ctx.author:
             await ctx.send("✅ You are now on LOA.")
         else:
@@ -64,6 +64,7 @@ class LOA(commands.Cog):
             await ctx.send("⚠️ The LOA system is currently disabled.")
             return
         guild = ctx.guild
+        print(f"[DEBUG] end_loa invoked by {ctx.author} for {member or ctx.author}")
         loa_role = self.get_loa_role(guild)
         if loa_role is None:
             await ctx.send("⚠️ LOA role is not configured.")
@@ -80,6 +81,7 @@ class LOA(commands.Cog):
             return
 
         await target.remove_roles(loa_role, reason="LOA end")
+        print(f"[DEBUG] LOA role removed from {target}")
         if target == ctx.author:
             await ctx.send("✅ Your LOA has ended.")
         else:
