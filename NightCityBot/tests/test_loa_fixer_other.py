@@ -17,11 +17,11 @@ async def run(suite, ctx) -> List[str]:
     target.roles = []
     target.add_roles = AsyncMock()
     target.remove_roles = AsyncMock()
-    loa_role = MagicMock(spec=discord.Role)
+    loa_role = discord.Object(id=config.LOA_ROLE_ID)
     loa_role.id = config.LOA_ROLE_ID
     # Patch the get_role method at the class level to avoid issues with
     # Discord's read-only attributes when ctx.guild is a real Guild instance.
-    with patch('discord.Guild.get_role', return_value=loa_role):
+    with patch('NightCityBot.cogs.loa.get_loa_role', return_value=loa_role):
         await loa.start_loa.callback(loa, ctx, target)
         target.roles.append(loa_role)
         await loa.end_loa.callback(loa, ctx, target)
