@@ -18,6 +18,7 @@ OPEN_LOG_FILE = "business_open_log.json"
 LAST_RENT_FILE = "last_rent.json"
 ATTEND_LOG_FILE = "attendance_log.json"
 CYBERWARE_LOG_FILE = "cyberware_log.json"
+SYSTEM_STATUS_FILE = "system_status.json"
 CYBER_CHECKUP_ROLE_ID = 0
 CYBER_MEDIUM_ROLE_ID = 0
 CYBER_HIGH_ROLE_ID = 0

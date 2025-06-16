@@ -20,6 +20,12 @@ class TestSuite(commands.Cog):
         self.bot = bot
         self.tests = tests.TEST_FUNCTIONS
         self.test_descriptions = tests.TEST_DESCRIPTIONS
+        self.verbose = False
+
+    def debug(self, logs: List[str], message: str) -> None:
+        """Append a debug message when verbose output is enabled."""
+        if self.verbose:
+            logs.append(f"🔍 {message}")
 
     async def get_test_user(self, ctx) -> Optional[discord.Member]:
         """Get or fetch the test user."""
@@ -61,6 +67,9 @@ class TestSuite(commands.Cog):
         if "-verbose" in test_names:
             test_names.remove("-verbose")
             verbose = True
+
+        self.verbose = verbose
+        ctx.verbose = verbose
 
         output_channel = ctx.channel
         if silent:
