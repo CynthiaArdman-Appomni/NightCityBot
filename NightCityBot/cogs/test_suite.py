@@ -136,8 +136,16 @@ class TestSuite(commands.Cog):
                 if current_chunk:
                     await output_channel.send(f"```\n{current_chunk.strip()}\n```")
             else:
-                summary_text = "\n".join(str(l) for l in all_logs)
-                await output_channel.send(f"```\n{summary_text.strip()[:1900]}\n```")
+                summary_text = "\n".join(str(l) for l in all_logs).strip()
+                current_chunk = ""
+                for line in summary_text.split("\n"):
+                    if len(current_chunk) + len(line) + 1 > 1900:
+                        await output_channel.send(f"```\n{current_chunk.strip()}\n```")
+                        current_chunk = line
+                    else:
+                        current_chunk += line + "\n"
+                if current_chunk:
+                    await output_channel.send(f"```\n{current_chunk.strip()}\n```")
 
             # Summary embed
             passed = sum(1 for r in all_logs if "✅" in r)
