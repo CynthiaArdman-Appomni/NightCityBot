@@ -109,8 +109,10 @@ class RPManager(commands.Cog):
             reason="Creating private RP group channel"
         )
 
-    async def end_rp_session(self, channel: discord.TextChannel):
-        """Archives and ends an RP session."""
+    async def end_rp_session(
+            self, channel: discord.TextChannel
+    ) -> Optional[discord.Thread]:
+        """Archive and end an RP session and return the created log thread."""
         logger.debug("end_rp_session started for channel %s", channel)
         log_channel = channel.guild.get_channel(config.GROUP_AUDIT_LOG_CHANNEL_ID)
         logger.debug("audit channel resolved as %s", log_channel)
@@ -125,7 +127,7 @@ class RPManager(commands.Cog):
                     channel,
                 )
                 await channel.delete(reason="RP session ended without log channel")
-                return
+                return None
 
             participants = channel.name.replace("text-rp-", "").split("-")
             thread_name = "GroupRP-" + "-".join(participants)
@@ -157,6 +159,8 @@ class RPManager(commands.Cog):
 
             logger.debug("deleting RP channel %s after logging", channel)
             await channel.delete(reason="RP session ended and logged.")
+            return log_thread
         except Exception as e:
             logger.exception("Failed to end RP session: %s", e)
             await channel.send(f"⚠️ Error ending RP: {e}")
+            return None

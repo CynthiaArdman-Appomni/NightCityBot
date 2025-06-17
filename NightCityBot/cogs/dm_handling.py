@@ -187,6 +187,10 @@ class DMHandler(commands.Cog):
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('dm'):
             await ctx.send("⚠️ The dm system is currently disabled.")
+            try:
+                await ctx.message.delete()
+            except Exception:
+                pass
             return
         try:
             if not user:
@@ -196,12 +200,20 @@ class DMHandler(commands.Cog):
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(ctx.author, "❌ Failed DM: Could not resolve user.")
+            try:
+                await ctx.message.delete()
+            except Exception:
+                pass
             return
         except Exception as e:
             await ctx.send(f"⚠️ Unexpected error: {str(e)}")
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(ctx.author, f"⚠️ Exception in DM: {str(e)}")
+            try:
+                await ctx.message.delete()
+            except Exception:
+                pass
             return
 
         file_links = [attachment.url for attachment in ctx.message.attachments]
@@ -218,7 +230,11 @@ class DMHandler(commands.Cog):
                 setattr(fake_ctx, "original_author", ctx.author)
                 await roll_cog.roll(fake_ctx, dice=dice)
                 await ctx.send(f"✅ Rolled `{dice}` anonymously for {user.display_name}.")
-                return
+            try:
+                await ctx.message.delete()
+            except Exception:
+                pass
+            return
 
         # Handle normal DM
         dm_content_parts = [message] if message else []
@@ -247,3 +263,8 @@ class DMHandler(commands.Cog):
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(ctx.author, f"❌ Failed DM: Recipient: {user} (Privacy settings).")
+        finally:
+            try:
+                await ctx.message.delete()
+            except Exception:
+                pass

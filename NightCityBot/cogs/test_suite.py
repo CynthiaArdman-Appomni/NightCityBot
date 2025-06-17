@@ -180,12 +180,22 @@ class TestSuite(commands.Cog):
         finally:
             if ctx.test_rp_channel:
                 logger.debug("Cleaning up test RP channel %s", ctx.test_rp_channel)
-                await rp_manager.end_rp_session(ctx.test_rp_channel)
+                thread = await rp_manager.end_rp_session(ctx.test_rp_channel)
+                if thread:
+                    try:
+                        await thread.delete(reason="Test cleanup")
+                    except Exception:
+                        logger.exception("Failed to delete log thread %s", thread)
             for ch in ctx.guild.text_channels:
                 if ch.name.startswith("text-rp-") and ch != ctx.test_rp_channel:
                     try:
                         logger.debug("Cleaning residual RP channel %s", ch)
-                        await rp_manager.end_rp_session(ch)
+                        thread = await rp_manager.end_rp_session(ch)
+                        if thread:
+                            try:
+                                await thread.delete(reason="Test cleanup")
+                            except Exception:
+                                logger.exception("Failed to delete log thread %s", thread)
                     except Exception:
                         logger.exception("Failed to clean RP channel %s", ch)
 

@@ -56,6 +56,10 @@ class Admin(commands.Cog):
                 await self.log_audit(ctx.author, f"✅ Posted anonymously to {dest_channel.mention}.")
         else:
             await ctx.send("❌ Provide a message or attachment.")
+        try:
+            await ctx.message.delete()
+        except Exception:
+            pass
 
     @commands.command(name="help")
     async def block_help(self, ctx):
