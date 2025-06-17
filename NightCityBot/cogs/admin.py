@@ -197,6 +197,9 @@ class Admin(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         """Global error handler for commands."""
+        # Ignore errors triggered by other bots to avoid feedback loops
+        if getattr(ctx.author, "bot", False):
+            return
         if isinstance(error, commands.CommandNotFound):
             # Ignore specific economy bot commands entirely
             cmd = ctx.message.content.lstrip(self.bot.command_prefix).split()[0].lower()
