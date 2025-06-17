@@ -39,6 +39,7 @@ TEST_MODULES = {
     "test_loa_id_check": "Handles LOA with distinct role instances sharing an ID.",
     "test_roll_as_user": "Rolls on behalf of another user.",
     "test_message_cleanup": "Ensures !dm and !post delete their commands.",
+    "test_balance_backup": "Ensures collect_rent backs up balances before processing.",
 }
 
 for name in TEST_MODULES:
