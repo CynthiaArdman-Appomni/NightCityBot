@@ -586,7 +586,11 @@ class Economy(commands.Cog):
                 bal = await self.unbelievaboat.get_balance(member.id)
                 if not bal:
                     log.append("⚠️ Could not fetch balance.")
-                    await ctx.send("\n".join(log))
+                    summary = "\n".join(log)
+                    if verbose:
+                        await ctx.send(summary)
+                    else:
+                        await ctx.send(f"⚠️ Could not fetch balance for <@{member.id}>")
                     continue
                 cash, bank = bal["cash"], bal["bank"]
                 log.append(f"💵 Starting balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}")
@@ -604,7 +608,11 @@ class Economy(commands.Cog):
                                     f"⚠️ <@{member.id}> could not pay baseline living cost (${BASELINE_LIVING_COST})."
                                 )
                         log.append("❌ Skipping remaining rent steps.")
-                        await ctx.send("\n".join(log))
+                        summary = "\n".join(log)
+                        if verbose:
+                            await ctx.send(summary)
+                        else:
+                            await ctx.send(f"❌ Skipping remaining rent steps for <@{member.id}>")
                         continue
 
                 cash, bank = await self.process_housing_rent(member, app_roles, cash, bank, log, rent_log_channel, eviction_channel, dry_run=dry_run) if not on_loa else (cash, bank)
