@@ -507,6 +507,7 @@ class Economy(commands.Cog):
         target_user: Optional[discord.Member] = None,
         dry_run: bool = False,
     ):
+
         """Internal helper for rent collection and simulation."""
         await ctx.send("🧪 Starting rent simulation..." if dry_run else "🚦 Starting rent collection...")
 
@@ -620,7 +621,6 @@ class Economy(commands.Cog):
 
             except Exception as e:
                 await ctx.send(f"❌ Error processing <@{member.id}>: `{e}`")
-
 
         end_msg = "✅ Rent simulation completed." if dry_run else "✅ Rent collection completed."
         await ctx.send(end_msg)
