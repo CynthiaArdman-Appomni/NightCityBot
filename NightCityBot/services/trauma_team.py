@@ -12,7 +12,8 @@ class TraumaTeamService:
             self,
             member: discord.Member,
             *,
-            log: Optional[List[str]] = None
+            log: Optional[List[str]] = None,
+            dry_run: bool = False,
     ) -> None:
         """Process Trauma Team subscription payment for a member."""
         control = self.bot.get_cog('SystemControl')
@@ -42,7 +43,7 @@ class TraumaTeamService:
         trauma_role = next(
             (r for r in member.roles if r.name in TRAUMA_ROLE_COSTS),
             None
-        )
+                )
         if not trauma_role:
             return  # no subscription
 
@@ -64,10 +65,11 @@ class TraumaTeamService:
 
         if cash + bank < cost:
             mention = f"<@&{config.TRAUMA_TEAM_ROLE_ID}>"
-            await target_thread.send(
-                f"❌ Payment for **{trauma_role.name}** (${cost}) by <@{member.id}> failed."
-                f"\n## {mention} Subscription suspended."
-            )
+            if not dry_run:
+                await target_thread.send(
+                    f"❌ Payment for **{trauma_role.name}** (${cost}) by <@{member.id}> failed."
+                    f"\n## {mention} Subscription suspended."
+                )
             if log is not None:
                 log.append("❌ Insufficient funds for Trauma payment.")
             return
@@ -76,21 +78,27 @@ class TraumaTeamService:
             "cash": -min(cash, cost),
             "bank": -(cost - min(cash, cost)),
         }
-        success = await self.bot.get_cog('Economy').unbelievaboat.update_balance(
-            member.id,
-            payload,
-            reason="Trauma Team Subscription"
-        )
+        success = True
+        if not dry_run:
+            success = await self.bot.get_cog('Economy').unbelievaboat.update_balance(
+                member.id,
+                payload,
+                reason="Trauma Team Subscription"
+            )
 
         if success:
-            await target_thread.send(
-                f"✅ **Payment Successful** — <@{member.id}> paid `${cost}` for **{trauma_role.name}** coverage."
-            )
+            if not dry_run:
+                await target_thread.send(
+                    f"✅ **Payment Successful** — <@{member.id}> paid `${cost}` for **{trauma_role.name}** coverage."
+                )
             if log is not None:
-                log.append("✅ Trauma Team payment completed. Notice Sent to users #tt-plans-payment thread.")
+                log.append(
+                    "✅ Trauma Team payment completed." if not dry_run else "✅ (Simulated) Trauma Team payment would succeed."
+                )
         else:
-            await target_thread.send(
-                f"⚠️ **Deduction failed** for <@{member.id}> despite available funds."
-            )
+            if not dry_run:
+                await target_thread.send(
+                    f"⚠️ **Deduction failed** for <@{member.id}> despite available funds."
+                )
             if log is not None:
                 log.append("⚠️ PATCH failed for Trauma Team payment.")

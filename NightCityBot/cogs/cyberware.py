@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands, tasks
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Optional, List
 from pathlib import Path
 
 import config
@@ -50,7 +50,7 @@ class CyberwareManager(commands.Cog):
             return
         await self.process_week()
 
-    async def process_week(self):
+    async def process_week(self, *, dry_run: bool = False, log: Optional[List[str]] = None):
         """Apply weekly check-up logic and deduct medication costs."""
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('cyberware'):
@@ -94,44 +94,86 @@ class CyberwareManager(commands.Cog):
                 if weeks:
                     weeks = 0
                 if checkup_role:
-                    await member.add_roles(checkup_role, reason="Weekly cyberware check")
-                self.data[user_id] = 0
+                    if not dry_run:
+                        await member.add_roles(checkup_role, reason="Weekly cyberware check")
+                    if log is not None:
+                        log.append(
+                            f"{'Would give' if dry_run else 'Gave'} checkup role to <@{member.id}>"
+                        )
+                if not dry_run:
+                    self.data[user_id] = 0
                 continue
 
             # User kept the checkup role for another week → charge them
             weeks += 1
             cost = self.calculate_cost(role_level, weeks)
+            if log is not None:
+                log.append(f"Processing <@{member.id}> — week {weeks} cost ${cost}")
             balance = await self.unbelievaboat.get_balance(member.id)
             if not balance:
-                if log_channel:
+                if log_channel and not dry_run:
                     await log_channel.send(
                         f"⚠️ Could not fetch balance for <@{member.id}> to process cyberware meds."
                     )
+                if log is not None and dry_run:
+                    log.append(f"Would notify missing balance for <@{member.id}>")
                 continue
+
+            if dry_run:
+                check = await self.unbelievaboat.verify_balance_ops(member.id)
+                if log is not None:
+                    log.append("🔄 Balance check passed." if check else "⚠️ Balance update check failed.")
 
             total = balance.get("cash", 0) + balance.get("bank", 0)
             if total < cost:
-                if log_channel:
+                if log_channel and not dry_run:
                     await log_channel.send(
                         f"🚨 <@{member.id}> cannot pay ${cost} for immunosuppressants and is in danger of cyberpsychosis."
                     )
+                if log is not None and dry_run:
+                    log.append(
+                        f"Would warn insufficient funds for <@{member.id}> (${cost})"
+                    )
             else:
-                success = await self.unbelievaboat.update_balance(
-                    member.id, {"cash": -cost}, reason="Cyberware medication"
-                )
+                success = True
+                if not dry_run:
+                    success = await self.unbelievaboat.update_balance(
+                        member.id, {"cash": -cost}, reason="Cyberware medication"
+                    )
                 if log_channel:
-                    if success:
+                    if success and not dry_run:
                         await log_channel.send(
                             f"✅ Deducted ${cost} for cyberware meds from <@{member.id}> (week {weeks})."
                         )
-                    else:
+                    elif not success and not dry_run:
                         await log_channel.send(
                             f"❌ Could not deduct ${cost} from <@{member.id}> for cyberware meds."
                         )
+                if log is not None and dry_run:
+                    log.append(
+                        f"✅ Would deduct ${cost} from <@{member.id}> for cyberware meds (week {weeks})."
+                    )
 
-            self.data[user_id] = weeks
+            if not dry_run:
+                self.data[user_id] = weeks
+            elif log is not None:
+                log.append(f"Streak would become {weeks} week(s) for <@{member.id}>")
+        if not dry_run:
+            await save_json_file(Path(config.CYBERWARE_LOG_FILE), self.data)
+        elif log is not None:
+            log.append("Simulation complete. No changes saved.")
 
-        await save_json_file(Path(config.CYBERWARE_LOG_FILE), self.data)
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def simulate_cyberware(self, ctx):
+        """Simulate the weekly cyberware process without making changes."""
+        logs: List[str] = []
+        await self.process_week(dry_run=True, log=logs)
+        summary = "\n".join(logs) if logs else "✅ Simulation complete."
+        await ctx.send(summary)
+        admin_cog = self.bot.get_cog('Admin')
+        if admin_cog:
+            await admin_cog.log_audit(ctx.author, summary)
 
     @commands.command()
     @is_ripperdoc()
