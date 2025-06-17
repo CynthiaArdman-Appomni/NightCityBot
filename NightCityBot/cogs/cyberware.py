@@ -102,8 +102,15 @@ class CyberwareManager(commands.Cog):
             weeks += 1
             cost = self.calculate_cost(role_level, weeks)
             balance = await self.unbelievaboat.get_balance(member.id)
-            total = (balance.get("cash", 0) if balance else 0) + (balance.get("bank", 0) if balance else 0)
-            if balance and total < cost:
+            if not balance:
+                if log_channel:
+                    await log_channel.send(
+                        f"⚠️ Could not fetch balance for <@{member.id}> to process cyberware meds."
+                    )
+                continue
+
+            total = balance.get("cash", 0) + balance.get("bank", 0)
+            if total < cost:
                 if log_channel:
                     await log_channel.send(
                         f"🚨 <@{member.id}> cannot pay ${cost} for immunosuppressants and is in danger of cyberpsychosis."
