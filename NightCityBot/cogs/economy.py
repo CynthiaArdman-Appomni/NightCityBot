@@ -218,6 +218,7 @@ class Economy(commands.Cog):
     @commands.command(name="due")
     async def due(self, ctx):
         """Show estimated amount you will owe on the 1st of the month."""
+        print(f"[DEBUG] due command invoked by {ctx.author} in {ctx.channel}")
         total, details = self.calculate_due(ctx.author)
         lines = [f"💸 **Estimated Due:** ${total}"] + [f"• {d}" for d in details]
         await ctx.send("\n".join(lines))
