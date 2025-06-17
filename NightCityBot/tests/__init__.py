@@ -38,6 +38,7 @@ TEST_MODULES = {
     "test_loa_fixer_other": "Fixer starts and ends LOA for another user.",
     "test_loa_id_check": "Handles LOA with distinct role instances sharing an ID.",
     "test_roll_as_user": "Rolls on behalf of another user.",
+    "test_message_cleanup": "Ensures !dm and !post delete their commands.",
 }
 
 for name in TEST_MODULES:
