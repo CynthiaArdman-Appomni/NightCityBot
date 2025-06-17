@@ -11,8 +11,9 @@ from NightCityBot.utils.constants import (
     ROLE_COSTS_HOUSING,
     BASELINE_LIVING_COST,
     TIER_0_INCOME_SCALE,
-    OPEN_PERCENT
-    ,ATTEND_REWARD
+    OPEN_PERCENT,
+    ATTEND_REWARD,
+    TRAUMA_ROLE_COSTS,
 )
 from NightCityBot.utils.helpers import load_json_file, save_json_file
 import config
@@ -179,6 +180,47 @@ class Economy(commands.Cog):
         reward = ATTEND_REWARD
         await self.unbelievaboat.update_balance(ctx.author.id, {"cash": reward}, reason="Attendance reward")
         await ctx.send(f"✅ Attendance logged! You received ${reward}.")
+
+    def calculate_due(self, member: discord.Member) -> tuple[int, List[str]]:
+        """Calculate upcoming rent, baseline, and subscription costs."""
+        details: List[str] = []
+        total = 0
+        role_names = [r.name for r in member.roles]
+        loa_role = member.guild.get_role(config.LOA_ROLE_ID)
+        on_loa = loa_role in member.roles if loa_role else False
+
+        if on_loa:
+            details.append("LOA active: baseline, housing, and Trauma Team skipped")
+        else:
+            total += BASELINE_LIVING_COST
+            details.append(f"Baseline living cost: ${BASELINE_LIVING_COST}")
+            for role in role_names:
+                if "Housing Tier" in role:
+                    amount = ROLE_COSTS_HOUSING.get(role, 0)
+                    total += amount
+                    details.append(f"{role}: ${amount}")
+
+        for role in role_names:
+            if "Business Tier" in role:
+                amount = ROLE_COSTS_BUSINESS.get(role, 0)
+                total += amount
+                details.append(f"{role}: ${amount}")
+
+        if not on_loa:
+            trauma_role = next((r for r in member.roles if r.name in TRAUMA_ROLE_COSTS), None)
+            if trauma_role:
+                cost = TRAUMA_ROLE_COSTS[trauma_role.name]
+                total += cost
+                details.append(f"{trauma_role.name}: ${cost}")
+
+        return total, details
+
+    @commands.command(name="due")
+    async def due(self, ctx):
+        """Show estimated amount you will owe on the 1st of the month."""
+        total, details = self.calculate_due(ctx.author)
+        lines = [f"💸 **Estimated Due:** ${total}"] + [f"• {d}" for d in details]
+        await ctx.send("\n".join(lines))
 
     async def deduct_flat_fee(self, member: discord.Member, cash: int, bank: int, log: List[str], amount: int = BASELINE_LIVING_COST) -> tuple[bool, int, int]:
         total = (cash or 0) + (bank or 0)
