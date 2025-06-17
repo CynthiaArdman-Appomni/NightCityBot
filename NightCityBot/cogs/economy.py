@@ -591,6 +591,8 @@ class Economy(commands.Cog):
                         await ctx.send(summary)
                     else:
                         await ctx.send(f"⚠️ Could not fetch balance for <@{member.id}>")
+                    if dry_run and admin_cog:
+                        await admin_cog.log_audit(ctx.author, summary)
                     continue
                 cash, bank = bal["cash"], bal["bank"]
                 log.append(f"💵 Starting balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}")
@@ -613,6 +615,8 @@ class Economy(commands.Cog):
                             await ctx.send(summary)
                         else:
                             await ctx.send(f"❌ Skipping remaining rent steps for <@{member.id}>")
+                        if dry_run and admin_cog:
+                            await admin_cog.log_audit(ctx.author, summary)
                         continue
 
                 cash, bank = await self.process_housing_rent(member, app_roles, cash, bank, log, rent_log_channel, eviction_channel, dry_run=dry_run) if not on_loa else (cash, bank)
@@ -638,6 +642,8 @@ class Economy(commands.Cog):
 
             except Exception as e:
                 await ctx.send(f"❌ Error processing <@{member.id}>: `{e}`")
+                if dry_run and admin_cog:
+                    await admin_cog.log_audit(ctx.author, f"Error processing <@{member.id}>: {e}")
 
         end_msg = "✅ Rent simulation completed." if dry_run else "✅ Rent collection completed."
         await ctx.send(end_msg)
