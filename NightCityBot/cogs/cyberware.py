@@ -119,6 +119,11 @@ class CyberwareManager(commands.Cog):
                     log.append(f"Would notify missing balance for <@{member.id}>")
                 continue
 
+            if dry_run:
+                check = await self.unbelievaboat.verify_balance_ops(member.id)
+                if log is not None:
+                    log.append("🔄 Balance check passed." if check else "⚠️ Balance update check failed.")
+
             total = balance.get("cash", 0) + balance.get("bank", 0)
             if total < cost:
                 if log_channel and not dry_run:
@@ -164,7 +169,11 @@ class CyberwareManager(commands.Cog):
         """Simulate the weekly cyberware process without making changes."""
         logs: List[str] = []
         await self.process_week(dry_run=True, log=logs)
-        await ctx.send("\n".join(logs) if logs else "✅ Simulation complete.")
+        summary = "\n".join(logs) if logs else "✅ Simulation complete."
+        await ctx.send(summary)
+        admin_cog = self.bot.get_cog('Admin')
+        if admin_cog:
+            await admin_cog.log_audit(ctx.author, summary)
 
     @commands.command()
     @is_ripperdoc()

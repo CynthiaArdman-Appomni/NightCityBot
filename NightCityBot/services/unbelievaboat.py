@@ -39,3 +39,11 @@ class UnbelievaBoatAPI:
                 error = await resp.text()
                 print(f"❌ PATCH failed: {resp.status} — {error}")
             return resp.status == 200
+
+    async def verify_balance_ops(self, user_id: int) -> bool:
+        """Test updating a balance without affecting the final amount."""
+        minus = await self.update_balance(user_id, {"cash": -1}, reason="Simulation check")
+        if not minus:
+            return False
+        plus = await self.update_balance(user_id, {"cash": 1}, reason="Simulation check")
+        return minus and plus

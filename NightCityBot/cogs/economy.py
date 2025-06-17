@@ -500,7 +500,14 @@ class Economy(commands.Cog):
 
         await ctx.send("\n".join(log))
 
-    async def run_rent_collection(self, ctx, *, target_user: Optional[discord.Member] = None, dry_run: bool = False):
+    async def run_rent_collection(
+        self,
+        ctx,
+        *,
+        target_user: Optional[discord.Member] = None,
+        dry_run: bool = False,
+    ):
+
         """Internal helper for rent collection and simulation."""
         await ctx.send("🧪 Starting rent simulation..." if dry_run else "🚦 Starting rent collection...")
 
@@ -555,6 +562,7 @@ class Economy(commands.Cog):
 
         eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
         rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
+        admin_cog = self.bot.get_cog('Admin')
 
         for member in members_to_process:
             try:
@@ -576,6 +584,10 @@ class Economy(commands.Cog):
                     continue
                 cash, bank = bal["cash"], bal["bank"]
                 log.append(f"💵 Starting balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}")
+
+                if dry_run:
+                    check = await self.unbelievaboat.verify_balance_ops(member.id)
+                    log.append("🔄 Balance check passed." if check else "⚠️ Balance update check failed.")
 
                 if not on_loa:
                     base_ok, cash, bank = await self.deduct_flat_fee(member, cash, bank, log, BASELINE_LIVING_COST, dry_run=dry_run)
@@ -602,13 +614,18 @@ class Economy(commands.Cog):
 
                 log.append(f"📊 Final balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}")
 
-                await ctx.send("\n".join(log))
+                summary = "\n".join(log)
+                await ctx.send(summary)
+                if dry_run and admin_cog:
+                    await admin_cog.log_audit(ctx.author, summary)
 
             except Exception as e:
                 await ctx.send(f"❌ Error processing <@{member.id}>: `{e}`")
 
-
-        await ctx.send("✅ Rent simulation completed." if dry_run else "✅ Rent collection completed.")
+        end_msg = "✅ Rent simulation completed." if dry_run else "✅ Rent collection completed."
+        await ctx.send(end_msg)
+        if dry_run and admin_cog:
+            await admin_cog.log_audit(ctx.author, end_msg)
 
     @commands.command(aliases=["collectrent"])
     @commands.has_permissions(administrator=True)
