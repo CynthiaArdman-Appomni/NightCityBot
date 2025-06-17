@@ -1,0 +1,18 @@
+from typing import List
+from unittest.mock import AsyncMock, patch
+import config
+
+async def run(suite, ctx) -> List[str]:
+    """Ensure collect_rent backs up member balances."""
+    logs = []
+    user = await suite.get_test_user(ctx)
+    economy = suite.bot.get_cog('Economy')
+    ctx.send = AsyncMock()
+    with (
+        patch.object(economy.unbelievaboat, "get_balance", new=AsyncMock(return_value={"cash": 1000, "bank": 0})),
+        patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock(return_value=True)),
+        patch.object(economy, "backup_balances", new=AsyncMock()) as mock_backup,
+    ):
+        await economy.collect_rent(ctx, target_user=user)
+        suite.assert_called(logs, mock_backup, "backup_balances")
+    return logs

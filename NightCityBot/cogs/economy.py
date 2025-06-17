@@ -226,6 +226,18 @@ class Economy(commands.Cog):
         lines = [f"💸 **Estimated Due:** ${total}"] + [f"• {d}" for d in details]
         await ctx.send("\n".join(lines))
 
+    async def backup_balances(self, members: List[discord.Member], path: Path) -> None:
+        """Save current cash and bank balances for members."""
+        data: Dict[str, Dict[str, int]] = {}
+        for m in members:
+            bal = await self.unbelievaboat.get_balance(m.id)
+            if bal:
+                data[str(m.id)] = {
+                    "cash": bal.get("cash", 0),
+                    "bank": bal.get("bank", 0),
+                }
+        await save_json_file(path, data)
+
     async def deduct_flat_fee(self, member: discord.Member, cash: int, bank: int, log: List[str], amount: int = BASELINE_LIVING_COST) -> tuple[bool, int, int]:
         total = (cash or 0) + (bank or 0)
         if total < amount:
@@ -511,6 +523,11 @@ class Economy(commands.Cog):
         if not members_to_process:
             await ctx.send("❌ No matching members found.")
             return
+
+        backup_dir = Path(config.BALANCE_BACKUP_DIR)
+        backup_dir.mkdir(exist_ok=True)
+        backup_file = backup_dir / f"balances_{datetime.utcnow():%Y%m%d_%H%M%S}.json"
+        await self.backup_balances(members_to_process, backup_file)
 
         eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
         rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
