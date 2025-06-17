@@ -94,7 +94,8 @@ class Admin(commands.Cog):
                 "→ Log up to 4 openings per month. Each opening grants an immediate cash payout based on your business tier.\n"
                 "→ Requires a Business role.\n"
                 "`!attend` — Sundays only\n"
-                "→ Verified players earn $250 every week they attend."
+                "→ Verified players earn $250 every week they attend.\n"
+                "`!due` — Estimate what you'll owe on the 1st."
             ),
             inline=False
         )
