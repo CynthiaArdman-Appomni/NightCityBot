@@ -238,7 +238,7 @@ class Economy(commands.Cog):
                 }
         await save_json_file(path, data)
 
-    async def deduct_flat_fee(self, member: discord.Member, cash: int, bank: int, log: List[str], amount: int = BASELINE_LIVING_COST) -> tuple[bool, int, int]:
+    async def deduct_flat_fee(self, member: discord.Member, cash: int, bank: int, log: List[str], amount: int = BASELINE_LIVING_COST, *, dry_run: bool = False) -> tuple[bool, int, int]:
         total = (cash or 0) + (bank or 0)
         if total < amount:
             log.append(f"❌ Insufficient funds for flat fee deduction (${amount}). Current balance: ${total}.")
@@ -252,11 +252,16 @@ class Economy(commands.Cog):
         if deduct_bank > 0:
             payload["bank"] = -deduct_bank
 
-        success = await self.unbelievaboat.update_balance(member.id, payload, reason="Flat Monthly Fee")
+        success = True
+        if not dry_run:
+            success = await self.unbelievaboat.update_balance(member.id, payload, reason="Flat Monthly Fee")
         if success:
-            cash -= deduct_cash
-            bank -= deduct_bank
-            log.append(f"💸 Deducted flat monthly fee of ${amount} (Cash: ${deduct_cash}, Bank: ${deduct_bank}).")
+            if not dry_run:
+                cash -= deduct_cash
+                bank -= deduct_bank
+            log.append(
+                f"{'💸 Would deduct' if dry_run else '💸 Deducted'} flat monthly fee of ${amount} (Cash: ${deduct_cash}, Bank: ${deduct_bank})."
+            )
         else:
             log.append("❌ Failed to deduct flat monthly fee.")
 
@@ -270,7 +275,9 @@ class Economy(commands.Cog):
             bank: int,
             log: List[str],
             rent_log_channel: Optional[discord.TextChannel],
-            eviction_channel: Optional[discord.TextChannel]
+            eviction_channel: Optional[discord.TextChannel],
+            *,
+            dry_run: bool = False,
     ) -> tuple[int, int]:
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('housing_rent'):
@@ -304,14 +311,21 @@ class Economy(commands.Cog):
         if deduct_bank > 0:
             payload["bank"] = -deduct_bank
 
-        success = await self.unbelievaboat.update_balance(member.id, payload, reason="Housing Rent")
+        success = True
+        if not dry_run:
+            success = await self.unbelievaboat.update_balance(member.id, payload, reason="Housing Rent")
         if success:
-            cash -= deduct_cash
-            bank -= deduct_bank
-            log.append(f"🧮 Subtracted housing rent ${housing_total} — ${deduct_cash} from cash, ${deduct_bank} from bank.")
-            log.append(f"📈 Balance after housing rent — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}")
+            if not dry_run:
+                cash -= deduct_cash
+                bank -= deduct_bank
+            log.append(
+                f"🧮 {'Would subtract' if dry_run else 'Subtracted'} housing rent ${housing_total} — ${deduct_cash} from cash, ${deduct_bank} from bank."
+            )
+            log.append(
+                f"📈 Balance after housing rent — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}"
+            )
             log.append("✅ Housing Rent collection completed. Notice Sent to #rent")
-            if rent_log_channel:
+            if rent_log_channel and not dry_run:
                 await rent_log_channel.send(f"✅ <@{member.id}> — Housing Rent paid: ${housing_total}")
         else:
             log.append("❌ Failed to deduct housing rent despite having sufficient funds.")
@@ -325,7 +339,9 @@ class Economy(commands.Cog):
             bank: int,
             log: List[str],
             rent_log_channel: Optional[discord.TextChannel],
-            eviction_channel: Optional[discord.TextChannel]
+            eviction_channel: Optional[discord.TextChannel],
+            *,
+            dry_run: bool = False,
     ) -> tuple[int, int]:
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('business_rent'):
@@ -359,14 +375,21 @@ class Economy(commands.Cog):
         if deduct_bank > 0:
             payload["bank"] = -deduct_bank
 
-        success = await self.unbelievaboat.update_balance(member.id, payload, reason="Business Rent")
+        success = True
+        if not dry_run:
+            success = await self.unbelievaboat.update_balance(member.id, payload, reason="Business Rent")
         if success:
-            cash -= deduct_cash
-            bank -= deduct_bank
-            log.append(f"🧮 Subtracted business rent ${business_total} — ${deduct_cash} from cash, ${deduct_bank} from bank.")
-            log.append(f"📈 Balance after business rent — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}")
+            if not dry_run:
+                cash -= deduct_cash
+                bank -= deduct_bank
+            log.append(
+                f"🧮 {'Would subtract' if dry_run else 'Subtracted'} business rent ${business_total} — ${deduct_cash} from cash, ${deduct_bank} from bank."
+            )
+            log.append(
+                f"📈 Balance after business rent — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}"
+            )
             log.append("✅ Business Rent collection completed. Notice Sent to #rent")
-            if rent_log_channel:
+            if rent_log_channel and not dry_run:
                 await rent_log_channel.send(f"✅ <@{member.id}> — Business Rent paid: ${business_total}")
         else:
             log.append("❌ Failed to deduct business rent despite having sufficient funds.")
@@ -477,26 +500,26 @@ class Economy(commands.Cog):
 
         await ctx.send("\n".join(log))
 
-    @commands.command(aliases=["collectrent"])
-    @commands.has_permissions(administrator=True)
-    async def collect_rent(self, ctx, *, target_user: Optional[discord.Member] = None):
-        """Global or per-member rent collection."""
-        await ctx.send("🚦 Starting rent collection...")
+    async def run_rent_collection(self, ctx, *, target_user: Optional[discord.Member] = None, dry_run: bool = False):
+        """Internal helper for rent collection and simulation."""
+        await ctx.send("🧪 Starting rent simulation..." if dry_run else "🚦 Starting rent collection...")
 
         if not target_user:
             if Path(config.OPEN_LOG_FILE).exists():
                 business_open_log = await load_json_file(config.OPEN_LOG_FILE, default={})
-                backup_base = f"open_history_{datetime.utcnow():%B_%Y}.json"
-                backup_path = Path(backup_base)
-                counter = 1
-                while backup_path.exists():
-                    backup_path = Path(f"{backup_base}_{counter}")
-                    counter += 1
-                Path(config.OPEN_LOG_FILE).rename(backup_path)
+                if not dry_run:
+                    backup_base = f"open_history_{datetime.utcnow():%B_%Y}.json"
+                    backup_path = Path(backup_base)
+                    counter = 1
+                    while backup_path.exists():
+                        backup_path = Path(f"{backup_base}_{counter}")
+                        counter += 1
+                    Path(config.OPEN_LOG_FILE).rename(backup_path)
             else:
                 business_open_log = {}
 
-            await save_json_file(config.OPEN_LOG_FILE, {})
+            if not dry_run:
+                await save_json_file(config.OPEN_LOG_FILE, {})
         else:
             if Path(config.OPEN_LOG_FILE).exists():
                 business_open_log = await load_json_file(config.OPEN_LOG_FILE, default={})
@@ -509,7 +532,7 @@ class Economy(commands.Cog):
             if datetime.utcnow() - last_run < timedelta(days=30):
                 await ctx.send("⚠️ Rent already collected in the last 30 days.")
                 return
-        if not target_user:
+        if not target_user and not dry_run:
             with open(config.LAST_RENT_FILE, "w") as f:
                 json.dump({"last_run": datetime.utcnow().isoformat()}, f)
 
@@ -527,7 +550,8 @@ class Economy(commands.Cog):
         backup_dir = Path(config.BALANCE_BACKUP_DIR)
         backup_dir.mkdir(exist_ok=True)
         backup_file = backup_dir / f"balances_{datetime.utcnow():%Y%m%d_%H%M%S}.json"
-        await self.backup_balances(members_to_process, backup_file)
+        if not dry_run:
+            await self.backup_balances(members_to_process, backup_file)
 
         eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
         rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
@@ -554,21 +578,22 @@ class Economy(commands.Cog):
                 log.append(f"💵 Starting balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}")
 
                 if not on_loa:
-                    base_ok, cash, bank = await self.deduct_flat_fee(member, cash, bank, log, BASELINE_LIVING_COST)
+                    base_ok, cash, bank = await self.deduct_flat_fee(member, cash, bank, log, BASELINE_LIVING_COST, dry_run=dry_run)
                     if not base_ok:
                         if eviction_channel:
-                            await eviction_channel.send(
-                                f"⚠️ <@{member.id}> could not pay baseline living cost (${BASELINE_LIVING_COST})."
-                            )
+                            if not dry_run:
+                                await eviction_channel.send(
+                                    f"⚠️ <@{member.id}> could not pay baseline living cost (${BASELINE_LIVING_COST})."
+                                )
                         log.append("❌ Skipping remaining rent steps.")
                         await ctx.send("\n".join(log))
                         continue
 
-                cash, bank = await self.process_housing_rent(member, app_roles, cash, bank, log, rent_log_channel, eviction_channel) if not on_loa else (cash, bank)
-                cash, bank = await self.process_business_rent(member, app_roles, cash, bank, log, rent_log_channel, eviction_channel)
+                cash, bank = await self.process_housing_rent(member, app_roles, cash, bank, log, rent_log_channel, eviction_channel, dry_run=dry_run) if not on_loa else (cash, bank)
+                cash, bank = await self.process_business_rent(member, app_roles, cash, bank, log, rent_log_channel, eviction_channel, dry_run=dry_run)
 
                 if not on_loa:
-                    await self.trauma_service.process_trauma_team_payment(member, log=log)
+                    await self.trauma_service.process_trauma_team_payment(member, log=log, dry_run=dry_run)
 
                 final = await self.unbelievaboat.get_balance(member.id)
                 if final:
@@ -583,6 +608,18 @@ class Economy(commands.Cog):
                 await ctx.send(f"❌ Error processing <@{member.id}>: `{e}`")
 
 
-        await ctx.send("✅ Rent collection completed.")
+        await ctx.send("✅ Rent simulation completed." if dry_run else "✅ Rent collection completed.")
+
+    @commands.command(aliases=["collectrent"])
+    @commands.has_permissions(administrator=True)
+    async def collect_rent(self, ctx, *, target_user: Optional[discord.Member] = None):
+        """Global or per-member rent collection."""
+        await self.run_rent_collection(ctx, target_user=target_user, dry_run=False)
+
+    @commands.command(aliases=["simulaterent"])
+    @commands.has_permissions(administrator=True)
+    async def simulate_rent(self, ctx, *, target_user: Optional[discord.Member] = None):
+        """Simulate rent collection without applying changes."""
+        await self.run_rent_collection(ctx, target_user=target_user, dry_run=True)
 
 

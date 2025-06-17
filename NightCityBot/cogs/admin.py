@@ -164,7 +164,9 @@ class Admin(commands.Cog):
                 "`!collect_rent [@user]` — Run monthly rent collection globally or for one user.\n"
                 "`!collect_housing @user` — Charge housing rent immediately.\n"
                 "`!collect_business @user` — Charge business rent immediately.\n"
-                "`!collect_trauma @user` — Process Trauma Team subscription."
+                "`!collect_trauma @user` — Process Trauma Team subscription.\n"
+                "`!simulate_rent` — Preview rent collection without changes.\n"
+                "`!simulate_cyberware` — Preview weekly cyberware costs."
             ),
             inline=False,
         )
