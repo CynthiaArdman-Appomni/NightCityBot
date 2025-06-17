@@ -164,9 +164,45 @@ class CyberwareManager(commands.Cog):
             log.append("Simulation complete. No changes saved.")
 
     @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def simulate_cyberware(self, ctx):
-        """Simulate the weekly cyberware process without making changes."""
+    @commands.check_any(is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True))
+    async def simulate_cyberware(
+        self,
+        ctx,
+        member: Optional[discord.Member] = None,
+        weeks: Optional[int] = None,
+    ):
+        """Simulate weekly cyberware costs.
+
+        With no arguments, performs a full dry-run of the weekly process. When
+        ``member`` and ``weeks`` are provided, it simply calculates how much that
+        user would owe on the given week.
+        """
+
+        # Specific user/week cost preview
+        if member and weeks is not None:
+            guild = ctx.guild
+            medium_role = guild.get_role(config.CYBER_MEDIUM_ROLE_ID)
+            high_role = guild.get_role(config.CYBER_HIGH_ROLE_ID)
+            extreme_role = guild.get_role(config.CYBER_EXTREME_ROLE_ID)
+            level = None
+            if extreme_role and extreme_role in member.roles:
+                level = "extreme"
+            elif high_role and high_role in member.roles:
+                level = "high"
+            elif medium_role and medium_role in member.roles:
+                level = "medium"
+
+            if level is None:
+                await ctx.send(f"{member.display_name} has no cyberware role.")
+                return
+
+            cost = self.calculate_cost(level, weeks)
+            await ctx.send(
+                f"💊 {member.display_name} would pay ${cost} for week {weeks}."
+            )
+            return
+
+        # Global dry-run simulation
         logs: List[str] = []
         await self.process_week(dry_run=True, log=logs)
         summary = "\n".join(logs) if logs else "✅ Simulation complete."
