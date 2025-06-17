@@ -134,67 +134,71 @@ class Admin(commands.Cog):
     @commands.command(name="helpfixer")
     async def helpfixer(self, ctx):
         """Display help for fixers."""
-        embed = discord.Embed(
-            title="🛠️ NCRP Bot — Fixer & Admin Help",
-            description="Advanced commands for messaging, RP management, rent, and testing.",
-            color=discord.Color.purple()
-        )
+        def embed_len(e: discord.Embed) -> int:
+            total = len(e.title or "") + len(e.description or "")
+            if e.footer and e.footer.text:
+                total += len(e.footer.text)
+            for f in e.fields:
+                total += len(f.name) + len(str(f.value))
+            return total
 
-        embed.add_field(
-            name="✉️ Messaging Tools",
-            value=(
+        fields = [
+            (
+                "✉️ Messaging Tools",
                 "`!dm @user <text>` — Send an anonymous DM to a user. Use `!roll` inside to relay a roll.\n"
-                "`!post <channel|thread> <message>` — Post or run a command in another location."
+                "`!post <channel|thread> <message>` — Post or run a command in another location.",
             ),
-            inline=False,
-        )
-
-        embed.add_field(
-            name="📑 RP Management",
-            value=(
+            (
+                "📑 RP Management",
                 "`!start_rp @users` — Create a private RP channel for the listed users.\n"
-                "`!end_rp` — Archive and delete the current RP session."
+                "`!end_rp` — Archive and delete the current RP session.",
             ),
-            inline=False,
-        )
-
-        embed.add_field(
-            name="💵 Rent Commands",
-            value=(
+            (
+                "💵 Rent Commands",
                 "`!collect_rent [@user]` — Run monthly rent collection globally or for one user. Use `-v` for verbose output.\n"
                 "`!collect_housing @user` — Charge housing rent immediately.\n"
                 "`!collect_business @user` — Charge business rent immediately.\n"
                 "`!collect_trauma @user` — Process Trauma Team subscription.\n"
                 "`!simulate_rent` — Preview rent collection without changes. Use `-v` for verbose output.\n"
-                "`!simulate_cyberware` — Preview weekly cyberware costs."
+                "`!simulate_cyberware [@user] [weeks]` — Preview cyberware costs.",
             ),
-            inline=False,
-        )
-
-        embed.add_field(
-            name="⚙️ System Control",
-            value=(
+            (
+                "⚙️ System Control",
                 "`!enable_system <name>` — Turn a system on.\n"
                 "`!disable_system <name>` — Turn a system off.\n"
-                "`!system_status` — Show current system states."
+                "`!system_status` — Show current system states.",
             ),
-            inline=False,
-        )
+            (
+                "🦾 Ripperdoc",
+                "`!checkup @user` — Remove the weekly cyberware checkup role.",
+            ),
+            (
+                "🧪 Testing",
+                "`!test_bot [tests]` — Run self-tests (bot owner only).",
+            ),
+        ]
 
-        embed.add_field(
-            name="🦾 Ripperdoc",
-            value="`!checkup @user` — Remove the weekly cyberware checkup role.",
-            inline=False,
+        embeds = []
+        current = discord.Embed(
+            title="🛠️ NCRP Bot — Fixer & Admin Help",
+            description="Advanced commands for messaging, RP management, rent, and testing.",
+            color=discord.Color.purple(),
         )
+        for name, value in fields:
+            if embed_len(current) + len(name) + len(value) > 5800:
+                current.set_footer(text="Fixer tools by MedusaCascade | v1.2")
+                embeds.append(current)
+                current = discord.Embed(
+                    title="🛠️ NCRP Bot — Fixer & Admin Help (cont.)",
+                    color=discord.Color.purple(),
+                )
+            current.add_field(name=name, value=value, inline=False)
 
-        embed.add_field(
-            name="🧪 Testing",
-            value="`!test_bot [tests]` — Run self-tests (bot owner only).",
-            inline=False,
-        )
+        current.set_footer(text="Fixer tools by MedusaCascade | v1.2")
+        embeds.append(current)
 
-        embed.set_footer(text="Fixer tools by MedusaCascade | v1.2")
-        await ctx.send(embed=embed)
+        for e in embeds:
+            await ctx.send(embed=e)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
