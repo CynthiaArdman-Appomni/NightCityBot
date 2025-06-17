@@ -206,6 +206,11 @@ class Admin(commands.Cog):
             if cmd in constants.UNBELIEVABOAT_COMMANDS:
                 return
             # Otherwise show a basic notice but do not audit
+            print(
+                f"[DEBUG] Unknown command from {ctx.author}"
+                f" in {getattr(ctx.channel, 'name', ctx.channel.id)}"
+                f" ({ctx.channel.id}) → {ctx.message.content!r}"
+            )
             await ctx.send("❌ Unknown command.")
             return
         elif isinstance(error, commands.CheckFailure):
