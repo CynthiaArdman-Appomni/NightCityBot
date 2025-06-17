@@ -50,6 +50,8 @@ class NightCityBot(commands.Bot):
         await self.add_cog(TestSuite(self))
 
     async def on_message(self, message: discord.Message):
+        if message.author == self.user or message.author.bot:
+            return
         dm_handler = self.get_cog('DMHandler')
         if dm_handler and isinstance(message.channel, discord.Thread):
             if message.channel.id in getattr(dm_handler, 'dm_threads', {}).values():
