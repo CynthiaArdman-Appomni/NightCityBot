@@ -506,9 +506,13 @@ class Economy(commands.Cog):
         *,
         target_user: Optional[discord.Member] = None,
         dry_run: bool = False,
+        verbose: bool = False,
     ):
 
-        """Internal helper for rent collection and simulation."""
+        """Internal helper for rent collection and simulation.
+
+        When ``verbose`` is ``False`` only minimal status messages are sent.
+        """
         await ctx.send("🧪 Starting rent simulation..." if dry_run else "🚦 Starting rent collection...")
 
         if not target_user:
@@ -567,6 +571,8 @@ class Economy(commands.Cog):
         for member in members_to_process:
             try:
                 log: List[str] = [f"🔍 **Working on:** <@{member.id}>"]
+                if not verbose:
+                    await ctx.send(f"Working on <@{member.id}>")
 
                 role_names = [r.name for r in member.roles]
                 app_roles = [r for r in role_names if "Tier" in r]
@@ -615,7 +621,10 @@ class Economy(commands.Cog):
                 log.append(f"📊 Final balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}")
 
                 summary = "\n".join(log)
-                await ctx.send(summary)
+                if verbose:
+                    await ctx.send(summary)
+                else:
+                    await ctx.send(f"✅ Completed for <@{member.id}>")
                 if dry_run and admin_cog:
                     await admin_cog.log_audit(ctx.author, summary)
 
@@ -629,14 +638,60 @@ class Economy(commands.Cog):
 
     @commands.command(aliases=["collectrent"])
     @commands.has_permissions(administrator=True)
-    async def collect_rent(self, ctx, *, target_user: Optional[discord.Member] = None):
-        """Global or per-member rent collection."""
-        await self.run_rent_collection(ctx, target_user=target_user, dry_run=False)
+    async def collect_rent(self, ctx, *args, target_user: Optional[discord.Member] = None):
+        """Global or per-member rent collection.
+
+        Pass ``-v``/``--verbose`` to include detailed output.
+        """
+        verbose = False
+        if target_user is None:
+            converter = commands.MemberConverter()
+            remaining = []
+            for arg in args:
+                if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
+                    verbose = True
+                else:
+                    remaining.append(arg)
+            for arg in remaining:
+                try:
+                    target_user = await converter.convert(ctx, arg)
+                    break
+                except commands.BadArgument:
+                    continue
+        else:
+            for arg in args:
+                if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
+                    verbose = True
+                    break
+        await self.run_rent_collection(ctx, target_user=target_user, dry_run=False, verbose=verbose)
 
     @commands.command(aliases=["simulaterent"])
     @commands.has_permissions(administrator=True)
-    async def simulate_rent(self, ctx, *, target_user: Optional[discord.Member] = None):
-        """Simulate rent collection without applying changes."""
-        await self.run_rent_collection(ctx, target_user=target_user, dry_run=True)
+    async def simulate_rent(self, ctx, *args, target_user: Optional[discord.Member] = None):
+        """Simulate rent collection without applying changes.
+
+        Pass ``-v``/``--verbose`` to include detailed output.
+        """
+        verbose = False
+        if target_user is None:
+            converter = commands.MemberConverter()
+            remaining = []
+            for arg in args:
+                if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
+                    verbose = True
+                else:
+                    remaining.append(arg)
+            for arg in remaining:
+                try:
+                    target_user = await converter.convert(ctx, arg)
+                    break
+                except commands.BadArgument:
+                    continue
+        else:
+            for arg in args:
+                if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
+                    verbose = True
+                    break
+        await self.run_rent_collection(ctx, target_user=target_user, dry_run=True, verbose=verbose)
 
 

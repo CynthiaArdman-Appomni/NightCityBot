@@ -161,11 +161,11 @@ class Admin(commands.Cog):
         embed.add_field(
             name="💵 Rent Commands",
             value=(
-                "`!collect_rent [@user]` — Run monthly rent collection globally or for one user.\n"
+                "`!collect_rent [@user]` — Run monthly rent collection globally or for one user. Use `-v` for verbose output.\n"
                 "`!collect_housing @user` — Charge housing rent immediately.\n"
                 "`!collect_business @user` — Charge business rent immediately.\n"
                 "`!collect_trauma @user` — Process Trauma Team subscription.\n"
-                "`!simulate_rent` — Preview rent collection without changes.\n"
+                "`!simulate_rent` — Preview rent collection without changes. Use `-v` for verbose output.\n"
                 "`!simulate_cyberware` — Preview weekly cyberware costs."
             ),
             inline=False,
