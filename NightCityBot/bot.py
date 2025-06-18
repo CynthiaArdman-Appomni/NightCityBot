@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import os
 import sys
+import logging
 
 # Ensure the package root is on the path when executed as a script
 package_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -23,9 +24,13 @@ from NightCityBot.utils.startup_checks import perform_startup_checks
 from flask import Flask
 from threading import Thread
 
+logger = logging.getLogger(__name__)
+
 
 class NightCityBot(commands.Bot):
-    def __init__(self):
+    """Discord bot wrapper for NCRP."""
+
+    def __init__(self) -> None:
         intents = discord.Intents.default()
         intents.messages = True
         intents.message_content = True
@@ -68,7 +73,7 @@ class NightCityBot(commands.Bot):
         await self.process_commands(message)
 
     async def on_ready(self):
-        print(f"✅ {self.user.name} is running!")
+        logger.info("%s is running!", self.user.name)
 
 
 app = Flask('')
@@ -91,7 +96,7 @@ def keep_alive():
 def main():
     bot = NightCityBot()
     keep_alive()
-    bot.run(config.TOKEN)
+    bot.run(os.environ['TOKEN'])
 
 
 if __name__ == "__main__":

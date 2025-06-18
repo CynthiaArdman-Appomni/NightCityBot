@@ -4,6 +4,7 @@ from datetime import datetime, time
 from zoneinfo import ZoneInfo
 from typing import Dict, Optional, List
 from pathlib import Path
+import os
 
 import config
 from NightCityBot.utils.helpers import load_json_file, save_json_file, get_tz_now
@@ -23,7 +24,7 @@ class CyberwareManager(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.unbelievaboat = UnbelievaBoatAPI(config.UNBELIEVABOAT_API_TOKEN)
+        self.unbelievaboat = UnbelievaBoatAPI(os.environ['UNBELIEVABOAT_API_TOKEN'])
         self.data: Dict[str, int] = {}
         self.bot.loop.create_task(self.load_data())
         self.weekly_check.start()
