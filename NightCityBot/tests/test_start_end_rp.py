@@ -8,13 +8,15 @@ async def run(suite, ctx) -> List[str]:
     """Create and end an RP session to confirm logging works."""
     logs = []
     rp_manager = suite.bot.get_cog('RPManager')
-    channel = await rp_manager.start_rp(ctx, f"<@{config.TEST_USER_ID}>")
-    suite.debug(logs, f"start_rp created: {getattr(channel, 'name', None)}")
-    if channel:
-        logs.append("✅ start_rp returned a channel")
+    thread = MagicMock(spec=discord.Thread)
+    ctx.channel.create_thread = AsyncMock(return_value=thread)
+    await rp_manager.start_rp(ctx, f"<@{config.TEST_USER_ID}>")
+    if ctx.channel.create_thread.await_count:
+        logs.append("✅ start_rp created thread")
+        ctx.channel = thread
+        rp_manager.end_rp_session = AsyncMock()
         await rp_manager.end_rp(ctx)
-        suite.debug(logs, "end_rp called")
-        logs.append("✅ end_rp executed without error")
+        suite.assert_called(logs, rp_manager.end_rp_session, "end_rp_session")
     else:
-        logs.append("❌ start_rp failed to create a channel")
+        logs.append("❌ start_rp failed to create thread")
     return logs
