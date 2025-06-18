@@ -407,9 +407,11 @@ class Economy(commands.Cog):
         if control and not control.is_enabled('housing_rent'):
             await ctx.send('⚠️ The housing_rent system is currently disabled.')
             return
+        admin_cog = self.bot.get_cog('Admin')
         log: List[str] = [f"🏠 Manual Housing Rent Collection for <@{user.id}>"]
         rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
         eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
+        await ctx.send(f"Working on <@{user.id}>")
 
         role_names = [r.name for r in user.roles]
         log.append(f"🧾 Roles: {role_names}")
@@ -417,7 +419,9 @@ class Economy(commands.Cog):
         balance_data = await self.unbelievaboat.get_balance(user.id)
         if not balance_data:
             log.append("❌ Could not fetch balance.")
-            await ctx.send("\n".join(log))
+            await ctx.send(f"⚠️ Could not fetch balance for <@{user.id}>")
+            if admin_cog:
+                await admin_cog.log_audit(ctx.author, "\n".join(log))
             return
 
         cash = balance_data["cash"]
@@ -432,9 +436,14 @@ class Economy(commands.Cog):
             final_cash = final.get("cash", 0)
             final_bank = final.get("bank", 0)
             final_total = final_cash + final_bank
-            log.append(f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}")
+            log.append(
+                f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}"
+            )
 
-        await ctx.send("\n".join(log))
+        summary = "\n".join(log)
+        await ctx.send(f"✅ Completed for <@{user.id}>")
+        if admin_cog:
+            await admin_cog.log_audit(ctx.author, summary)
 
     @commands.command(aliases=["collectbusiness"])
     @commands.has_permissions(administrator=True)
@@ -444,9 +453,11 @@ class Economy(commands.Cog):
         if control and not control.is_enabled('business_rent'):
             await ctx.send('⚠️ The business_rent system is currently disabled.')
             return
+        admin_cog = self.bot.get_cog('Admin')
         log: List[str] = [f"🏢 Manual Business Rent Collection for <@{user.id}>"]
         rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
         eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
+        await ctx.send(f"Working on <@{user.id}>")
 
         role_names = [r.name for r in user.roles]
         log.append(f"🧾 Roles: {role_names}")
@@ -454,7 +465,9 @@ class Economy(commands.Cog):
         balance_data = await self.unbelievaboat.get_balance(user.id)
         if not balance_data:
             log.append("❌ Could not fetch balance.")
-            await ctx.send("\n".join(log))
+            await ctx.send(f"⚠️ Could not fetch balance for <@{user.id}>")
+            if admin_cog:
+                await admin_cog.log_audit(ctx.author, "\n".join(log))
             return
 
         cash = balance_data["cash"]
@@ -469,9 +482,14 @@ class Economy(commands.Cog):
             final_cash = final.get("cash", 0)
             final_bank = final.get("bank", 0)
             final_total = final_cash + final_bank
-            log.append(f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}")
+            log.append(
+                f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}"
+            )
 
-        await ctx.send("\n".join(log))
+        summary = "\n".join(log)
+        await ctx.send(f"✅ Completed for <@{user.id}>")
+        if admin_cog:
+            await admin_cog.log_audit(ctx.author, summary)
 
     @commands.command(aliases=["collecttrauma"])
     @commands.has_permissions(administrator=True)
@@ -481,11 +499,14 @@ class Economy(commands.Cog):
         if control and not control.is_enabled('trauma_team'):
             await ctx.send('⚠️ The trauma_team system is currently disabled.')
             return
+        admin_cog = self.bot.get_cog('Admin')
         log: List[str] = [f"💊 Manual Trauma Team Subscription Processing for <@{user.id}>"]
         balance_data = await self.unbelievaboat.get_balance(user.id)
         if not balance_data:
             log.append("❌ Could not fetch balance.")
-            await ctx.send("\n".join(log))
+            await ctx.send(f"⚠️ Could not fetch balance for <@{user.id}>")
+            if admin_cog:
+                await admin_cog.log_audit(ctx.author, "\n".join(log))
             return
 
         cash = balance_data["cash"]
@@ -493,6 +514,7 @@ class Economy(commands.Cog):
         total = (cash or 0) + (bank or 0)
         log.append(f"💵 Balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: ${total:,}")
 
+        await ctx.send(f"Working on <@{user.id}>")
         await self.trauma_service.process_trauma_team_payment(user, log=log)
 
         final = await self.unbelievaboat.get_balance(user.id)
@@ -500,9 +522,14 @@ class Economy(commands.Cog):
             final_cash = final.get("cash", 0)
             final_bank = final.get("bank", 0)
             final_total = final_cash + final_bank
-            log.append(f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}")
+            log.append(
+                f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}"
+            )
 
-        await ctx.send("\n".join(log))
+        summary = "\n".join(log)
+        await ctx.send(f"✅ Completed for <@{user.id}>")
+        if admin_cog:
+            await admin_cog.log_audit(ctx.author, summary)
 
     async def run_rent_collection(
         self,
