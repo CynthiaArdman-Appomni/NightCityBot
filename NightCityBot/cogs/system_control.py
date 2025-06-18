@@ -49,6 +49,11 @@ class SystemControl(commands.Cog):
     async def enable_system(self, ctx, system: str):
         """Enable a disabled system."""
         system = system.lower()
+        if system == "all":
+            for name in SYSTEMS:
+                await self.set_status(name, True)
+            await ctx.send("✅ Enabled all systems.")
+            return
         if not await self.set_status(system, True):
             await ctx.send(f"❌ Unknown system '{system}'.")
             return
@@ -59,6 +64,11 @@ class SystemControl(commands.Cog):
     async def disable_system(self, ctx, system: str):
         """Disable an active system."""
         system = system.lower()
+        if system == "all":
+            for name in SYSTEMS:
+                await self.set_status(name, False)
+            await ctx.send("✅ Disabled all systems.")
+            return
         if not await self.set_status(system, False):
             await ctx.send(f"❌ Unknown system '{system}'.")
             return
