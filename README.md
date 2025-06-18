@@ -122,7 +122,7 @@ Offers helper commands for staff and global error handling.
 
 Exposes the internal test suite directly through Discord commands.
 
-* `!test_bot [tests]` – run selected self‑tests. Without arguments it runs the entire suite defined in `NightCityBot/tests`.
+* `!test_bot [tests]` – run selected self‑tests. Without arguments it runs the entire suite defined in `NightCityBot/tests`. Each test is marked as pass or fail based on its log output.
 * `!test__bot [pattern]` – execute the pytest based tests. Mainly used by the repository maintainers.
 
 ## Services
@@ -160,5 +160,5 @@ A comprehensive suite of automated tests lives in `NightCityBot/tests`.  They ca
 pytest
 ```
 
-Alternatively, run `!test_bot` inside Discord to perform many of the same checks without leaving the chat.
+Alternatively, run `!test_bot` inside Discord to perform many of the same checks without leaving the chat. The command now flags any failing sub-tests so results reflect actual success or failure.
 
