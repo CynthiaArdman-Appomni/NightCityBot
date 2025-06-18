@@ -13,11 +13,15 @@ async def run(suite, ctx) -> List[str]:
     ctx.message.attachments = []
     # create=True allows patching even though MagicMock lacks the attribute
     with patch.object(type(ctx.author), "create_dm", new=AsyncMock(return_value=dm_channel), create=True):
-        # Limit to a simple test
-        test_cog.tests = {'test_help_commands': tests.TEST_FUNCTIONS['test_help_commands']}
-        await test_cog.test_bot(ctx, 'test_help_commands', '-silent')
-        if any('embed' in kwargs for _, kwargs in dm_channel.send.call_args_list):
-            logs.append('✅ test_bot DM summary sent')
-        else:
-            logs.append('❌ test_bot did not send DM summary')
+        # Limit to a simple test and restore original registry afterwards
+        original_tests = test_cog.tests
+        try:
+            test_cog.tests = {'test_help_commands': tests.TEST_FUNCTIONS['test_help_commands']}
+            await test_cog.test_bot(ctx, 'test_help_commands', '-silent')
+            if any('embed' in kwargs for _, kwargs in dm_channel.send.call_args_list):
+                logs.append('✅ test_bot DM summary sent')
+            else:
+                logs.append('❌ test_bot did not send DM summary')
+        finally:
+            test_cog.tests = original_tests
     return logs
