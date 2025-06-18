@@ -17,6 +17,10 @@ from NightCityBot.utils.constants import (
     TRAUMA_ROLE_COSTS,
 )
 from NightCityBot.utils import helpers
+
+# Expose helper functions for tests that patch them directly
+load_json_file = helpers.load_json_file
+save_json_file = helpers.save_json_file
 import config
 from NightCityBot.services.unbelievaboat import UnbelievaBoatAPI
 from NightCityBot.services.trauma_team import TraumaTeamService
