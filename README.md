@@ -49,9 +49,9 @@ Handles anonymous DMs from Fixers to players and maintains a logging thread for 
 
 Key features:
 
-* `!dm @user <message>` – send an anonymous DM and log the conversation in a private thread.
-* Automatic relay of commands such as `!roll` or `!start_rp` when used from a DM logging thread.
-* Creates/loads the mapping of users to logging threads using `thread_map.json`.
+* `!dm @user <message>` – send an anonymous DM to a player. Attachments are forwarded and the entire exchange is logged in a private thread so staff can review it later.
+* Commands typed from a DM log thread (for example `!roll` or `!start_rp`) are relayed back to the user, allowing full interaction without revealing your identity.
+* The mapping of users to logging threads is persisted in `thread_map.json` and loaded on startup.
 
 ### Economy
 *File: `NightCityBot/cogs/economy.py`*
@@ -60,11 +60,12 @@ Manages the in‑game economy and rent collection. It integrates with the [Unbel
 
 Main commands:
 
-* `!open_shop` – record a business opening on Sundays and instantly grant passive income based on the business tier.
-* `!attend` – weekly attendance reward for verified players.
-* `!due` – estimate upcoming rent, baseline fees and this week's cyberware medication cost.
-* `!collect_rent` / `!simulate_rent` – perform (or simulate) monthly rent collection across all members. Handles housing rent, business rent, baseline cost and Trauma Team subscriptions.
-* `!collect_housing`, `!collect_business`, `!collect_trauma` – manual per‑member processing.
+* `!open_shop` – used by business owners on Sundays. Logs a shop opening and immediately awards passive income based on the business tier. Each player can record up to four openings per month.
+* `!attend` – every verified player can run this on Sundays to receive a weekly $250 attendance reward. The command refuses to run more than once per week.
+* `!due` – displays a full breakdown of the baseline fee, housing and business rent, Trauma Team subscription and upcoming cyberware medication costs that will be charged on the 1st.
+* `!collect_rent [@user] [-v]` – run the monthly rent cycle. Supply a user mention to limit the collection to that member. Pass `-v` to print every deduction step in detail.
+* `!simulate_rent [@user] [-v]` – identical to `!collect_rent` but performs a dry run without updating balances.
+* `!collect_housing @user`, `!collect_business @user`, `!collect_trauma @user` – immediately charge a single user's housing rent, business rent or Trauma Team subscription.
 
 The cog stores logs in JSON files such as `business_open_log.json` and `attendance_log.json` and consults `NightCityBot/utils/constants.py` for role costs.
 
@@ -78,9 +79,9 @@ Implements weekly check‑up reminders and medication costs for players with cyb
 
 Commands:
 
-* `!simulate_cyberware` – simulate the weekly process or calculate the cost for a particular user/week.
-* `!checkup @user` – ripperdoc command to remove the check‑up role once an in‑character examination is done.
-* `!weeks_without_checkup @user` – display the current streak.
+* `!simulate_cyberware [@user] [week]` – with no arguments this performs a dry run of the entire weekly cycle for every player. When a user and week number are provided it simply reports the medication cost that would be charged on that week.
+* `!checkup @user` – ripperdoc command to remove the weekly check‑up role from a player after their in‑character medical exam, resetting their streak to zero.
+* `!weeks_without_checkup @user` – show how many weeks the specified player has kept the check‑up role without visiting a ripperdoc.
 
 All data is stored in `cyberware_log.json`.
 
@@ -89,9 +90,9 @@ All data is stored in `cyberware_log.json`.
 
 Provides tools for creating private RP text channels and archiving them when complete.
 
-* `!start_rp @users` – creates a locked text channel named using `utils.helpers.build_channel_name`.
-* `!end_rp` – archives the channel contents to a thread in `GROUP_AUDIT_LOG_CHANNEL_ID` and then deletes the channel.
-* Commands typed inside `text-rp-*` channels are intercepted and passed back to the bot for processing (allowing `!roll` and other commands inside RP sessions).
+* `!start_rp @users` – create a private text channel for the mentioned users. The channel name is generated automatically using `utils.helpers.build_channel_name` and only the participants and staff can view it.
+* `!end_rp` – once the scene is finished, this command archives the entire channel into the group audit forum and deletes the original channel.
+* Any command typed inside a `text-rp-*` channel is relayed back to the bot, so players can roll dice or trigger other commands without leaving the RP session.
 
 ### RollSystem
 *File: `NightCityBot/cogs/roll_system.py`*
@@ -109,8 +110,8 @@ Highlights:
 
 Manages Leave‑of‑Absence status.
 
-* `!start_loa` and `!end_loa` – players can toggle their own LOA, while Fixers can specify another member.
-* When on LOA, baseline costs, housing rent and Trauma Team payments are skipped by other cogs.
+* `!start_loa` and `!end_loa` – players may place themselves on LOA to pause monthly fees and Trauma Team billing. Fixers can provide a user mention to toggle LOA for someone else.
+* While a player is on LOA, the economy cog automatically skips baseline costs, housing rent and Trauma Team payments until `!end_loa` is used.
 
 ### SystemControl
 *File: `NightCityBot/cogs/system_control.py`*
@@ -119,26 +120,26 @@ A small cog that allows administrators to enable or disable major subsystems at 
 
 Commands:
 
-* `!enable_system <name>` / `!disable_system <name>`
-* `!system_status` – show current on/off flags.
+* `!enable_system <name>` / `!disable_system <name>` – flip a specific subsystem such as `cyberware` or `open_shop` on or off at runtime. The setting persists in `system_status.json`.
+* `!system_status` – list every tracked subsystem and whether it is currently enabled.
 
 ### Admin
 *File: `NightCityBot/cogs/admin.py`*
 
 Offers helper commands for staff and global error handling.
 
-* `!post <channel> <message>` – post a message or run a command in another channel/thread. Frequently used in conjunction with `!roll` or `!start_rp`.
-* `!helpme` and `!helpfixer` – display help embeds for regular users and Fixers respectively.
-* `!check_config` – verify that all configured roles and channels exist.
-* Logs actions to `AUDIT_LOG_CHANNEL_ID` via `log_audit`.
+* `!post <channel> <message>` – send a message or execute a command in another channel or thread. If `<message>` begins with `!`, the command is run as if it were typed in that location.
+* `!helpme` and `!helpfixer` – show the built in help embeds. The former lists player commands while the latter documents every fixer and admin command with available options.
+* `!check_config` – re-run startup checks to confirm that every configured role and channel still exists.
+* All sensitive actions are logged via `log_audit` to the channel defined by `AUDIT_LOG_CHANNEL_ID`.
 
 ### TestSuite
 *File: `NightCityBot/cogs/test_suite.py`*
 
 Exposes the internal test suite directly through Discord commands.
 
-* `!test_bot [tests]` – run selected self‑tests. Without arguments it runs the entire suite defined in `NightCityBot/tests`.
-* `!test__bot [pattern]` – execute the pytest based tests. Mainly used by the repository maintainers.
+* `!test_bot [tests]` – execute the built-in test functions. Provide one or more test names to run them selectively. Use `-silent` to send results via DM and `-verbose` for step-by-step logs.
+* `!test__bot [pattern]` – run the full PyTest suite. Optional patterns limit execution to matching tests. This command is primarily for repository maintainers.
 
 ## Services
 
