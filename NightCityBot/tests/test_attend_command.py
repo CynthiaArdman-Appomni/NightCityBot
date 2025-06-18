@@ -26,7 +26,7 @@ async def run(suite, ctx) -> List[str]:
         patch("NightCityBot.cogs.economy.load_json_file", new=AsyncMock(return_value={})),
         patch("NightCityBot.cogs.economy.save_json_file", new=AsyncMock()),
     ):
-        mock_dt.utcnow.return_value = monday
+        mock_dt.now.return_value = monday
         mock_dt.fromisoformat = datetime.fromisoformat
         await economy.attend(ctx)
         msg = ctx.send.await_args[0][0]
@@ -47,7 +47,7 @@ async def run(suite, ctx) -> List[str]:
         ),
         patch("NightCityBot.cogs.economy.save_json_file", new=AsyncMock()),
     ):
-        mock_dt.utcnow.return_value = sunday
+        mock_dt.now.return_value = sunday
         mock_dt.fromisoformat = datetime.fromisoformat
         await economy.attend(ctx)
         msg = ctx.send.await_args[0][0]
@@ -68,7 +68,7 @@ async def run(suite, ctx) -> List[str]:
         patch("NightCityBot.cogs.economy.save_json_file", new=AsyncMock()),
         patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock()),
     ):
-        mock_dt.utcnow.return_value = sunday
+        mock_dt.now.return_value = sunday
         mock_dt.fromisoformat = datetime.fromisoformat
         await economy.attend(ctx)
         msg = ctx.send.await_args[0][0]

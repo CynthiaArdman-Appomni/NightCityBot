@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import Optional, List, Dict
 from pathlib import Path
 import json
@@ -49,10 +50,13 @@ class Economy(commands.Cog):
         total_income = 0
 
         member_id_str = str(member.id)
+        tz = ZoneInfo(getattr(config, "TIMEZONE", "UTC"))
+        now = datetime.now(tz)
         opens_this_month = [
-            ts for ts in business_open_log.get(member_id_str, [])
-            if datetime.fromisoformat(ts).month == datetime.utcnow().month and
-               datetime.fromisoformat(ts).year == datetime.utcnow().year
+            ts
+            for ts in business_open_log.get(member_id_str, [])
+            if datetime.fromisoformat(ts).month == now.month
+            and datetime.fromisoformat(ts).year == now.year
         ]
         open_count = min(len(opens_this_month), 4)
 
@@ -97,7 +101,7 @@ class Economy(commands.Cog):
             await ctx.send("❌ You must have a business role to use this command.")
             return
 
-        now = datetime.utcnow()
+        now = datetime.now(ZoneInfo(getattr(config, "TIMEZONE", "UTC")))
         if now.weekday() != 6:
             await ctx.send("❌ Business openings can only be logged on Sundays.")
             return
@@ -157,7 +161,7 @@ class Economy(commands.Cog):
             await ctx.send("❌ You must be verified to use this command.")
             return
 
-        now = datetime.utcnow()
+        now = datetime.now(ZoneInfo(getattr(config, "TIMEZONE", "UTC")))
         if now.weekday() != 6:
             await ctx.send("❌ Attendance can only be logged on Sundays.")
             return

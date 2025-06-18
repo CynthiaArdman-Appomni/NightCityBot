@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands, tasks
-from datetime import datetime
+from datetime import datetime, time
+from zoneinfo import ZoneInfo
 from typing import Dict, Optional, List
 from pathlib import Path
 
@@ -40,17 +41,23 @@ class CyberwareManager(commands.Cog):
         cost = int(base * (2 ** (weeks - 1)))
         return min(cost, MAX_COST[level])
 
-    @tasks.loop(hours=24)
+    @tasks.loop(time=time(hour=0, tzinfo=ZoneInfo(getattr(config, "TIMEZONE", "UTC"))))
     async def weekly_check(self):
         """Run every day and trigger processing each Saturday."""
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('cyberware'):
             return
-        if datetime.utcnow().weekday() != 5:  # Saturday
+        if datetime.now(ZoneInfo(getattr(config, "TIMEZONE", "UTC"))).weekday() != 5:  # Saturday
             return
         await self.process_week()
 
-    async def process_week(self, *, dry_run: bool = False, log: Optional[List[str]] = None):
+    async def process_week(
+        self,
+        *,
+        dry_run: bool = False,
+        log: Optional[List[str]] = None,
+        target_member: Optional[discord.Member] = None,
+    ):
         """Apply weekly check-up logic and deduct medication costs."""
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('cyberware'):
@@ -68,7 +75,8 @@ class CyberwareManager(commands.Cog):
             getattr(config, "RIPPERDOC_LOG_CHANNEL_ID", config.RENT_LOG_CHANNEL_ID)
         )
 
-        for member in guild.members:
+        members = [target_member] if target_member else guild.members
+        for member in members:
             if loa_role and loa_role in member.roles:
                 continue
             role_level = None
@@ -168,7 +176,7 @@ class CyberwareManager(commands.Cog):
     async def simulate_cyberware(
         self,
         ctx,
-        member: Optional[discord.Member] = None,
+        member: Optional[str] = None,
         weeks: Optional[int] = None,
     ):
         """Simulate weekly cyberware costs.
@@ -178,33 +186,41 @@ class CyberwareManager(commands.Cog):
         user would owe on the given week.
         """
 
+        resolved_member: Optional[discord.Member] = None
+        if member:
+            try:
+                resolved_member = await commands.MemberConverter().convert(ctx, member)
+            except commands.BadArgument:
+                await ctx.send("❌ Could not resolve user.")
+                return
+
         # Specific user/week cost preview
-        if member and weeks is not None:
+        if resolved_member and weeks is not None:
             guild = ctx.guild
             medium_role = guild.get_role(config.CYBER_MEDIUM_ROLE_ID)
             high_role = guild.get_role(config.CYBER_HIGH_ROLE_ID)
             extreme_role = guild.get_role(config.CYBER_EXTREME_ROLE_ID)
             level = None
-            if extreme_role and extreme_role in member.roles:
+            if extreme_role and extreme_role in resolved_member.roles:
                 level = "extreme"
-            elif high_role and high_role in member.roles:
+            elif high_role and high_role in resolved_member.roles:
                 level = "high"
-            elif medium_role and medium_role in member.roles:
+            elif medium_role and medium_role in resolved_member.roles:
                 level = "medium"
 
             if level is None:
-                await ctx.send(f"{member.display_name} has no cyberware role.")
+                await ctx.send(f"{resolved_member.display_name} has no cyberware role.")
                 return
 
             cost = self.calculate_cost(level, weeks)
             await ctx.send(
-                f"💊 {member.display_name} would pay ${cost} for week {weeks}."
+                f"💊 {resolved_member.display_name} would pay ${cost} for week {weeks}."
             )
             return
 
-        # Global dry-run simulation
+        # Global dry-run simulation or single-user when member is provided
         logs: List[str] = []
-        await self.process_week(dry_run=True, log=logs)
+        await self.process_week(dry_run=True, log=logs, target_member=resolved_member)
         summary = "\n".join(logs) if logs else "✅ Simulation complete."
         await ctx.send(summary)
         admin_cog = self.bot.get_cog('Admin')
