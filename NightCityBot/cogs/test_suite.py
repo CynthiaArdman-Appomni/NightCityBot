@@ -56,7 +56,7 @@ class TestSuite(commands.Cog):
     @commands.command(hidden=True, aliases=["testbot"])
     @commands.is_owner()
     async def test_bot(self, ctx, *test_names: str):
-        """Run bot self tests."""
+        """Run bot self tests and report pass/fail per test."""
         start = time.time()
         all_logs = []
 
@@ -126,6 +126,8 @@ class TestSuite(commands.Cog):
         ctx.test_rp_channel = rp_channel
 
         try:
+            passed_tests = 0
+            failed_tests = 0
             for name, func in tests:
                 if verbose:
                     await output_channel.send(
@@ -135,8 +137,13 @@ class TestSuite(commands.Cog):
                     logs = await func(self, ctx)
                 except Exception as e:
                     logs = [f"❌ Exception in `{name}`: {e}"]
+
                 all_logs.append(f"{name} — {self.test_descriptions.get(name, '')}")
                 all_logs.extend(logs)
+                if any("❌" in l for l in logs):
+                    failed_tests += 1
+                else:
+                    passed_tests += 1
                 all_logs.append("────────────")
 
             if verbose:
@@ -164,8 +171,8 @@ class TestSuite(commands.Cog):
                     await output_channel.send(f"```\n{current_chunk.strip()}\n```")
 
             # Summary embed
-            passed = sum(1 for r in all_logs if "✅" in r)
-            failed = sum(1 for r in all_logs if "❌" in r)
+            passed = passed_tests
+            failed = failed_tests
             duration = time.time() - start
 
             title = "🧪 Full Bot Self-Test Summary" if not test_names else "🧪 Selected Test Summary"
