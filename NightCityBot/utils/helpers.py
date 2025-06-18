@@ -6,6 +6,9 @@ import config
 from pathlib import Path
 import json
 import aiofiles
+import logging
+
+logger = logging.getLogger(__name__)
 
 def build_channel_name(usernames, max_length=100):
     """Builds a Discord channel name for a group RP."""
@@ -30,7 +33,7 @@ async def load_json_file(file_path: Path | str, default=None):
             async with aiofiles.open(path, 'r') as f:
                 return json.loads(await f.read())
     except Exception as e:
-        print(f"Error loading {path.name}: {e}")
+        logger.exception("Error loading %s: %s", path.name, e)
     return default if default is not None else {}
 
 async def save_json_file(file_path: Path | str, data):
@@ -41,7 +44,7 @@ async def save_json_file(file_path: Path | str, data):
             await f.write(json.dumps(data, indent=2))
         return True
     except Exception as e:
-        print(f"Error saving {path.name}: {e}")
+        logger.exception("Error saving %s: %s", path.name, e)
         return False
 
 def get_tz_now() -> datetime:

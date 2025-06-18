@@ -1,11 +1,13 @@
-import discord
-from discord.ext import commands
+import logging
+import os
+import json
 from datetime import datetime, timedelta
 import asyncio
 from typing import Optional, List, Dict
+
+import discord
+from discord.ext import commands
 from pathlib import Path
-import json
-import os
 from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.utils.constants import (
     ROLE_COSTS_BUSINESS,
@@ -25,9 +27,14 @@ import config
 from NightCityBot.services.unbelievaboat import UnbelievaBoatAPI
 from NightCityBot.services.trauma_team import TraumaTeamService
 
+logger = logging.getLogger(__name__)
+
 
 class Economy(commands.Cog):
-    def __init__(self, bot):
+    """Cog managing player economy and automated rent."""
+
+    def __init__(self, bot: commands.Bot) -> None:
+        """Initialize the economy cog."""
         self.bot = bot
         self.unbelievaboat = UnbelievaBoatAPI(os.environ['UNBELIEVABOAT_API_TOKEN'])
         self.trauma_service = TraumaTeamService(bot)
@@ -258,9 +265,12 @@ class Economy(commands.Cog):
 
         Includes upcoming cyberware medication costs if applicable.
         """
-        print(
-            f"[DEBUG] due command invoked by {ctx.author} ({ctx.author.id})"
-            f" in {getattr(ctx.channel, 'name', ctx.channel.id)} ({ctx.channel.id})"
+        logger.debug(
+            "due command invoked by %s (%s) in %s (%s)",
+            ctx.author,
+            ctx.author.id,
+            getattr(ctx.channel, 'name', ctx.channel.id),
+            ctx.channel.id,
         )
         total, details = self.calculate_due(ctx.author)
         lines = [f"💸 **Estimated Due:** ${total}"] + [f"• {d}" for d in details]
