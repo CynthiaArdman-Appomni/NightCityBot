@@ -86,9 +86,8 @@ class Admin(commands.Cog):
             inline=False,
         )
 
-     embed.add_field(
+        embed.add_field(
             name="💰 Rent & Cost of Living",
-            name="💰 Economy",
             value=(
                 "Everyone pays a **$500/month** baseline fee for survival (food, water, etc).\n"
                 "Even if you don't have a house or business — you're still eating Prepack.\n\n"
@@ -99,18 +98,19 @@ class Admin(commands.Cog):
                 "→ Verified players earn $250 every week they attend.\n"
                 "`!due` — Estimate what you'll owe on the 1st."
             ),
-            inline=False
             inline=False,
         )
-
+    
         embed.add_field(
             name="🦾 Cyberware Maintenance",
-            name="🦾 Cyberware Info",
             value=(
                 "Players with cyberware roles receive a **Checkup** role every Monday. Remove it after your in-game check-up.\n"
                 "If you still have the role the following week, immunosuppressant costs double each week. They start at about $15 for Medium, $40 for High, and $80 for Extreme.\n"
                 "Costs cap after roughly 8 weeks at $2,000 / $5,000 / $10,000 respectively."
-
+            ),
+            inline=False,
+        )
+    
         embed.add_field(
             name="🏖️ Leave of Absence",
             value=(
