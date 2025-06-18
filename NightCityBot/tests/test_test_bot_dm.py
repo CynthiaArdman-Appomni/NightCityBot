@@ -9,14 +9,14 @@ async def run(suite, ctx) -> List[str]:
     test_cog = suite.bot.get_cog('TestSuite')
     dm_channel = MagicMock()
     dm_channel.send = AsyncMock()
-    ctx.author.create_dm = AsyncMock(return_value=dm_channel)
     ctx.send = AsyncMock()
     ctx.message.attachments = []
-    # Limit to a simple test
-    test_cog.tests = {'test_help_commands': tests.TEST_FUNCTIONS['test_help_commands']}
-    await test_cog.test_bot(ctx, 'test_help_commands', '-silent')
-    if any('embed' in kwargs for _, kwargs in dm_channel.send.call_args_list):
-        logs.append('✅ test_bot DM summary sent')
-    else:
-        logs.append('❌ test_bot did not send DM summary')
+    with patch.object(type(ctx.author), "create_dm", new=AsyncMock(return_value=dm_channel)):
+        # Limit to a simple test
+        test_cog.tests = {'test_help_commands': tests.TEST_FUNCTIONS['test_help_commands']}
+        await test_cog.test_bot(ctx, 'test_help_commands', '-silent')
+        if any('embed' in kwargs for _, kwargs in dm_channel.send.call_args_list):
+            logs.append('✅ test_bot DM summary sent')
+        else:
+            logs.append('❌ test_bot did not send DM summary')
     return logs
