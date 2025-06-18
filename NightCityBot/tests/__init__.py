@@ -41,6 +41,7 @@ TEST_MODULES = {
     "test_message_cleanup": "Ensures !dm and !post delete their commands.",
     "test_balance_backup": "Ensures collect_rent backs up balances before processing.",
     "test_test_bot_dm": "Runs test_bot in silent mode and checks DM output.",
+    "test_open_shop_concurrency": "Runs open_shop concurrently to ensure locking.",
 }
 
 for name in TEST_MODULES:

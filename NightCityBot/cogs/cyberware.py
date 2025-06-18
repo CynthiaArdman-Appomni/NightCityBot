@@ -6,7 +6,7 @@ from typing import Dict, Optional, List
 from pathlib import Path
 
 import config
-from NightCityBot.utils.helpers import load_json_file, save_json_file
+from NightCityBot.utils.helpers import load_json_file, save_json_file, get_tz_now
 from NightCityBot.services.unbelievaboat import UnbelievaBoatAPI
 from NightCityBot.utils.permissions import is_ripperdoc, is_fixer
 
@@ -47,7 +47,7 @@ class CyberwareManager(commands.Cog):
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('cyberware'):
             return
-        if datetime.now(ZoneInfo(getattr(config, "TIMEZONE", "UTC"))).weekday() != 5:  # Saturday
+        if get_tz_now().weekday() != 5:  # Saturday
             return
         await self.process_week()
 
@@ -93,8 +93,7 @@ class CyberwareManager(commands.Cog):
             has_checkup = checkup_role in member.roles if checkup_role else False
 
             if role_level is None:
-                if weeks:
-                    self.data.pop(user_id, None)
+                # Keep streak data if the user temporarily loses the role
                 continue
 
             if not has_checkup:

@@ -16,6 +16,20 @@ Install dependencies with:
 pip install -r requirements.txt
 ```
 
+## Configuration
+
+Create a `config.py` file with your bot token, role and channel IDs. The bot uses
+an IANA timezone string via `TIMEZONE` to schedule weekly tasks such as
+`!open_shop`. Example:
+
+```python
+BOT_TOKEN = "..."
+GUILD_ID = 1234567890
+TIMEZONE = "America/New_York"  # or your preferred zone
+```
+
+Run `!check_config` after changing any IDs to verify the setup.
+
 ## Running the bot
 
 Execute the entry point script:
@@ -115,6 +129,7 @@ Offers helper commands for staff and global error handling.
 
 * `!post <channel> <message>` – post a message or run a command in another channel/thread. Frequently used in conjunction with `!roll` or `!start_rp`.
 * `!helpme` and `!helpfixer` – display help embeds for regular users and Fixers respectively.
+* `!check_config` – verify that all configured roles and channels exist.
 * Logs actions to `AUDIT_LOG_CHANNEL_ID` via `log_audit`.
 
 ### TestSuite

@@ -22,12 +22,10 @@ async def run(suite, ctx) -> List[str]:
     # Non-Sunday should be rejected
     monday = datetime(2025, 6, 16)
     with (
-        patch("NightCityBot.cogs.economy.datetime") as mock_dt,
+        patch("NightCityBot.utils.helpers.get_tz_now", return_value=monday),
         patch("NightCityBot.cogs.economy.load_json_file", new=AsyncMock(return_value={})),
         patch("NightCityBot.cogs.economy.save_json_file", new=AsyncMock()),
     ):
-        mock_dt.now.return_value = monday
-        mock_dt.fromisoformat = datetime.fromisoformat
         await economy.attend(ctx)
         msg = ctx.send.await_args[0][0]
         if "only be logged on Sundays" in msg:
@@ -40,15 +38,13 @@ async def run(suite, ctx) -> List[str]:
     sunday = datetime(2025, 6, 15)
     prev = sunday - timedelta(days=3)
     with (
-        patch("NightCityBot.cogs.economy.datetime") as mock_dt,
+        patch("NightCityBot.utils.helpers.get_tz_now", return_value=sunday),
         patch(
             "NightCityBot.cogs.economy.load_json_file",
             new=AsyncMock(return_value={str(mock_author.id): [prev.isoformat()]}),
         ),
         patch("NightCityBot.cogs.economy.save_json_file", new=AsyncMock()),
     ):
-        mock_dt.now.return_value = sunday
-        mock_dt.fromisoformat = datetime.fromisoformat
         await economy.attend(ctx)
         msg = ctx.send.await_args[0][0]
         if "already logged attendance this week" in msg:
@@ -60,7 +56,7 @@ async def run(suite, ctx) -> List[str]:
     # Success when a week has passed
     prev2 = sunday - timedelta(days=7)
     with (
-        patch("NightCityBot.cogs.economy.datetime") as mock_dt,
+        patch("NightCityBot.utils.helpers.get_tz_now", return_value=sunday),
         patch(
             "NightCityBot.cogs.economy.load_json_file",
             new=AsyncMock(return_value={str(mock_author.id): [prev2.isoformat()]}),
@@ -68,8 +64,6 @@ async def run(suite, ctx) -> List[str]:
         patch("NightCityBot.cogs.economy.save_json_file", new=AsyncMock()),
         patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock()),
     ):
-        mock_dt.now.return_value = sunday
-        mock_dt.fromisoformat = datetime.fromisoformat
         await economy.attend(ctx)
         msg = ctx.send.await_args[0][0]
         if "Attendance logged" in msg:

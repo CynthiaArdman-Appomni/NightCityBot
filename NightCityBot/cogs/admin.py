@@ -4,6 +4,7 @@ from typing import Optional
 import config
 from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.utils import constants
+from NightCityBot.utils import startup_checks
 
 
 class Admin(commands.Cog):
@@ -239,3 +240,11 @@ class Admin(commands.Cog):
             print(f"[AUDIT] Skipped: Channel {config.AUDIT_LOG_CHANNEL_ID} is not a TextChannel")
 
         print(f"[AUDIT] {user}: {action_desc}")
+
+    @commands.command(name="check_config", aliases=["config_check"])
+    @commands.has_permissions(administrator=True)
+    async def check_config(self, ctx):
+        """Re-run startup configuration checks."""
+        await ctx.send("🔍 Running configuration checks...")
+        await startup_checks.verify_config(self.bot)
+        await ctx.send("✅ Configuration check complete. See console for details.")
