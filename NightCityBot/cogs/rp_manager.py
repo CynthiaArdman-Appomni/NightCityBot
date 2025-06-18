@@ -56,14 +56,24 @@ class RPManager(commands.Cog):
             await ctx.send("❌ Could not resolve any users.")
             return
 
-        channel = await self.create_group_rp_channel(guild, users)
+        usernames = [(u.name, u.id) for u in users]
+        thread_name = build_channel_name(usernames)
+        thread = await ctx.channel.create_thread(
+            name=thread_name,
+            type=discord.ChannelType.private_thread,
+            reason="Creating private RP thread",
+        )
+        for u in users:
+            await thread.add_user(u)
+        await thread.add_user(ctx.author)
+
         mentions = " ".join(user.mention for user in users)
         fixer_role = await ctx.guild.fetch_role(config.FIXER_ROLE_ID)
         fixer_mention = fixer_role.mention if fixer_role else ""
 
-        await channel.send(f"✅ RP session created! {mentions} {fixer_mention}")
-        await ctx.send(f"✅ RP channel created: {channel.mention}")
-        return channel
+        await thread.send(f"✅ RP session created! {mentions} {fixer_mention}")
+        await ctx.send(f"✅ RP thread created: {thread.mention}")
+        return thread
 
     @commands.command(
         aliases=["endrp", "rp_end", "rpend"]
