@@ -32,15 +32,33 @@ class UnbelievaBoatAPI:
         await self.session.close()
 
     async def get_balance(self, user_id: int) -> Optional[Dict]:
-        """Get a user's balance from UnbelievaBoat."""
+        """Get a user's balance from UnbelievaBoat.
+
+        If the user does not yet have an account on UnbelievaBoat the API
+        returns ``404``.  In that case we attempt to create a zeroed balance
+        entry and retry the request once so callers can rely on receiving a
+        balance dictionary for new users.
+        """
         url = f"{self.base_url}/users/{user_id}"
         resp = await self._request("get", url)
+
         if resp and resp.status == 200:
             try:
                 return await resp.json()
             except Exception:
-                pass
-        elif resp is not None:
+                return None
+
+        if resp and resp.status == 404:
+            created = await self.update_balance(user_id, {"cash": 0}, reason="Initialise account")
+            if created:
+                resp = await self._request("get", url)
+                if resp and resp.status == 200:
+                    try:
+                        return await resp.json()
+                    except Exception:
+                        return None
+
+        if resp is not None:
             text = await resp.text()
             print(f"❌ GET failed: {resp.status} — {text}")
         return None
