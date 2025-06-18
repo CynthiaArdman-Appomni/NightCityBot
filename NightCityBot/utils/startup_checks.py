@@ -1,14 +1,9 @@
-import asyncio
-import logging
+import discord
 from pathlib import Path
 from typing import Iterable
 
-import discord
-
 import config
 from .helpers import load_json_file, save_json_file
-
-logger = logging.getLogger(__name__)
 
 # Role and channel identifiers to verify
 ROLE_ID_FIELDS: Iterable[str] = [
@@ -43,20 +38,22 @@ LOG_FILES = [
 async def verify_config(bot: discord.Client) -> None:
     guild = bot.get_guild(config.GUILD_ID)
     if not guild:
-        logger.warning("Guild with ID %s not found", config.GUILD_ID)
+        print(f"⚠️ Guild with ID {config.GUILD_ID} not found.")
         return
 
-    # Check that configured roles exist
+    issues = False
     for field in ROLE_ID_FIELDS:
         role_id = getattr(config, field, 0)
         if role_id and guild.get_role(role_id) is None:
-            logger.warning("Missing role for %s: %s", field, role_id)
+            print(f"⚠️ Missing role for {field}: {role_id}")
+            issues = True
 
     # Check that configured channels exist
     for field in CHANNEL_ID_FIELDS:
         ch_id = getattr(config, field, 0)
         if ch_id and guild.get_channel(ch_id) is None:
-            logger.warning("Missing channel for %s: %s", field, ch_id)
+            print(f"⚠️ Missing channel for {field}: {ch_id}")
+            issues = True
 
     # Check bot permissions
     required_perms = [
@@ -70,7 +67,11 @@ async def verify_config(bot: discord.Client) -> None:
     me = guild.me
     for perm in required_perms:
         if not getattr(me.guild_permissions, perm, False):
-            logger.warning("Bot missing permission: %s", perm)
+            print(f"⚠️ Bot missing permission: {perm}")
+            issues = True
+
+    if not issues:
+        print("✅ Configuration verified with no issues.")
 
 async def cleanup_logs(bot: discord.Client) -> None:
     guild = bot.get_guild(config.GUILD_ID)
@@ -87,10 +88,8 @@ async def cleanup_logs(bot: discord.Client) -> None:
         cleaned = {uid: val for uid, val in data.items() if uid in member_ids}
         if cleaned != data:
             await save_json_file(path, cleaned)
-            logger.info("Cleaned orphaned entries from %s", path.name)
+            print(f"✅ Cleaned orphaned entries from {path.name}")
 
 async def perform_startup_checks(bot: discord.Client) -> None:
-    await bot.wait_until_ready()
-    await asyncio.sleep(1)
     await verify_config(bot)
     await cleanup_logs(bot)

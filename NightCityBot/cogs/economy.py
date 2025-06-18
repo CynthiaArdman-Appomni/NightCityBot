@@ -41,6 +41,23 @@ class Economy(commands.Cog):
         self.open_log_lock = asyncio.Lock()
         self.attend_lock = asyncio.Lock()
 
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.author == self.bot.user or message.author.bot:
+            return
+        if message.channel.id == config.BUSINESS_ACTIVITY_CHANNEL_ID:
+            if not message.content.strip().startswith(("!open_shop", "!openshop", "!os")):
+                try:
+                    await message.delete()
+                except Exception:
+                    pass
+        if message.channel.id == config.ATTENDANCE_CHANNEL_ID:
+            if not message.content.strip().startswith("!attend"):
+                try:
+                    await message.delete()
+                except Exception:
+                    pass
+
     def cog_unload(self):
         self.bot.loop.create_task(self.unbelievaboat.close())
 
@@ -97,7 +114,7 @@ class Economy(commands.Cog):
             return current["cash"], current["bank"]
         return None, None
 
-    @commands.command(aliases=["openshop"])
+    @commands.command(aliases=["openshop", "os"])
     @commands.has_permissions(send_messages=True)
     async def open_shop(self, ctx):
         """Log a business opening and grant income immediately."""
@@ -169,6 +186,9 @@ class Economy(commands.Cog):
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('attend'):
             await ctx.send("⚠️ The attend system is currently disabled.")
+            return
+        if ctx.channel.id != config.ATTENDANCE_CHANNEL_ID:
+            await ctx.send("❌ You can only log attendance in the designated channel.")
             return
         if not any(r.id == config.VERIFIED_ROLE_ID for r in ctx.author.roles):
             await ctx.send("❌ You must be verified to use this command.")
