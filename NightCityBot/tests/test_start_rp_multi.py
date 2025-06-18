@@ -9,17 +9,17 @@ async def run(suite, ctx) -> List[str]:
     logs: List[str] = []
     rp = suite.bot.get_cog('RPManager')
     user = await suite.get_test_user(ctx)
-    thread = MagicMock(spec=discord.Thread)
-    ctx.channel.create_thread = AsyncMock(return_value=thread)
-    await rp.start_rp(ctx, f"<@{user.id}>", str(ctx.author.id))
-    if ctx.channel.create_thread.await_count:
+    channel = MagicMock(spec=discord.TextChannel)
+    channel.name = "text-rp-test"
+    rp.create_group_rp_channel = AsyncMock(return_value=channel)
+    result = await rp.start_rp(ctx, f"<@{user.id}>", str(ctx.author.id))
+    suite.debug(logs, f"start_rp_multi created: {getattr(result, 'name', None)}")
+    if result:
         logs.append("✅ start_rp handled users")
-        await suite.bot.get_cog('RollSystem').loggable_roll(ctx.author, thread, "1d6")
-        rp.end_rp_session = AsyncMock()
-        ctx.channel = thread
-        await rp.end_rp(ctx)
-        suite.debug(logs, "end_rp called in multi")
-        suite.assert_called(logs, rp.end_rp_session, "end_rp_session")
-    else:
-        logs.append("❌ start_rp failed to create thread")
+    await suite.bot.get_cog('RollSystem').loggable_roll(ctx.author, channel, "1d6")
+    rp.end_rp_session = AsyncMock()
+    ctx.channel = channel
+    await rp.end_rp(ctx)
+    suite.debug(logs, "end_rp called in multi")
+    suite.assert_called(logs, rp.end_rp_session, "end_rp_session")
     return logs
