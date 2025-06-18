@@ -129,8 +129,12 @@ Exposes the internal test suite directly through Discord commands.
 
 The `services` package contains integrations used by the cogs:
 
-* **UnbelievaBoatAPI** (`services/unbelievaboat.py`) – minimal wrapper around the UnbelievaBoat REST API for fetching and updating user balances.
+* **UnbelievaBoatAPI** (`services/unbelievaboat.py`) – minimal wrapper around the UnbelievaBoat REST API for fetching and updating user balances. The wrapper includes basic retry logic for resilience against temporary failures.
 * **TraumaTeamService** (`services/trauma_team.py`) – helper for processing Trauma Team subscription payments and posting into the configured forum channel.
+
+## Startup checks
+
+On initialisation the bot runs `perform_startup_checks` which verifies that all configured roles and channels exist, confirms the bot has the permissions it needs, and cleans up orphaned entries from the JSON log files. This helps catch configuration issues early and keeps data files tidy.
 
 ## Utilities
 

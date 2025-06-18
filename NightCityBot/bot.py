@@ -19,6 +19,7 @@ from NightCityBot.cogs.test_suite import TestSuite
 from NightCityBot.cogs.cyberware import CyberwareManager
 from NightCityBot.cogs.loa import LOA
 from NightCityBot.cogs.system_control import SystemControl
+from NightCityBot.utils.startup_checks import perform_startup_checks
 from flask import Flask
 from threading import Thread
 
@@ -48,6 +49,8 @@ class NightCityBot(commands.Bot):
         await self.add_cog(LOA(self))
         await self.add_cog(Admin(self))
         await self.add_cog(TestSuite(self))
+        # Verify configuration and clean up logs after all cogs are loaded
+        self.loop.create_task(perform_startup_checks(self))
 
     async def on_message(self, message: discord.Message):
         if message.author == self.user or message.author.bot:
