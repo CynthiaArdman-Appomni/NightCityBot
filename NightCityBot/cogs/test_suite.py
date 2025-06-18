@@ -140,7 +140,10 @@ class TestSuite(commands.Cog):
 
                 all_logs.append(f"{name} — {self.test_descriptions.get(name, '')}")
                 all_logs.extend(logs)
-                if any("❌" in l for l in logs):
+                fail_logs = any("❌" in l for l in logs) or any(
+                    "Could not fetch balance" in l for l in logs
+                )
+                if fail_logs:
                     failed_tests += 1
                 else:
                     passed_tests += 1
