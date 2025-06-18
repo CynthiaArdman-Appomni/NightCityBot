@@ -12,12 +12,14 @@ async def run(suite, ctx) -> List[str]:
     ctx.send = AsyncMock()
     ctx.message.attachments = []
     roll_cog = suite.bot.get_cog('RollSystem')
+    dm_channel = MagicMock(spec=discord.DMChannel)
+    dm_channel.send = AsyncMock()
     with (
         patch.object(dm, "get_or_create_dm_thread", new=AsyncMock(return_value=MagicMock(spec=discord.Thread))),
-        patch.object(discord.DMChannel, "send", wraps=discord.DMChannel.send) as send_mock,
+        patch.object(discord.Member, "create_dm", new=AsyncMock(return_value=dm_channel)),
         patch.object(roll_cog, "loggable_roll", wraps=roll_cog.loggable_roll) as mock_roll,
     ):
         await dm.dm.callback(dm, ctx, user, message="!roll 1d20")
-        suite.assert_send(logs, send_mock, "dm.send")
+        suite.assert_send(logs, dm_channel.send, "dm.send")
     suite.assert_called(logs, mock_roll, "loggable_roll")
     return logs
