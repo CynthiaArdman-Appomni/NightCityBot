@@ -11,7 +11,8 @@ async def run(suite, ctx) -> List[str]:
     dm_channel.send = AsyncMock()
     ctx.send = AsyncMock()
     ctx.message.attachments = []
-    with patch.object(type(ctx.author), "create_dm", new=AsyncMock(return_value=dm_channel)):
+    # create=True allows patching even though MagicMock lacks the attribute
+    with patch.object(type(ctx.author), "create_dm", new=AsyncMock(return_value=dm_channel), create=True):
         # Limit to a simple test
         test_cog.tests = {'test_help_commands': tests.TEST_FUNCTIONS['test_help_commands']}
         await test_cog.test_bot(ctx, 'test_help_commands', '-silent')
