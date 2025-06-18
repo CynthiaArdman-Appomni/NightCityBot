@@ -117,6 +117,9 @@ class TestSuite(commands.Cog):
 
         rp_manager = self.bot.get_cog('RPManager')
         rp_channel = None
+        ctx.initial_rp_channels = {
+            ch.id for ch in ctx.guild.text_channels if ch.name.startswith("text-rp-")
+        }
         needs_rp = (not test_names) or any(name in rp_required_tests for name, _ in tests)
         if needs_rp:
             rp_channel = await rp_manager.start_rp(ctx, f"<@{config.TEST_USER_ID}>")
@@ -187,7 +190,11 @@ class TestSuite(commands.Cog):
                     except Exception:
                         logger.exception("Failed to delete log thread %s", thread)
             for ch in ctx.guild.text_channels:
-                if ch.name.startswith("text-rp-") and ch != ctx.test_rp_channel:
+                if (
+                    ch.name.startswith("text-rp-")
+                    and ch != ctx.test_rp_channel
+                    and ch.id not in getattr(ctx, "initial_rp_channels", set())
+                ):
                     try:
                         logger.debug("Cleaning residual RP channel %s", ch)
                         thread = await rp_manager.end_rp_session(ch)

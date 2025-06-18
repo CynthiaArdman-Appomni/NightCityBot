@@ -14,7 +14,7 @@ async def run(suite, ctx) -> List[str]:
     dummy.display_name = user.display_name
     ctx.send = AsyncMock()
     ctx.message.attachments = []
-    with patch.object(type(dummy), "send", wraps=dummy.send) as send_mock:
+    with patch.object(dummy, "send", wraps=dummy.send) as send_mock:
         with patch.object(dm, "get_or_create_dm_thread", new=AsyncMock(return_value=MagicMock(spec=discord.Thread))):
             await dm.dm.callback(dm, ctx, dummy, message="Test")
         suite.assert_send(logs, send_mock, "user.send")
