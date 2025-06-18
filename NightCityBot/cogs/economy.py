@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+import asyncio
 from typing import Optional, List, Dict
 from pathlib import Path
 import json
@@ -16,7 +16,7 @@ from NightCityBot.utils.constants import (
     ATTEND_REWARD,
     TRAUMA_ROLE_COSTS,
 )
-from NightCityBot.utils.helpers import load_json_file, save_json_file
+from NightCityBot.utils.helpers import load_json_file, save_json_file, get_tz_now
 import config
 from NightCityBot.services.unbelievaboat import UnbelievaBoatAPI
 from NightCityBot.services.trauma_team import TraumaTeamService
@@ -27,6 +27,8 @@ class Economy(commands.Cog):
         self.bot = bot
         self.unbelievaboat = UnbelievaBoatAPI(config.UNBELIEVABOAT_API_TOKEN)
         self.trauma_service = TraumaTeamService(bot)
+        self.open_log_lock = asyncio.Lock()
+        self.attend_lock = asyncio.Lock()
 
     def cog_unload(self):
         self.bot.loop.create_task(self.unbelievaboat.close())
@@ -50,8 +52,7 @@ class Economy(commands.Cog):
         total_income = 0
 
         member_id_str = str(member.id)
-        tz = ZoneInfo(getattr(config, "TIMEZONE", "UTC"))
-        now = datetime.now(tz)
+        now = get_tz_now()
         opens_this_month = [
             ts
             for ts in business_open_log.get(member_id_str, [])
@@ -101,7 +102,7 @@ class Economy(commands.Cog):
             await ctx.send("❌ You must have a business role to use this command.")
             return
 
-        now = datetime.now(ZoneInfo(getattr(config, "TIMEZONE", "UTC")))
+        now = get_tz_now()
         if now.weekday() != 6:
             await ctx.send("❌ Business openings can only be logged on Sundays.")
             return
@@ -109,27 +110,28 @@ class Economy(commands.Cog):
         user_id = str(ctx.author.id)
         now_str = now.isoformat()
 
-        data = await load_json_file(config.OPEN_LOG_FILE, default={})
+        async with self.open_log_lock:
+            data = await load_json_file(config.OPEN_LOG_FILE, default={})
 
-        all_opens = data.get(user_id, [])
-        this_month_opens = [
-            datetime.fromisoformat(ts)
-            for ts in all_opens
-            if datetime.fromisoformat(ts).month == now.month and
-               datetime.fromisoformat(ts).year == now.year
-        ]
+            all_opens = data.get(user_id, [])
+            this_month_opens = [
+                datetime.fromisoformat(ts)
+                for ts in all_opens
+                if datetime.fromisoformat(ts).month == now.month and
+                   datetime.fromisoformat(ts).year == now.year
+            ]
 
-        if any(ts.date() == now.date() for ts in this_month_opens):
-            await ctx.send("❌ You've already logged a business opening today.")
-            return
+            if any(ts.date() == now.date() for ts in this_month_opens):
+                await ctx.send("❌ You've already logged a business opening today.")
+                return
 
-        open_count_before = min(len(this_month_opens), 4)
-        open_count_after = min(open_count_before + 1, 4)
-        open_count_total = len(this_month_opens) + 1
+            open_count_before = min(len(this_month_opens), 4)
+            open_count_after = min(open_count_before + 1, 4)
+            open_count_total = len(this_month_opens) + 1
 
-        all_opens.append(now_str)
-        data[user_id] = all_opens
-        await save_json_file(config.OPEN_LOG_FILE, data)
+            all_opens.append(now_str)
+            data[user_id] = all_opens
+            await save_json_file(config.OPEN_LOG_FILE, data)
 
         reward = 0
         role_names = [r.name for r in ctx.author.roles]
@@ -161,7 +163,7 @@ class Economy(commands.Cog):
             await ctx.send("❌ You must be verified to use this command.")
             return
 
-        now = datetime.now(ZoneInfo(getattr(config, "TIMEZONE", "UTC")))
+        now = get_tz_now()
         if now.weekday() != 6:
             await ctx.send("❌ Attendance can only be logged on Sundays.")
             return
@@ -169,17 +171,18 @@ class Economy(commands.Cog):
         user_id = str(ctx.author.id)
         now_str = now.isoformat()
 
-        data = await load_json_file(config.ATTEND_LOG_FILE, default={})
+        async with self.attend_lock:
+            data = await load_json_file(config.ATTEND_LOG_FILE, default={})
 
-        all_logs = data.get(user_id, [])
-        parsed = [datetime.fromisoformat(ts) for ts in all_logs]
-        if parsed and (now - max(parsed)).days < 7:
-            await ctx.send("❌ You've already logged attendance this week.")
-            return
+            all_logs = data.get(user_id, [])
+            parsed = [datetime.fromisoformat(ts) for ts in all_logs]
+            if parsed and (now - max(parsed)).days < 7:
+                await ctx.send("❌ You've already logged attendance this week.")
+                return
 
-        all_logs.append(now_str)
-        data[user_id] = all_logs
-        await save_json_file(config.ATTEND_LOG_FILE, data)
+            all_logs.append(now_str)
+            data[user_id] = all_logs
+            await save_json_file(config.ATTEND_LOG_FILE, data)
 
         reward = ATTEND_REWARD
         await self.unbelievaboat.update_balance(ctx.author.id, {"cash": reward}, reason="Attendance reward")

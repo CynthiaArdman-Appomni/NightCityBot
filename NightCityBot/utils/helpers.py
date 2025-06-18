@@ -1,6 +1,8 @@
 from typing import Optional, List
 import re
 from datetime import datetime
+from zoneinfo import ZoneInfo
+import config
 from pathlib import Path
 import json
 import aiofiles
@@ -41,3 +43,8 @@ async def save_json_file(file_path: Path | str, data):
     except Exception as e:
         print(f"Error saving {path.name}: {e}")
         return False
+
+def get_tz_now() -> datetime:
+    """Return current time in the configured timezone."""
+    tz = ZoneInfo(getattr(config, "TIMEZONE", "UTC"))
+    return datetime.now(tz)

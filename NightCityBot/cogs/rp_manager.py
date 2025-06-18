@@ -1,5 +1,6 @@
 import re
 import logging
+import asyncio
 import discord
 from discord.ext import commands
 from typing import Optional, List, cast
@@ -141,6 +142,7 @@ class RPManager(commands.Cog):
             log_thread = created.thread if hasattr(created, "thread") else created
             log_thread = cast(discord.Thread, log_thread)
 
+            buffer = ""
             async for msg in channel.history(limit=None, oldest_first=True):
                 ts = msg.created_at.strftime("%Y-%m-%d %H:%M:%S")
                 content = msg.content or "*(No text content)*"
@@ -150,12 +152,26 @@ class RPManager(commands.Cog):
                     for attachment in msg.attachments:
                         entry += f"\n📎 Attachment: {attachment.url}"
 
-                if len(entry) <= 2000:
-                    await log_thread.send(entry)
-                else:
-                    chunks = [entry[i:i + 1990] for i in range(0, len(entry), 1990)]
+                if len(entry) > 1900:
+                    chunks = [entry[i:i + 1900] for i in range(0, len(entry), 1900)]
                     for chunk in chunks:
+                        if buffer:
+                            await log_thread.send(buffer)
+                            buffer = ""
+                            await asyncio.sleep(1)
                         await log_thread.send(chunk)
+                        await asyncio.sleep(1)
+                    continue
+
+                if len(buffer) + len(entry) + 1 > 1900:
+                    await log_thread.send(buffer)
+                    buffer = entry
+                    await asyncio.sleep(1)
+                else:
+                    buffer += entry + "\n"
+
+            if buffer:
+                await log_thread.send(buffer)
 
             logger.debug("deleting RP channel %s after logging", channel)
             await channel.delete(reason="RP session ended and logged.")

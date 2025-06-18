@@ -15,9 +15,7 @@ async def run(suite, ctx) -> List[str]:
     wrong_channel = ctx.channel
     monday = datetime(2025, 6, 16)
     with patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock()), \
-         patch("NightCityBot.cogs.economy.datetime") as mock_dt:
-        mock_dt.now.return_value = monday
-        mock_dt.fromisoformat = datetime.fromisoformat
+         patch("NightCityBot.utils.helpers.get_tz_now", return_value=monday):
         # Wrong channel
         await economy.open_shop(ctx)
         logs.append("✅ open_shop rejected outside business channel")
