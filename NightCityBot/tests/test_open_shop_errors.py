@@ -13,7 +13,11 @@ async def run(suite, ctx) -> List[str]:
     logs = []
     economy = suite.bot.get_cog('Economy')
     wrong_channel = ctx.channel
-    with patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock()):
+    monday = datetime(2025, 6, 16)
+    with patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock()), \
+         patch("NightCityBot.cogs.economy.datetime") as mock_dt:
+        mock_dt.now.return_value = monday
+        mock_dt.fromisoformat = datetime.fromisoformat
         # Wrong channel
         await economy.open_shop(ctx)
         logs.append("✅ open_shop rejected outside business channel")
@@ -33,11 +37,8 @@ async def run(suite, ctx) -> List[str]:
         role = MagicMock()
         role.name = "Business Tier 1"
         mock_author.roles = [role]
-        if datetime.utcnow().weekday() == 6:
-            logs.append("⚠️ Test run on Sunday; skip non-Sunday check")
-        else:
-            await economy.open_shop(ctx)
-            logs.append("✅ open_shop rejected on non-Sunday")
+        await economy.open_shop(ctx)
+        logs.append("✅ open_shop rejected on non-Sunday")
 
         ctx.channel = wrong_channel
         ctx.author = original_author

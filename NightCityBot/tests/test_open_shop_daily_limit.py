@@ -32,7 +32,7 @@ async def run(suite, ctx) -> List[str]:
         patch("NightCityBot.cogs.economy.save_json_file", new=fake_save),
         patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock()),
     ):
-        mock_dt.utcnow.return_value = sunday
+        mock_dt.now.return_value = sunday
         mock_dt.fromisoformat = datetime.fromisoformat
         await economy.open_shop(ctx)
         await economy.open_shop(ctx)

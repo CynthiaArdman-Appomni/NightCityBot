@@ -18,6 +18,7 @@ async def run(suite, ctx) -> List[str]:
         patch("NightCityBot.cogs.cyberware.save_json_file", new=AsyncMock()),
     ):
         await economy.simulate_rent(ctx, target_user=ctx.author)
-        await cyber.simulate_cyberware(ctx, member=ctx.author, weeks=3)
+        await cyber.simulate_cyberware(ctx, member=str(ctx.author.id))
+        await cyber.simulate_cyberware(ctx, member=str(ctx.author.id), weeks=3)
         suite.assert_called(logs, mock_audit, "log_audit")
     return logs

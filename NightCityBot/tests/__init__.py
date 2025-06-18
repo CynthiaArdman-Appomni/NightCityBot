@@ -40,6 +40,7 @@ TEST_MODULES = {
     "test_roll_as_user": "Rolls on behalf of another user.",
     "test_message_cleanup": "Ensures !dm and !post delete their commands.",
     "test_balance_backup": "Ensures collect_rent backs up balances before processing.",
+    "test_test_bot_dm": "Runs test_bot in silent mode and checks DM output.",
 }
 
 for name in TEST_MODULES:
