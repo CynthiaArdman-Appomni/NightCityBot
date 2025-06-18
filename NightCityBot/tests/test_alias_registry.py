@@ -14,7 +14,7 @@ import pytest
     (LOA, "end_loa", ["endloa", "loa_end", "loaend"]),
     (RPManager, "start_rp", ["startrp", "rp_start", "rpstart"]),
     (RPManager, "end_rp", ["endrp", "rp_end", "rpend"]),
-    (Economy, "open_shop", ["openshop", "os"]),
+    (Economy, "open_shop", ["openshop"]),
     (Economy, "collect_rent", ["collectrent"]),
     (Economy, "collect_housing", ["collecthousing"]),
     (Economy, "collect_business", ["collectbusiness"]),

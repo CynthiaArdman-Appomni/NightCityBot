@@ -147,21 +147,11 @@ class DMHandler(commands.Cog):
                 return
 
             # Handle normal message relay
-            files = []
-            for a in message.attachments:
-                if a.size > 8 * 1024 * 1024:
-                    await message.channel.send(
-                        f"⚠️ Attachment '{a.filename}' too large to forward."
-                    )
-                else:
-                    files.append(await a.to_file())
-            try:
-                await target_user.send(content=message.content or None, files=files)
-            except discord.HTTPException:
-                await message.channel.send("⚠️ Failed to forward message — attachment too large.")
+            files = [await a.to_file() for a in message.attachments]
+            await target_user.send(content=message.content or None, files=files)
             await message.channel.send(
-                f"📤 **Sent to {target_user.display_name} ({target_user.id}) "
-                f"by {message.author.display_name} ({message.author.id}):**\n{message.content}"
+                f"📤 **Sent to {target_user.display_name} "
+                f"by {message.author.display_name}:**\n{message.content}"
             )
             try:
                 await message.delete()
@@ -182,7 +172,7 @@ class DMHandler(commands.Cog):
                 if chunk.strip().startswith("!"):
                     continue
                 await msg_target.send(
-                    f"📥 **Received from {message.author.display_name} ({message.author.id})**:\n{chunk}"
+                    f"📥 **Received from {message.author.display_name}**:\n{chunk}"
                 )
 
             for att in message.attachments:
@@ -238,12 +228,8 @@ class DMHandler(commands.Cog):
                 fake_ctx.author = member
                 fake_ctx.channel = await user.create_dm()
                 setattr(fake_ctx, "original_author", ctx.author)
-                thread = await self.get_or_create_dm_thread(user)
                 await roll_cog.roll(fake_ctx, dice=dice)
-                if isinstance(thread, discord.abc.Messageable):
-                    await thread.send(
-                        f"✅ Rolled `{dice}` anonymously for {user.display_name}."
-                    )
+                await ctx.send(f"✅ Rolled `{dice}` anonymously for {user.display_name}.")
             try:
                 await ctx.message.delete()
             except Exception:
@@ -263,7 +249,7 @@ class DMHandler(commands.Cog):
             thread = await self.get_or_create_dm_thread(user)
             if isinstance(thread, (discord.Thread, discord.TextChannel)):
                 await thread.send(
-                    f"📤 **Sent to {user.display_name} ({user.id}) by {ctx.author.display_name} ({ctx.author.id}):**\n{dm_content}"
+                    f"📤 **Sent to {user.display_name} by {ctx.author.display_name}:**\n{dm_content}"
                 )
             else:
                 print(f"[ERROR] Cannot log DM — thread type is {type(thread)}")
