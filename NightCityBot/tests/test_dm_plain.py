@@ -9,11 +9,10 @@ async def run(suite, ctx) -> List[str]:
     logs: List[str] = []
     dm = suite.bot.get_cog('DMHandler')
     user = await suite.get_test_user(ctx)
-    send_mock = AsyncMock()
-    with patch.object(type(user), "send", new=send_mock):
-        ctx.send = AsyncMock()
-        ctx.message.attachments = []
+    ctx.send = AsyncMock()
+    ctx.message.attachments = []
+    with patch.object(type(user), "send", wraps=user.send) as send_mock:
         with patch.object(dm, "get_or_create_dm_thread", new=AsyncMock(return_value=MagicMock(spec=discord.Thread))):
             await dm.dm.callback(dm, ctx, user, message="Hello there!")
-    suite.assert_send(logs, send_mock, "user.send")
+        suite.assert_send(logs, send_mock, "user.send")
     return logs
