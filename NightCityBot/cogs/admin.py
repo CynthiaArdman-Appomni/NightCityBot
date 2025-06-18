@@ -76,55 +76,41 @@ class Admin(commands.Cog):
         )
 
         embed.add_field(
-            name="🎲 RP Tools",
+            name="🎲 Dice Rolls",
             value=(
-                "`!roll [XdY+Z]`\n"
-                "→ Roll dice in any channel or DM.\n"
-                "→ Netrunner Level 2 = +1, Level 3 = +2 bonus.\n"
-                "→ Roll results in DMs are logged privately."
+                "`!roll [XdY+Z]` – roll dice using standard notation, e.g. `!roll 2d6+1`. "
+                "Mention another user to roll for them.\n"
+                "Netrunner Level 2 grants +1 and Level 3 grants +2 to the total. "
+                "Rolls made in DMs are recorded in your private log thread."
             ),
-            inline=False
+            inline=False,
         )
 
         embed.add_field(
-            name="💰 Rent & Cost of Living",
+            name="💰 Economy",
             value=(
-                "Everyone pays a **$500/month** baseline fee for survival (food, water, etc).\n"
-                "Even if you don't have a house or business — you're still eating Prepack.\n\n"
-                "`!open_shop` — Sundays only\n"
-                "→ Log up to 4 openings per month. Each opening grants an immediate cash payout based on your business tier.\n"
-                "→ Requires a Business role.\n"
-                "`!attend` — Sundays only\n"
-                "→ Verified players earn $250 every week they attend.\n"
-                "`!due` — Estimate what you'll owe on the 1st."
+                "Everyone owes a **$500/month** baseline fee for food and shelter.\n"
+                "`!open_shop` – record a business opening on Sundays and immediately receive passive income.\n"
+                "`!attend` – every Sunday verified players can claim a $250 stipend.\n"
+                "`!due` – list all upcoming rent and fees you will owe on the 1st."
             ),
-            inline=False
+            inline=False,
         )
 
         embed.add_field(
-            name="🦾 Cyberware Maintenance",
+            name="🦾 Cyberware Info",
             value=(
-                "Players with cyberware roles receive a **Checkup** role every Monday. Remove it after your in-game check-up.\n"
-                "If you still have the role the following week, immunosuppressant costs double each week. They start at about $15 for Medium, $40 for High, and $80 for Extreme.\n"
-                "Costs cap after roughly 8 weeks at $2,000 / $5,000 / $10,000 respectively."
+                "Players with cyberware receive a **Checkup** role every Monday. "
+                "Remove it after an in-character exam to avoid rising medication costs."
             ),
-            inline=False
+            inline=False,
         )
 
         embed.add_field(
             name="🏖️ Leave of Absence",
             value=(
-                "Use `!start_loa` to pause housing rent, baseline fees, Trauma Team, and cyberware costs.\n"
-                "`!end_loa` when you return. Business rent still applies."
-            ),
-            inline=False
-        )
-
-        embed.add_field(
-            name="🦾 Ripperdoc",
-            value=(
-                "`!checkup @user` — Remove the weekly cyberware checkup role.\n"
-                "`!weeks_without_checkup @user` — Show checkup streak."
+                "`!start_loa` – pause your baseline fees, housing rent and Trauma Team while away.\n"
+                "`!end_loa` – resume all costs when you return. Fixers can specify a member for both commands."
             ),
             inline=False,
         )
@@ -146,36 +132,40 @@ class Admin(commands.Cog):
         fields = [
             (
                 "✉️ Messaging Tools",
-                "`!dm @user <text>` — Send an anonymous DM to a user. Use `!roll` inside to relay a roll.\n"
-                "`!post <channel|thread> <message>` — Post or run a command in another location.",
+                "`!dm @user <text>` – send an anonymous DM with optional attachments. The conversation is logged in a private thread. Use `!roll` within that thread to relay dice results.\n"
+                "`!post <channel|thread> <message>` – send a message or execute a command in another location. Prefix the text with `!` to run it as a command.",
             ),
             (
                 "📑 RP Management",
-                "`!start_rp @users` — Create a private RP channel for the listed users.\n"
-                "`!end_rp` — Archive and delete the current RP session.",
+                "`!start_rp @users...` – create a locked RP channel for the listed users and ping Fixers.\n"
+                "`!end_rp` – archive the current RP channel to the log forum and then delete it.",
             ),
             (
-                "💵 Rent Commands",
-                "`!collect_rent [@user]` — Run monthly rent collection globally or for one user. Use `-v` for verbose output.\n"
-                "`!collect_housing @user` — Charge housing rent immediately.\n"
-                "`!collect_business @user` — Charge business rent immediately.\n"
-                "`!collect_trauma @user` — Process Trauma Team subscription.\n"
-                "`!simulate_rent` — Preview rent collection without changes. Use `-v` for verbose output.\n"
-                "`!simulate_cyberware [@user] [weeks]` — Preview cyberware costs.",
+                "💵 Economy & Rent",
+                "`!open_shop` – record a business opening on Sunday and grant passive income immediately.\n"
+                "`!attend` – log weekly attendance for a $250 payout.\n"
+                "`!due` – display a detailed breakdown of what a user owes on the 1st.\n"
+                "`!collect_rent [@user] [-v]` – run the monthly rent cycle. `@user` targets one member and `-v` posts detailed logs.\n"
+                "`!collect_housing @user` / `!collect_business @user` / `!collect_trauma @user` – charge specific housing, business or Trauma Team fees immediately.\n"
+                "`!simulate_rent [@user] [-v]` – perform a dry run of rent collection using the same options.\n"
+                "`!simulate_cyberware [@user] [week]` – preview cyberware medication costs globally or for a certain week.",
+            ),
+            (
+                "🏖️ LOA & Cyberware",
+                "`!start_loa [@user]` / `!end_loa [@user]` – toggle LOA for yourself or the specified member.\n"
+                "`!checkup @user` – remove the checkup role once an in-character exam is completed.\n"
+                "`!weeks_without_checkup @user` – show how many weeks a member has kept the role without a checkup.",
             ),
             (
                 "⚙️ System Control",
-                "`!enable_system <name>` — Turn a system on.\n"
-                "`!disable_system <name>` — Turn a system off.\n"
-                "`!system_status` — Show current system states.",
+                "`!enable_system <name>` / `!disable_system <name>` – turn major subsystems on or off.\n"
+                "`!system_status` – display the current enable/disable flags.",
             ),
             (
-                "🦾 Ripperdoc",
-                "`!checkup @user` — Remove the weekly cyberware checkup role.",
-            ),
-            (
-                "🧪 Testing",
-                "`!test_bot [tests]` — Run self-tests (bot owner only).",
+                "🛠️ Admin Tools",
+                "`!check_config` – re-run startup checks to verify channel and role IDs.\n"
+                "`!test_bot [tests] [-silent] [-verbose]` – execute the built-in test suite. Results can be DMed when `-silent` is used and step details are shown with `-verbose`.\n"
+                "`!test__bot [pattern]` – run the PyTest suite optionally filtering by pattern.",
             ),
         ]
 
