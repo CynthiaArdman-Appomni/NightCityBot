@@ -48,7 +48,7 @@ Main commands:
 
 * `!open_shop` – record a business opening on Sundays and instantly grant passive income based on the business tier.
 * `!attend` – weekly attendance reward for verified players.
-* `!due` – estimate upcoming rent and baseline fees.
+* `!due` – estimate upcoming rent, baseline fees and this week's cyberware medication cost.
 * `!collect_rent` / `!simulate_rent` – perform (or simulate) monthly rent collection across all members. Handles housing rent, business rent, baseline cost and Trauma Team subscriptions.
 * `!collect_housing`, `!collect_business`, `!collect_trauma` – manual per‑member processing.
 

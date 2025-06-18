@@ -186,7 +186,7 @@ class Economy(commands.Cog):
         await ctx.send(f"✅ Attendance logged! You received ${reward}.")
 
     def calculate_due(self, member: discord.Member) -> tuple[int, List[str]]:
-        """Calculate upcoming rent, baseline, and subscription costs."""
+        """Calculate upcoming rent, baseline, cyberware and subscription costs."""
         details: List[str] = []
         total = 0
         role_names = [r.name for r in member.roles]
@@ -217,11 +217,40 @@ class Economy(commands.Cog):
                 total += cost
                 details.append(f"{trauma_role.name}: ${cost}")
 
+            cyber = self.bot.get_cog('CyberwareManager')
+            if cyber:
+                guild = member.guild
+                checkup_role = guild.get_role(config.CYBER_CHECKUP_ROLE_ID)
+                medium = guild.get_role(config.CYBER_MEDIUM_ROLE_ID)
+                high = guild.get_role(config.CYBER_HIGH_ROLE_ID)
+                extreme = guild.get_role(config.CYBER_EXTREME_ROLE_ID)
+
+                level = None
+                if extreme and extreme in member.roles:
+                    level = 'extreme'
+                elif high and high in member.roles:
+                    level = 'high'
+                elif medium and medium in member.roles:
+                    level = 'medium'
+
+                if level:
+                    weeks = cyber.data.get(str(member.id), 0)
+                    if checkup_role and checkup_role in member.roles:
+                        upcoming = weeks + 1
+                        cost = cyber.calculate_cost(level, upcoming)
+                        total += cost
+                        details.append(f"Cyberware meds week {upcoming}: ${cost}")
+                    else:
+                        details.append("Cyberware checkup due — no med cost")
+
         return total, details
 
     @commands.command(name="due")
     async def due(self, ctx):
-        """Show estimated amount you will owe on the 1st of the month."""
+        """Show estimated amount you will owe on the 1st of the month.
+
+        Includes upcoming cyberware medication costs if applicable.
+        """
         print(
             f"[DEBUG] due command invoked by {ctx.author} ({ctx.author.id})"
             f" in {getattr(ctx.channel, 'name', ctx.channel.id)} ({ctx.channel.id})"
