@@ -29,7 +29,7 @@ from NightCityBot.services.trauma_team import TraumaTeamService
 class Economy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.unbelievaboat = UnbelievaBoatAPI(config.UNBELIEVABOAT_API_TOKEN)
+        self.unbelievaboat = UnbelievaBoatAPI(os.environ['UNBELIEVABOAT_API_TOKEN'])
         self.trauma_service = TraumaTeamService(bot)
         self.open_log_lock = asyncio.Lock()
         self.attend_lock = asyncio.Lock()

@@ -91,7 +91,7 @@ def keep_alive():
 def main():
     bot = NightCityBot()
     keep_alive()
-    bot.run(config.TOKEN)
+    bot.run(os.environ['TOKEN'])
 
 
 if __name__ == "__main__":
