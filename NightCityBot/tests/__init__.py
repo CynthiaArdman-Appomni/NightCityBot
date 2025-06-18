@@ -41,6 +41,7 @@ TEST_MODULES = {
     "test_message_cleanup": "Ensures !dm and !post delete their commands.",
     "test_balance_backup": "Ensures collect_rent backs up balances before processing.",
     "test_test_bot_dm": "Runs test_bot in silent mode and checks DM output.",
+    "test_unbelievaboat_connection": "Verifies connection to the UnbelievaBoat API.",
 }
 
 for name in TEST_MODULES:
