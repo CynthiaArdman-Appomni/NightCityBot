@@ -16,7 +16,7 @@ from NightCityBot.utils.constants import (
     ATTEND_REWARD,
     TRAUMA_ROLE_COSTS,
 )
-from NightCityBot.utils.helpers import load_json_file, save_json_file, get_tz_now
+from NightCityBot.utils import helpers
 import config
 from NightCityBot.services.unbelievaboat import UnbelievaBoatAPI
 from NightCityBot.services.trauma_team import TraumaTeamService
@@ -52,7 +52,7 @@ class Economy(commands.Cog):
         total_income = 0
 
         member_id_str = str(member.id)
-        now = get_tz_now()
+        now = helpers.get_tz_now()
         opens_this_month = [
             ts
             for ts in business_open_log.get(member_id_str, [])
@@ -102,7 +102,7 @@ class Economy(commands.Cog):
             await ctx.send("❌ You must have a business role to use this command.")
             return
 
-        now = get_tz_now()
+        now = helpers.get_tz_now()
         if now.weekday() != 6:
             await ctx.send("❌ Business openings can only be logged on Sundays.")
             return
@@ -111,7 +111,7 @@ class Economy(commands.Cog):
         now_str = now.isoformat()
 
         async with self.open_log_lock:
-            data = await load_json_file(config.OPEN_LOG_FILE, default={})
+            data = await helpers.load_json_file(config.OPEN_LOG_FILE, default={})
 
             all_opens = data.get(user_id, [])
             this_month_opens = [
@@ -131,7 +131,7 @@ class Economy(commands.Cog):
 
             all_opens.append(now_str)
             data[user_id] = all_opens
-            await save_json_file(config.OPEN_LOG_FILE, data)
+            await helpers.save_json_file(config.OPEN_LOG_FILE, data)
 
         reward = 0
         role_names = [r.name for r in ctx.author.roles]
@@ -163,7 +163,7 @@ class Economy(commands.Cog):
             await ctx.send("❌ You must be verified to use this command.")
             return
 
-        now = get_tz_now()
+        now = helpers.get_tz_now()
         if now.weekday() != 6:
             await ctx.send("❌ Attendance can only be logged on Sundays.")
             return
@@ -172,7 +172,7 @@ class Economy(commands.Cog):
         now_str = now.isoformat()
 
         async with self.attend_lock:
-            data = await load_json_file(config.ATTEND_LOG_FILE, default={})
+            data = await helpers.load_json_file(config.ATTEND_LOG_FILE, default={})
 
             all_logs = data.get(user_id, [])
             parsed = [datetime.fromisoformat(ts) for ts in all_logs]
@@ -182,7 +182,7 @@ class Economy(commands.Cog):
 
             all_logs.append(now_str)
             data[user_id] = all_logs
-            await save_json_file(config.ATTEND_LOG_FILE, data)
+            await helpers.save_json_file(config.ATTEND_LOG_FILE, data)
 
         reward = ATTEND_REWARD
         await self.unbelievaboat.update_balance(ctx.author.id, {"cash": reward}, reason="Attendance reward")
@@ -272,7 +272,7 @@ class Economy(commands.Cog):
                     "cash": bal.get("cash", 0),
                     "bank": bal.get("bank", 0),
                 }
-        await save_json_file(path, data)
+        await helpers.save_json_file(path, data)
 
     async def deduct_flat_fee(self, member: discord.Member, cash: int, bank: int, log: List[str], amount: int = BASELINE_LIVING_COST, *, dry_run: bool = False) -> tuple[bool, int, int]:
         total = (cash or 0) + (bank or 0)
@@ -580,7 +580,7 @@ class Economy(commands.Cog):
 
         if not target_user:
             if Path(config.OPEN_LOG_FILE).exists():
-                business_open_log = await load_json_file(config.OPEN_LOG_FILE, default={})
+                business_open_log = await helpers.load_json_file(config.OPEN_LOG_FILE, default={})
                 if not dry_run:
                     backup_base = f"open_history_{datetime.utcnow():%B_%Y}.json"
                     backup_path = Path(backup_base)
@@ -593,10 +593,10 @@ class Economy(commands.Cog):
                 business_open_log = {}
 
             if not dry_run:
-                await save_json_file(config.OPEN_LOG_FILE, {})
+                await helpers.save_json_file(config.OPEN_LOG_FILE, {})
         else:
             if Path(config.OPEN_LOG_FILE).exists():
-                business_open_log = await load_json_file(config.OPEN_LOG_FILE, default={})
+                business_open_log = await helpers.load_json_file(config.OPEN_LOG_FILE, default={})
             else:
                 business_open_log = {}
 
