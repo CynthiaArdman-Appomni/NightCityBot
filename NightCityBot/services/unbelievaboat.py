@@ -1,5 +1,4 @@
 import aiohttp
-import asyncio
 from typing import Dict, Optional
 import config
 
@@ -13,37 +12,16 @@ class UnbelievaBoatAPI:
         }
         self.session = session or aiohttp.ClientSession()
 
-    async def _request(self, method: str, url: str, **kwargs) -> Optional[aiohttp.ClientResponse]:
-        """Internal helper with basic retries."""
-        for attempt in range(3):
-            try:
-                async with self.session.request(method, url, headers=self.headers, timeout=10, **kwargs) as resp:
-                    if resp.status == 429 and attempt < 2:
-                        retry_after = int(resp.headers.get("Retry-After", "1"))
-                        await asyncio.sleep(retry_after)
-                        continue
-                    return resp
-            except aiohttp.ClientError as e:
-                print(f"❌ {method.upper()} failed: {e}")
-                await asyncio.sleep(2 ** attempt)
-        return None
-
     async def close(self) -> None:
         await self.session.close()
 
     async def get_balance(self, user_id: int) -> Optional[Dict]:
         """Get a user's balance from UnbelievaBoat."""
         url = f"{self.base_url}/users/{user_id}"
-        resp = await self._request("get", url)
-        if resp and resp.status == 200:
-            try:
+        async with self.session.get(url, headers=self.headers) as resp:
+            if resp.status == 200:
                 return await resp.json()
-            except Exception:
-                pass
-        elif resp is not None:
-            text = await resp.text()
-            print(f"❌ GET failed: {resp.status} — {text}")
-        return None
+            return None
 
     async def update_balance(
         self,
@@ -56,13 +34,11 @@ class UnbelievaBoatAPI:
         payload = amount_dict.copy()
         payload["reason"] = reason
 
-        resp = await self._request("patch", url, json=payload)
-        if resp and resp.status == 200:
-            return True
-        if resp is not None:
-            error = await resp.text()
-            print(f"❌ PATCH failed: {resp.status} — {error}")
-        return False
+        async with self.session.patch(url, headers=self.headers, json=payload) as resp:
+            if resp.status != 200:
+                error = await resp.text()
+                print(f"❌ PATCH failed: {resp.status} — {error}")
+            return resp.status == 200
 
     async def verify_balance_ops(self, user_id: int) -> bool:
         """Test updating a balance without affecting the final amount."""
