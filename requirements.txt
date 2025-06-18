@@ -3,4 +3,5 @@ aiohttp
 Flask
 pytest
 aiofiles
-
+tzdata
+discord
