@@ -85,5 +85,6 @@ async def cleanup_logs(bot: discord.Client) -> None:
             print(f"✅ Cleaned orphaned entries from {path.name}")
 
 async def perform_startup_checks(bot: discord.Client) -> None:
+    await bot.wait_until_ready()
     await verify_config(bot)
     await cleanup_logs(bot)
