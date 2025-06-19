@@ -45,13 +45,15 @@ class Economy(commands.Cog):
     async def on_message(self, message: discord.Message):
         if message.author == self.bot.user or message.author.bot:
             return
-        if message.channel.id == config.BUSINESS_ACTIVITY_CHANNEL_ID:
+        channel_id = message.channel.id
+        parent_id = getattr(message.channel, 'parent_id', None)
+        if channel_id == config.BUSINESS_ACTIVITY_CHANNEL_ID or parent_id == config.BUSINESS_ACTIVITY_CHANNEL_ID:
             if not message.content.strip().startswith(("!open_shop", "!openshop", "!os")):
                 try:
                     await message.delete()
                 except Exception:
                     pass
-        if message.channel.id == config.ATTENDANCE_CHANNEL_ID:
+        if channel_id == config.ATTENDANCE_CHANNEL_ID or parent_id == config.ATTENDANCE_CHANNEL_ID:
             if not message.content.strip().startswith("!attend"):
                 try:
                     await message.delete()
@@ -123,7 +125,9 @@ class Economy(commands.Cog):
             await ctx.send("⚠️ The open_shop system is currently disabled.")
             return
         if ctx.channel.id != config.BUSINESS_ACTIVITY_CHANNEL_ID:
-            await ctx.send("❌ You can only log business openings in the designated business activity channel.")
+            ch = ctx.guild.get_channel(config.BUSINESS_ACTIVITY_CHANNEL_ID)
+            mention = ch.mention if ch else "#open_shop"
+            await ctx.send(f"❌ Please use {mention} for this command.")
             return
 
         if not any(r.name.startswith("Business") for r in ctx.author.roles):
@@ -188,7 +192,9 @@ class Economy(commands.Cog):
             await ctx.send("⚠️ The attend system is currently disabled.")
             return
         if ctx.channel.id != config.ATTENDANCE_CHANNEL_ID:
-            await ctx.send("❌ You can only log attendance in the designated channel.")
+            ch = ctx.guild.get_channel(config.ATTENDANCE_CHANNEL_ID)
+            mention = ch.mention if ch else "#attend"
+            await ctx.send(f"❌ Please use {mention} for this command.")
             return
         if not any(r.id == config.VERIFIED_ROLE_ID for r in ctx.author.roles):
             await ctx.send("❌ You must be verified to use this command.")
