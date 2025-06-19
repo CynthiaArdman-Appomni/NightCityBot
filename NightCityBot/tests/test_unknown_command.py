@@ -9,6 +9,7 @@ async def run(suite, ctx) -> List[str]:
     """Send an unknown ! command and ensure it's ignored."""
     logs = []
     admin = suite.bot.get_cog('Admin')
+    ctx.send = AsyncMock()
     try:
         msg = ctx.message
         msg.content = "!notacommand"
