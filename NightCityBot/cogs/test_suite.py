@@ -25,6 +25,21 @@ class TestSuite(commands.Cog):
         self.test_descriptions = tests.TEST_DESCRIPTIONS
         self.verbose = False
 
+    @commands.command(name="list_tests")
+    @commands.is_owner()
+    async def list_tests(self, ctx):
+        """List available self-tests and descriptions."""
+        lines = [f"`{name}` - {desc}" for name, desc in self.test_descriptions.items()]
+        current = ""
+        for line in lines:
+            if len(current) + len(line) + 1 > 1900:
+                await ctx.send(f"```\n{current.strip()}\n```")
+                current = line + "\n"
+            else:
+                current += line + "\n"
+        if current:
+            await ctx.send(f"```\n{current.strip()}\n```")
+
     def debug(self, logs: List[str], message: str) -> None:
         """Append a debug message when verbose output is enabled."""
         if self.verbose:
@@ -53,6 +68,14 @@ class TestSuite(commands.Cog):
         except AssertionError:
             logs.append(f"❌ {label} was not called")
 
+    async def audit_log(self, ctx, message: str) -> None:
+        """Send a message to the audit log channel via the Admin cog."""
+        admin = self.bot.get_cog('Admin')
+        if not admin:
+            return
+        for i in range(0, len(message), 900):
+            await admin.log_audit(ctx.author, message[i : i + 900])
+
     @commands.command(hidden=True, aliases=["testbot"])
     @commands.is_owner()
     async def test_bot(self, ctx, *test_names: str):
@@ -78,6 +101,12 @@ class TestSuite(commands.Cog):
         self.verbose = verbose
         ctx.verbose = verbose
 
+        await self.audit_log(
+            ctx,
+            f"Started test_bot: {', '.join(test_names) if test_names else 'all tests'};"
+            f" silent={silent}, verbose={verbose}, dry_run={dry_run}"
+        )
+
         output_channel = ctx.channel
         if silent:
             output_channel = await ctx.author.create_dm()
@@ -95,35 +124,57 @@ class TestSuite(commands.Cog):
             await output_channel.send(
                 f"🧪 Dry run — would execute: {', '.join(test_names) if test_names else 'all tests'}"
             )
+            await self.audit_log(
+                ctx,
+                f"Dry run — would execute: {', '.join(test_names) if test_names else 'all tests'}"
+            )
             return
 
+        tests = list(self.tests.items())
+        tests_dict = self.tests
+
+        expanded_names = []
         if test_names:
+            selected = []
+            unknown = []
+            for pattern in test_names:
+                matched = [
+                    (n, tests_dict[n])
+                    for n in tests_dict
+                    if n == pattern or n.startswith(pattern)
+                ]
+                if matched:
+                    selected.extend(matched)
+                else:
+                    unknown.append(pattern)
+            if unknown:
+                await output_channel.send(
+                    f"⚠️ Unknown tests: {', '.join(unknown)}"
+                )
+            # deduplicate while preserving order
+            seen = set()
+            filtered = []
+            for name, func in selected:
+                if name not in seen:
+                    seen.add(name)
+                    filtered.append((name, func))
+            tests = filtered
+            expanded_names = [n for n, _ in filtered]
+            if not tests:
+                return
+
             await output_channel.send(
-                f"🧪 Running selected tests on <@{config.TEST_USER_ID}>: {', '.join(test_names)}"
+                f"🧪 Running selected tests on <@{config.TEST_USER_ID}>: {', '.join(expanded_names)}"
+            )
+            await self.audit_log(
+                ctx,
+                f"Running selected tests: {', '.join(expanded_names)}"
             )
         else:
             await output_channel.send(
                 f"🧪 Running full self-test on user <@{config.TEST_USER_ID}>..."
             )
-
-        tests = list(self.tests.items())
-        tests_dict = self.tests
-
-        if test_names:
-            filtered = []
-            unknown = []
-            for name in test_names:
-                if name in tests_dict:
-                    filtered.append((name, tests_dict[name]))
-                else:
-                    unknown.append(name)
-            if unknown:
-                await output_channel.send(
-                    f"⚠️ Unknown tests: {', '.join(unknown)}"
-                )
-            tests = filtered
-            if not tests:
-                return
+            await self.audit_log(ctx, "Running full self-test")
 
         rp_manager = self.bot.get_cog('RPManager')
         rp_channel = None
@@ -141,14 +192,20 @@ class TestSuite(commands.Cog):
                     await output_channel.send(
                         f"🧪 `{name}` — {self.test_descriptions.get(name, 'No description.')}"
                     )
+                await self.audit_log(
+                    ctx,
+                    f"Running test {name}: {self.test_descriptions.get(name, 'No description.')}"
+                )
                 try:
                     logs = await func(self, ctx)
                 except Exception as e:
                     logs = [f"❌ Exception in `{name}`: {e}"]
+                await self.audit_log(ctx, f"Results for {name}:\n" + "\n".join(str(l) for l in logs))
                 all_logs.append(f"{name} — {self.test_descriptions.get(name, '')}")
                 all_logs.extend(logs)
                 all_logs.append("────────────")
 
+            summary_text = "\n".join(str(l) for l in all_logs).strip()
             if verbose:
                 # Send results in chunks
                 current_chunk = ""
@@ -162,7 +219,6 @@ class TestSuite(commands.Cog):
                 if current_chunk:
                     await output_channel.send(f"```\n{current_chunk.strip()}\n```")
             else:
-                summary_text = "\n".join(str(l) for l in all_logs).strip()
                 current_chunk = ""
                 for line in summary_text.split("\n"):
                     if len(current_chunk) + len(line) + 1 > 1900:
@@ -172,6 +228,7 @@ class TestSuite(commands.Cog):
                         current_chunk += line + "\n"
                 if current_chunk:
                     await output_channel.send(f"```\n{current_chunk.strip()}\n```")
+            await self.audit_log(ctx, summary_text)
 
             # Summary embed
             passed = sum(1 for r in all_logs if "✅" in r)
@@ -190,6 +247,10 @@ class TestSuite(commands.Cog):
             )
             embed.set_footer(text=f"⏱️ Completed in {duration:.2f}s")
             await output_channel.send(embed=embed)
+            await self.audit_log(
+                ctx,
+                f"Summary: Passed {passed}, Failed {failed}, Duration {duration:.2f}s"
+            )
         finally:
             if ctx.test_rp_channel:
                 logger.debug("Cleaning up test RP channel %s", ctx.test_rp_channel)

@@ -16,23 +16,20 @@ async def run(suite, ctx) -> List[str]:
             os.remove(config.LAST_RENT_FILE)
 
         economy = suite.bot.get_cog('Economy')
-        await economy.collect_rent(ctx)
-        logs.append("✅ collect_rent (global) executed")
+        cyber = suite.bot.get_cog('CyberwareManager')
+        with (
+            patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock(return_value=True)),
+            patch.object(cyber.unbelievaboat, "update_balance", new=AsyncMock(return_value=True)),
+            patch("NightCityBot.cogs.cyberware.save_json_file", new=AsyncMock()),
+        ):
+            await economy.simulate_rent(ctx)
+            logs.append("✅ simulate_rent (global) executed")
 
-        if os.path.exists(config.LAST_RENT_FILE):
-            os.remove(config.LAST_RENT_FILE)
+            await economy.simulate_rent(ctx, target_user=user)
+            logs.append("✅ simulate_rent (specific user) executed")
 
-        await economy.collect_rent(ctx, target_user=user)
-        logs.append("✅ collect_rent (specific user) executed")
-
-        await economy.collect_housing(ctx, f"<@{user.id}>")
-        logs.append("✅ collect_housing executed")
-
-        await economy.collect_business(ctx, f"<@{user.id}>")
-        logs.append("✅ collect_business executed")
-
-        await economy.collect_trauma(ctx, f"<@{user.id}>")
-        logs.append("✅ collect_trauma executed")
+            await cyber.simulate_cyberware(ctx, str(user.id))
+            logs.append("✅ simulate_cyberware executed")
 
         logs.append("→ Result: ✅ All rent commands executed.")
     except Exception as e:

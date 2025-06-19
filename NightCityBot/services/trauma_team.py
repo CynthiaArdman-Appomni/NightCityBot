@@ -53,10 +53,13 @@ class TraumaTeamService:
             log.append(f"💊 Deducting ${cost} for Trauma Team plan: {trauma_role.name}")
 
         # Find user's trauma thread
-        thread_name_suffix = f"- {member.id}"
         target_thread = next(
-            (t for t in trauma_channel.threads if t.name.endswith(thread_name_suffix)),
-            None
+            (
+                t
+                for t in trauma_channel.threads
+                if t.name.rsplit(" - ", 1)[-1] == str(member.id)
+            ),
+            None,
         )
         if not target_thread:
             if log is not None:

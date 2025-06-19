@@ -9,7 +9,11 @@ async def run(suite, ctx) -> List[str]:
     economy = suite.bot.get_cog('Economy')
     ctx.send = AsyncMock()
     with (
-        patch.object(economy.unbelievaboat, "get_balance", new=AsyncMock(return_value={"cash": 1000, "bank": 0})),
+        patch.object(
+            economy.unbelievaboat,
+            "get_balance",
+            new=AsyncMock(return_value={"cash": 10000, "bank": 5000}),
+        ),
         patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock(return_value=True)),
         patch.object(economy, "backup_balances", new=AsyncMock()) as mock_backup,
     ):

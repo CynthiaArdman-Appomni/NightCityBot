@@ -159,7 +159,9 @@ class Admin(commands.Cog):
                 "`!collect_rent [@user] [-v]` (alias: !collectrent) – run the monthly rent cycle. `@user` targets one member and `-v` posts detailed logs.\n"
                 "`!collect_housing @user [-v]` / `!collect_business @user [-v]` / `!collect_trauma @user [-v]` – charge specific fees with optional verbose logs. (aliases: !collecthousing / !collectbusiness / !collecttrauma)\n"
                 "`!simulate_rent [@user] [-v]` (alias: !simulaterent) – perform a dry run of rent collection using the same options.\n"
-                "`!simulate_cyberware [@user] [week]` – preview cyberware medication costs globally or for a certain week.",
+                "`!simulate_cyberware [@user] [week]` – preview cyberware medication costs globally or for a certain week.\n"
+                "`!backup_balances` – save all member balances to a timestamped file.\n"
+                "`!restore_balances <file>` – restore balances from a backup file.",
             ),
             (
                 "🏖️ LOA & Cyberware",
@@ -174,7 +176,8 @@ class Admin(commands.Cog):
             ),
             (
                 "🛠️ Admin Tools",
-                "`!test_bot [tests] [-silent] [-verbose]` – execute the built-in test suite. Results can be DMed when `-silent` is used and step details are shown with `-verbose`.\n"
+                "`!test_bot [tests] [-silent] [-verbose]` – execute the built-in test suite. Results can be DMed when `-silent` is used and step details are shown with `-verbose`. Prefixes run groups of tests.\n"
+                "`!list_tests` – show all available self-test names.\n"
                 "`!test__bot [pattern]` – run the PyTest suite optionally filtering by pattern.",
             ),
         ]

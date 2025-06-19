@@ -69,7 +69,10 @@ class RPManager(commands.Cog):
                 pass
             return
 
-        channel = await self.create_group_rp_channel(ctx.guild, users + [ctx.author], ctx.channel.category)
+        target_category = ctx.guild.get_channel(getattr(config, "RP_IC_CATEGORY_ID", ctx.channel.category.id))
+        if not isinstance(target_category, discord.CategoryChannel):
+            target_category = ctx.channel.category
+        channel = await self.create_group_rp_channel(ctx.guild, users + [ctx.author], target_category)
         if not channel:
             await ctx.send("❌ Failed to create RP channel.")
             admin = self.bot.get_cog('Admin')
