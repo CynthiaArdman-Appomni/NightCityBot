@@ -392,14 +392,17 @@ class Economy(commands.Cog):
         file_path = backup_dir / filename
 
         data = {}
-        for m in members:
+        total = len(members)
+        for idx, m in enumerate(members, start=1):
             bal = await self.unbelievaboat.get_balance(m.id)
             if not bal:
+                await ctx.send(f"⚠️ Failed to fetch balance for {m.display_name} ({idx}/{total})")
                 continue
             data[str(m.id)] = {
                 "cash": bal.get("cash", 0),
                 "bank": bal.get("bank", 0),
             }
+            await ctx.send(f"Backed up {m.display_name} ({idx}/{total})")
 
         await save_json_file(file_path, data)
         await self.backup_balances(members, label=filename)
