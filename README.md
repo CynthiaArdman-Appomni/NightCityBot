@@ -139,7 +139,7 @@ Offers helper commands for staff and global error handling.
 
 Exposes the internal test suite directly through Discord commands.
 
-* `!test_bot [tests]` – execute the built-in test functions. Provide one or more test names or prefixes to run them selectively. Use `-silent` to send results via DM and `-verbose` for step-by-step logs.
+* `!test_bot [tests]` – execute the built-in test functions. Provide one or more test names or prefixes to run them selectively. Use `-silent` to send results via DM and `-verbose` for step-by-step logs. All output is also mirrored to the audit log channel for debugging.
 * `!list_tests` – display the available self-test names.
 * `!test__bot [pattern]` – run the full PyTest suite. Optional patterns limit execution to matching tests. This command is primarily for repository maintainers.
 
