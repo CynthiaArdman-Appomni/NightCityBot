@@ -583,13 +583,20 @@ class Economy(commands.Cog):
     @commands.command(aliases=["collecthousing"])
     @commands.has_permissions(administrator=True)
     async def collect_housing(self, ctx, *args):
-        """Manually collect housing rent from a single user"""
+        """Manually collect housing rent from a single user.
+
+        Use ``-force`` to ignore the 30 day cooldown.
+        """
         converter = commands.MemberConverter()
         user = None
         verbose = False
+        force = False
         for arg in args:
-            if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
+            lower = arg.lower()
+            if lower in {"-v", "--verbose", "-verbose", "verbose"}:
                 verbose = True
+            elif lower in {"-force", "--force", "force", "-f"}:
+                force = True
             elif user is None:
                 try:
                     user = await converter.convert(ctx, arg)
@@ -599,8 +606,8 @@ class Economy(commands.Cog):
             await ctx.send("❌ Could not resolve user.")
             return
 
-        if await self._label_used_recently(user, "collect_housing_after"):
-            await ctx.send("⚠️ Housing rent already collected in the last 30 days.")
+        if not force and await self._label_used_recently(user, "collect_housing_after"):
+            await ctx.send("⏭️ Housing rent already collected in the last 30 days. Use -force to override.")
             return
 
         control = self.bot.get_cog('SystemControl')
@@ -675,13 +682,20 @@ class Economy(commands.Cog):
     @commands.command(aliases=["collectbusiness"])
     @commands.has_permissions(administrator=True)
     async def collect_business(self, ctx, *args):
-        """Manually collect business rent from a single user"""
+        """Manually collect business rent from a single user.
+
+        Use ``-force`` to ignore the 30 day cooldown.
+        """
         converter = commands.MemberConverter()
         user = None
         verbose = False
+        force = False
         for arg in args:
-            if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
+            lower = arg.lower()
+            if lower in {"-v", "--verbose", "-verbose", "verbose"}:
                 verbose = True
+            elif lower in {"-force", "--force", "force", "-f"}:
+                force = True
             elif user is None:
                 try:
                     user = await converter.convert(ctx, arg)
@@ -691,8 +705,8 @@ class Economy(commands.Cog):
             await ctx.send("❌ Could not resolve user.")
             return
 
-        if await self._label_used_recently(user, "collect_business_after"):
-            await ctx.send("⚠️ Business rent already collected in the last 30 days.")
+        if not force and await self._label_used_recently(user, "collect_business_after"):
+            await ctx.send("⏭️ Business rent already collected in the last 30 days. Use -force to override.")
             return
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('business_rent'):
@@ -754,12 +768,20 @@ class Economy(commands.Cog):
     @commands.command(aliases=["collecttrauma"])
     @commands.has_permissions(administrator=True)
     async def collect_trauma(self, ctx, *args):
+        """Manually collect Trauma Team subscription.
+
+        Use ``-force`` to ignore the 30 day cooldown.
+        """
         converter = commands.MemberConverter()
         user = None
         verbose = False
+        force = False
         for arg in args:
-            if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
+            lower = arg.lower()
+            if lower in {"-v", "--verbose", "-verbose", "verbose"}:
                 verbose = True
+            elif lower in {"-force", "--force", "force", "-f"}:
+                force = True
             elif user is None:
                 try:
                     user = await converter.convert(ctx, arg)
@@ -769,10 +791,9 @@ class Economy(commands.Cog):
             await ctx.send("❌ Could not resolve user.")
             return
 
-        if await self._label_used_recently(user, "collect_trauma_after"):
-            await ctx.send("⚠️ Trauma subscription already processed in the last 30 days.")
+        if not force and await self._label_used_recently(user, "collect_trauma_after"):
+            await ctx.send("⏭️ Trauma subscription already processed in the last 30 days. Use -force to override.")
             return
-        """Manually collect Trauma Team subscription"""
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('trauma_team'):
             await ctx.send('⚠️ The trauma_team system is currently disabled.')
@@ -827,6 +848,7 @@ class Economy(commands.Cog):
         target_user: Optional[discord.Member] = None,
         dry_run: bool = False,
         verbose: bool = False,
+        force: bool = False,
     ):
 
         """Internal helper for rent collection and simulation.
@@ -858,14 +880,14 @@ class Economy(commands.Cog):
             else:
                 business_open_log = {}
 
-        if not target_user and Path(config.LAST_RENT_FILE).exists():
+        if not force and not target_user and Path(config.LAST_RENT_FILE).exists():
             try:
                 data = await load_json_file(config.LAST_RENT_FILE, default=None)
                 last_run = datetime.fromisoformat(data["last_run"])
             except Exception:
                 last_run = None
             if last_run and datetime.utcnow() - last_run < timedelta(days=30):
-                await ctx.send("⚠️ Rent already collected in the last 30 days.")
+                await ctx.send("⚠️ Rent already collected in the last 30 days. Use -force to override.")
                 return
         if not target_user and not dry_run:
             with open(config.LAST_RENT_FILE, "w") as f:
@@ -891,6 +913,15 @@ class Economy(commands.Cog):
 
         for member in members_to_process:
             try:
+                if not force:
+                    recent = await self._label_used_recently(member, "collect_rent_after")
+                    recent = recent or await self._label_used_recently(member, "collect_housing_after")
+                    recent = recent or await self._label_used_recently(member, "collect_business_after")
+                    recent = recent or await self._label_used_recently(member, "collect_trauma_after")
+                    if recent:
+                        await ctx.send(f"⏭️ Skipping <@{member.id}> — rent recently collected.")
+                        continue
+
                 log: List[str] = [f"🔍 **Working on:** <@{member.id}>"]
                 if not verbose:
                     await ctx.send(f"Working on <@{member.id}>")
@@ -990,15 +1021,19 @@ class Economy(commands.Cog):
     async def collect_rent(self, ctx, *args, target_user: Optional[discord.Member] = None):
         """Global or per-member rent collection.
 
-        Pass ``-v``/``--verbose`` to include detailed output.
+        Pass ``-v``/``--verbose`` for detailed output and ``-force`` to ignore the 30 day cooldown.
         """
         verbose = False
+        force = False
         if target_user is None:
             converter = commands.MemberConverter()
             remaining = []
             for arg in args:
-                if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
+                lower = arg.lower()
+                if lower in {"-v", "--verbose", "-verbose", "verbose"}:
                     verbose = True
+                elif lower in {"-force", "--force", "force", "-f"}:
+                    force = True
                 else:
                     remaining.append(arg)
             for arg in remaining:
@@ -1009,14 +1044,12 @@ class Economy(commands.Cog):
                     continue
         else:
             for arg in args:
-                if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
+                lower = arg.lower()
+                if lower in {"-v", "--verbose", "-verbose", "verbose"}:
                     verbose = True
-                    break
-
-        if target_user and await self._label_used_recently(target_user, "collect_rent_after"):
-            await ctx.send("⚠️ Rent already collected for this user in the last 30 days.")
-            return
-        await self.run_rent_collection(ctx, target_user=target_user, dry_run=False, verbose=verbose)
+                elif lower in {"-force", "--force", "force", "-f"}:
+                    force = True
+        await self.run_rent_collection(ctx, target_user=target_user, dry_run=False, verbose=verbose, force=force)
 
     @commands.command(aliases=["simulaterent"])
     @commands.has_permissions(administrator=True)

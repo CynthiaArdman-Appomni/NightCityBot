@@ -63,9 +63,9 @@ Main commands:
 * `!open_shop` – used by business owners on Sundays. Logs a shop opening and immediately awards passive income based on the business tier. Each player can record up to four openings per month.
 * `!attend` – every verified player can run this on Sundays to receive a weekly $250 attendance reward. The command refuses to run more than once per week.
 * `!due` – displays a full breakdown of the baseline fee, housing and business rent, Trauma Team subscription and upcoming cyberware medication costs that will be charged on the 1st.
-* `!collect_rent [@user] [-v]` – run the monthly rent cycle. Supply a user mention to limit the collection to that member. Pass `-v` to print every deduction step in detail.
+* `!collect_rent [@user] [-v] [-force]` – run the monthly rent cycle. Supply a user mention to limit the collection to that member. Use `-force` to ignore the 30 day cooldown.
 * `!simulate_rent [@user] [-v]` – identical to `!collect_rent` but performs a dry run without updating balances.
-* `!collect_housing @user`, `!collect_business @user`, `!collect_trauma @user` – immediately charge a single user's housing rent, business rent or Trauma Team subscription.
+* `!collect_housing @user [-force]`, `!collect_business @user [-force]`, `!collect_trauma @user [-force]` – immediately charge a single user's housing rent, business rent or Trauma Team subscription. Pass `-force` to override the 30 day limit.
 * `!backup_balances` – save all member balances to a timestamped JSON file. Each
   backup entry records the balance and the `change` since the previous entry.
 * `!restore_balances <file>` – restore balances from a previous backup file.
