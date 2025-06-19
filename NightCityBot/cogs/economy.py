@@ -527,8 +527,12 @@ class Economy(commands.Cog):
 
         cash = balance_data["cash"]
         bank = balance_data["bank"]
+        start_cash = cash
+        start_bank = bank
         total = (cash or 0) + (bank or 0)
-        log.append(f"💵 Balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: ${total:,}")
+        log.append(
+            f"💵 Balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: ${total:,}"
+        )
 
         cash, bank = await self.process_housing_rent(user, role_names, cash, bank, log, rent_log_channel, eviction_channel)
 
@@ -551,7 +555,7 @@ class Economy(commands.Cog):
         else:
             await ctx.send(
                 f"✅ Completed for <@{user.id}>\n"
-                f"Before: Cash ${cash:,}, Bank ${bank:,}\n"
+                f"Before: Cash ${start_cash:,}, Bank ${start_bank:,}\n"
                 f"After: Cash ${final_cash:,}, Bank ${final_bank:,}"
             )
         if admin_cog:
@@ -598,8 +602,12 @@ class Economy(commands.Cog):
 
         cash = balance_data["cash"]
         bank = balance_data["bank"]
+        start_cash = cash
+        start_bank = bank
         total = (cash or 0) + (bank or 0)
-        log.append(f"💵 Balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: ${total:,}")
+        log.append(
+            f"💵 Balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: ${total:,}"
+        )
 
         cash, bank = await self.process_business_rent(user, role_names, cash, bank, log, rent_log_channel, eviction_channel)
 
@@ -622,7 +630,7 @@ class Economy(commands.Cog):
         else:
             await ctx.send(
                 f"✅ Completed for <@{user.id}>\n"
-                f"Before: Cash ${cash:,}, Bank ${bank:,}\n"
+                f"Before: Cash ${start_cash:,}, Bank ${start_bank:,}\n"
                 f"After: Cash ${final_cash:,}, Bank ${final_bank:,}"
             )
         if admin_cog:

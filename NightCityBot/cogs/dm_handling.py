@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 
 import discord
 from discord.ext import commands
@@ -271,6 +272,20 @@ class DMHandler(commands.Cog):
             roll_cog = self.bot.get_cog('RollSystem')
             if roll_cog:
                 dice = message.strip()[len("!roll"):].strip()
+                pattern = r"(?:(\d*)d)?(\d+)([+-]\d+)?"
+                if not re.fullmatch(pattern, dice.replace(" ", "")):
+                    await ctx.send(
+                        "🎲 Format: `!roll XdY+Z` (e.g. `!roll 2d6+3`)")
+                    try:
+                        await ctx.message.delete()
+                        admin = self.bot.get_cog('Admin')
+                        if admin:
+                            await admin.log_audit(
+                                ctx.author,
+                                f"🗑️ Deleted command: {ctx.message.content}")
+                    except Exception:
+                        pass
+                    return
                 member = ctx.guild.get_member(user.id) or user
                 fake_ctx = await self.bot.get_context(ctx.message)
                 fake_ctx.author = member
