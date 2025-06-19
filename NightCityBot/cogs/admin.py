@@ -73,6 +73,7 @@ class Admin(commands.Cog):
             await ctx.send("❌ Provide a message or attachment.")
         try:
             await ctx.message.delete()
+            await self.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
         except Exception:
             pass
 
@@ -156,19 +157,19 @@ class Admin(commands.Cog):
                 "`!attend` – log weekly attendance for a $250 payout.\n"
                 "`!due` – display a detailed breakdown of what a user owes on the 1st.\n"
                 "`!collect_rent [@user] [-v]` – run the monthly rent cycle. `@user` targets one member and `-v` posts detailed logs.\n"
-                "`!collect_housing @user` / `!collect_business @user` / `!collect_trauma @user` – charge specific housing, business or Trauma Team fees immediately.\n"
+                "`!collect_housing @user [-v]` / `!collect_business @user [-v]` / `!collect_trauma @user [-v]` – charge specific fees with optional verbose logs.\n"
                 "`!simulate_rent [@user] [-v]` – perform a dry run of rent collection using the same options.\n"
                 "`!simulate_cyberware [@user] [week]` – preview cyberware medication costs globally or for a certain week.",
             ),
             (
                 "🏖️ LOA & Cyberware",
                 "`!start_loa [@user]` / `!end_loa [@user]` – toggle LOA for yourself or the specified member.\n"
-                "`!checkup @user` – remove the checkup role once an in-character exam is completed.\n"
-                "`!weeks_without_checkup @user` – show how many weeks a member has kept the role without a checkup.",
+                "`!checkup @user` (aliases: !check-up, !check_up, !cu, !cup) – remove the checkup role once an in-character exam is completed.\n"
+                "`!weeks_without_checkup @user` (aliases: !wwocup, !wwc) – show how many weeks a member has kept the role without a checkup.",
             ),
             (
                 "⚙️ System Control",
-                "`!enable_system <name>` / `!disable_system <name>` – turn major subsystems on or off.\n"
+                "`!enable_system <name>` / `!disable_system <name>` (aliases: !es/!ds) – toggle major subsystems.\n"
                 "`!system_status` – display the current enable/disable flags.",
             ),
             (
@@ -222,8 +223,9 @@ class Admin(commands.Cog):
             await ctx.send("❌ Unknown command.")
             return
         elif isinstance(error, commands.CheckFailure):
-            await ctx.send("❌ Permission denied.")
-            await self.log_audit(ctx.author, f"❌ Permission denied: {ctx.message.content}")
+            reason = str(error) or "Permission denied."
+            await ctx.send(f"❌ {reason}")
+            await self.log_audit(ctx.author, f"❌ {reason}: {ctx.message.content}")
         else:
             await ctx.send(f"⚠️ Error: {str(error)}")
             await self.log_audit(ctx.author, f"⚠️ Error: {ctx.message.content} → {str(error)}")

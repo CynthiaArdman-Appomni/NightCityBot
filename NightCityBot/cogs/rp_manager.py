@@ -32,6 +32,8 @@ class RPManager(commands.Cog):
                 await self.bot.invoke(ctx)
                 try:
                     await message.delete()
+                    if admin:
+                        await admin.log_audit(message.author, f"🗑️ Deleted message in RP: {message.content}")
                 except Exception:
                     pass
                 return
@@ -55,16 +57,30 @@ class RPManager(commands.Cog):
                 users.append(member)
 
         if not users:
+            await ctx.send("❌ Could not resolve any users.")
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(ctx.author, "❌ start_rp failed: no users resolved")
+            try:
+                await ctx.message.delete()
+                if admin:
+                    await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
+            except Exception:
+                pass
             return
 
         channel = await self.create_group_rp_channel(ctx.guild, users + [ctx.author], ctx.channel.category)
         if not channel:
+            await ctx.send("❌ Failed to create RP channel.")
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(ctx.author, "❌ Failed to create RP channel.")
+            try:
+                await ctx.message.delete()
+                if admin:
+                    await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
+            except Exception:
+                pass
             return None
 
         mentions = " ".join(user.mention for user in users)
@@ -75,6 +91,13 @@ class RPManager(commands.Cog):
         admin = self.bot.get_cog('Admin')
         if admin:
             await admin.log_audit(ctx.author, f"✅ RP channel created: {channel.mention}")
+        try:
+            await ctx.message.delete()
+            admin = self.bot.get_cog('Admin')
+            if admin:
+                await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
+        except Exception:
+            pass
         return channel
 
     @commands.command(

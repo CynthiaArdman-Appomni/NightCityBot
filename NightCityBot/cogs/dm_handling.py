@@ -125,6 +125,9 @@ class DMHandler(commands.Cog):
                     await roll_cog.roll(ctx, dice=dice)
                 try:
                     await message.delete()
+                    admin = self.bot.get_cog('Admin')
+                    if admin:
+                        await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {message.content}")
                 except Exception:
                     pass
                 return
@@ -142,6 +145,9 @@ class DMHandler(commands.Cog):
                     await rp_cog.start_rp(ctx, *args)
                 try:
                     await message.delete()
+                    admin = self.bot.get_cog('Admin')
+                    if admin:
+                        await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {message.content}")
                 except Exception:
                     pass
                 return
@@ -156,6 +162,9 @@ class DMHandler(commands.Cog):
                 await self.bot.invoke(ctx)
                 try:
                     await message.delete()
+                    admin = self.bot.get_cog('Admin')
+                    if admin:
+                        await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {message.content}")
                 except Exception:
                     pass
                 return
@@ -182,6 +191,9 @@ class DMHandler(commands.Cog):
             )
             try:
                 await message.delete()
+                admin = self.bot.get_cog('Admin')
+                if admin:
+                    await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {message.content}")
             except Exception:
                 pass
 
@@ -216,6 +228,9 @@ class DMHandler(commands.Cog):
             await ctx.send("⚠️ The dm system is currently disabled.")
             try:
                 await ctx.message.delete()
+                admin = self.bot.get_cog('Admin')
+                if admin:
+                    await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
             except Exception:
                 pass
             return
@@ -229,6 +244,9 @@ class DMHandler(commands.Cog):
                 await admin.log_audit(ctx.author, "❌ Failed DM: Could not resolve user.")
             try:
                 await ctx.message.delete()
+                admin = self.bot.get_cog('Admin')
+                if admin:
+                    await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
             except Exception:
                 pass
             return
@@ -239,6 +257,9 @@ class DMHandler(commands.Cog):
                 await admin.log_audit(ctx.author, f"⚠️ Exception in DM: {str(e)}")
             try:
                 await ctx.message.delete()
+                admin = self.bot.get_cog('Admin')
+                if admin:
+                    await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
             except Exception:
                 pass
             return
@@ -266,6 +287,9 @@ class DMHandler(commands.Cog):
 
             try:
                 await ctx.message.delete()
+                admin = self.bot.get_cog('Admin')
+                if admin:
+                    await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
             except Exception:
                 pass
             return
@@ -300,5 +324,8 @@ class DMHandler(commands.Cog):
         finally:
             try:
                 await ctx.message.delete()
+                admin = self.bot.get_cog('Admin')
+                if admin:
+                    await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
             except Exception:
                 pass
