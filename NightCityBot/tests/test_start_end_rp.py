@@ -9,6 +9,9 @@ async def run(suite, ctx) -> List[str]:
     logs = []
     rp_manager = suite.bot.get_cog('RPManager')
     channel = MagicMock(spec=discord.TextChannel)
+    channel.send = AsyncMock()
+    ctx.send = AsyncMock()
+    ctx.message.delete = AsyncMock()
     with patch.object(discord.Guild, "create_text_channel", AsyncMock(return_value=channel)) as mock_create:
         await rp_manager.start_rp(ctx, f"<@{config.TEST_USER_ID}>")
         if mock_create.await_count:
