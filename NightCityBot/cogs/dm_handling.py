@@ -161,21 +161,24 @@ class DMHandler(commands.Cog):
                 return
 
             # Handle normal message relay
-            files = []
+            user_files = []
+            log_files = []
             for a in message.attachments:
                 if a.size > 8 * 1024 * 1024:
                     await message.channel.send(
                         f"⚠️ Attachment '{a.filename}' too large to forward."
                     )
                 else:
-                    files.append(await a.to_file())
+                    user_files.append(await a.to_file())
+                    log_files.append(await a.to_file())
             try:
-                await target_user.send(content=message.content or None, files=files)
+                await target_user.send(content=message.content or None, files=user_files)
             except discord.HTTPException:
                 await message.channel.send("⚠️ Failed to forward message — attachment too large.")
             await message.channel.send(
                 f"📤 **Sent to {target_user.display_name} ({target_user.id}) "
-                f"by {message.author.display_name} ({message.author.id}):**\n{message.content}"
+                f"by {message.author.display_name} ({message.author.id}):**\n{message.content}",
+                files=log_files
             )
             try:
                 await message.delete()
@@ -254,11 +257,6 @@ class DMHandler(commands.Cog):
                 setattr(fake_ctx, "original_author", ctx.author)
                 thread = await self.get_or_create_dm_thread(user)
                 await roll_cog.roll(fake_ctx, dice=dice)
-                if isinstance(thread, discord.abc.Messageable):
-                    await thread.send(
-                        f"✅ Rolled `{dice}` anonymously for {user.display_name}."
-                    )
-
                 admin = self.bot.get_cog('Admin')
                 if admin:
                     await admin.log_audit(

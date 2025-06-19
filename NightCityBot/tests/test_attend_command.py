@@ -18,6 +18,20 @@ async def run(suite, ctx) -> List[str]:
     mock_author.roles = [discord.Object(id=config.VERIFIED_ROLE_ID)]
     ctx.author = mock_author
     ctx.send = AsyncMock()
+    original_channel = ctx.channel
+
+    # Wrong channel should be rejected
+    ctx.channel = MagicMock(id=9999)
+    sunday = datetime(2025, 6, 15)
+    with patch("NightCityBot.utils.helpers.get_tz_now", return_value=sunday):
+        await economy.attend(ctx)
+        msg = ctx.send.await_args[0][0]
+        if "Please use" in msg:
+            logs.append("✅ attend rejected in wrong channel")
+        else:
+            logs.append("❌ attend allowed in wrong channel")
+    ctx.send.reset_mock()
+    ctx.channel = original_channel
 
     # Non-Sunday should be rejected
     monday = datetime(2025, 6, 16)

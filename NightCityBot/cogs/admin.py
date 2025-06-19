@@ -249,10 +249,9 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def check_config(self, ctx):
         """Re-run startup configuration checks."""
-        await ctx.send("🔍 Running configuration checks...")
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             await startup_checks.verify_config(self.bot)
         output = buf.getvalue().strip() or "(no output)"
-        await ctx.send(f"```{output}```")
-        await ctx.send("✅ Configuration check complete.")
+        await self.log_audit(ctx.author, f"`check_config` output:\n```{output}```")
+
