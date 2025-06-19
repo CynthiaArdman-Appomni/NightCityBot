@@ -19,6 +19,9 @@ async def run(suite, ctx) -> List[str]:
     ctx.author = mock_author
     ctx.send = AsyncMock()
     original_channel = ctx.channel
+    # Ensure the channel id matches the configured attendance channel so
+    # subsequent checks don't fail due to a mismatched ID.
+    original_channel.id = config.ATTENDANCE_CHANNEL_ID
 
     # Wrong channel should be rejected
     ctx.channel = MagicMock(id=9999)
