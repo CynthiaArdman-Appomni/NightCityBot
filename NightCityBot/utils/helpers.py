@@ -47,6 +47,15 @@ async def save_json_file(file_path: Path | str, data):
         logger.exception("Error saving %s: %s", path.name, e)
         return False
 
+async def append_json_file(file_path: Path | str, item) -> bool:
+    """Append an item to a JSON list file."""
+    path = Path(file_path)
+    entries = await load_json_file(path, default=[])
+    if not isinstance(entries, list):
+        entries = []
+    entries.append(item)
+    return await save_json_file(path, entries)
+
 def get_tz_now() -> datetime:
     """Return current time in the configured timezone."""
     tz = ZoneInfo(getattr(config, "TIMEZONE", "UTC"))
