@@ -74,6 +74,7 @@ Main commands:
 * `!backup_balances` – save all member balances to a timestamped JSON file. Each
   backup entry records the balance and the `change` since the previous entry.
 * `!restore_balances <file>` – restore balances from a previous backup file.
+* `!restore_balance @user <file>` – restore a single user's balance from the specified backup.
 
 The cog stores logs in JSON files such as `business_open_log.json` and `attendance_log.json` and consults `NightCityBot/utils/constants.py` for role costs.
 
