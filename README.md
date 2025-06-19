@@ -28,7 +28,7 @@ GUILD_ID = 1234567890
 TIMEZONE = "America/New_York"  # or your preferred zone
 ```
 
-Run `!check_config` after changing any IDs to verify the setup.
+Configuration is verified automatically when the bot starts.
 
 ## Running the bot
 
@@ -130,7 +130,6 @@ Offers helper commands for staff and global error handling.
 
 * `!post <channel> <message>` – send a message or execute a command in another channel or thread. If `<message>` begins with `!`, the command is run as if it were typed in that location.
 * `!helpme` and `!helpfixer` – show the built in help embeds. The former lists player commands while the latter documents every fixer and admin command with available options.
-* `!check_config` – re-run startup checks to confirm that every configured role and channel still exists.
 * All sensitive actions are logged via `log_audit` to the channel defined by `AUDIT_LOG_CHANNEL_ID`.
 
 ### TestSuite
