@@ -106,7 +106,7 @@ class Admin(commands.Cog):
             value=(
                 "Everyone pays a **$500/month** baseline fee for survival (food, water, etc).\n"
                 "Even if you don't have a house or business — you're still eating Prepack.\n\n"
-                "`!open_shop` — Sundays only\n"
+                "`!open_shop` (aliases: !openshop, !os) — Sundays only\n"
                 "→ Log up to 4 openings per month. Each opening grants an immediate cash payout based on your business tier.\n"
                 "→ Requires a Business role.\n"
                 "`!attend` — Sundays only\n"
@@ -120,8 +120,8 @@ class Admin(commands.Cog):
         embed.add_field(
             name="🏖️ Leave of Absence",
             value=(
-                "`!start_loa` – pause your baseline fees, housing rent and Trauma Team while away.\n"
-                "`!end_loa` – resume all costs when you return. Fixers can specify a member for both commands."
+                "`!start_loa` (aliases: !startloa, !loa_start, !loastart) – pause your baseline fees, housing rent and Trauma Team while away.\n"
+                "`!end_loa` (aliases: !endloa, !loa_end, !loaend) – resume all costs when you return. Fixers can specify a member for both commands."
             ),
             inline=False,
         )
@@ -148,22 +148,22 @@ class Admin(commands.Cog):
             ),
             (
                 "📑 RP Management",
-                "`!start_rp @users...` – create a locked RP channel for the listed users and ping Fixers.\n"
-                "`!end_rp` – archive the current RP channel to the log forum and then delete it.",
+                "`!start_rp @users...` (aliases: !startrp, !rp_start, !rpstart) – create a locked RP channel for the listed users and ping Fixers.\n"
+                "`!end_rp` (aliases: !endrp, !rp_end, !rpend) – archive the current RP channel to the log forum and then delete it.",
             ),
             (
                 "💵 Economy & Rent",
-                "`!open_shop` – record a business opening on Sunday and grant passive income immediately.\n"
+                "`!open_shop` (aliases: !openshop, !os) – record a business opening on Sunday and grant passive income immediately.\n"
                 "`!attend` – log weekly attendance for a $250 payout.\n"
                 "`!due` – display a detailed breakdown of what a user owes on the 1st.\n"
-                "`!collect_rent [@user] [-v]` – run the monthly rent cycle. `@user` targets one member and `-v` posts detailed logs.\n"
-                "`!collect_housing @user [-v]` / `!collect_business @user [-v]` / `!collect_trauma @user [-v]` – charge specific fees with optional verbose logs.\n"
-                "`!simulate_rent [@user] [-v]` – perform a dry run of rent collection using the same options.\n"
+                "`!collect_rent [@user] [-v]` (alias: !collectrent) – run the monthly rent cycle. `@user` targets one member and `-v` posts detailed logs.\n"
+                "`!collect_housing @user [-v]` / `!collect_business @user [-v]` / `!collect_trauma @user [-v]` – charge specific fees with optional verbose logs. (aliases: !collecthousing / !collectbusiness / !collecttrauma)\n"
+                "`!simulate_rent [@user] [-v]` (alias: !simulaterent) – perform a dry run of rent collection using the same options.\n"
                 "`!simulate_cyberware [@user] [week]` – preview cyberware medication costs globally or for a certain week.",
             ),
             (
                 "🏖️ LOA & Cyberware",
-                "`!start_loa [@user]` / `!end_loa [@user]` – toggle LOA for yourself or the specified member.\n"
+                "`!start_loa [@user]` (aliases: !startloa, !loa_start, !loastart) / `!end_loa [@user]` (aliases: !endloa, !loa_end, !loaend) – toggle LOA for yourself or the specified member.\n"
                 "`!checkup @user` (aliases: !check-up, !check_up, !cu, !cup) – remove the checkup role once an in-character exam is completed.\n"
                 "`!weeks_without_checkup @user` (aliases: !wwocup, !wwc) – show how many weeks a member has kept the role without a checkup.",
             ),
