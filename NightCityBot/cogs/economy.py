@@ -438,6 +438,37 @@ class Economy(commands.Cog):
                 restored += 1
         await ctx.send(f"✅ Restored balances for {restored} members from `{filename}`")
 
+    @commands.command(name="restore_balance")
+    @commands.has_permissions(administrator=True)
+    async def restore_balance_command(self, ctx, member: discord.Member, filename: str):
+        """Restore a single member's balance from a backup file."""
+        backup_path = Path(config.BALANCE_BACKUP_DIR) / filename
+        if not backup_path.exists():
+            await ctx.send("❌ Backup file not found.")
+            return
+
+        data = await load_json_file(backup_path, default={})
+        bal = data.get(str(member.id))
+        if not bal:
+            await ctx.send("❌ User not found in backup file.")
+            return
+        current = await self.unbelievaboat.get_balance(member.id)
+        if not current:
+            await ctx.send("❌ Failed to fetch current balance.")
+            return
+        payload = {}
+        delta_cash = bal.get("cash", 0) - current.get("cash", 0)
+        delta_bank = bal.get("bank", 0) - current.get("bank", 0)
+        if delta_cash:
+            payload["cash"] = delta_cash
+        if delta_bank:
+            payload["bank"] = delta_bank
+        if payload:
+            await self.unbelievaboat.update_balance(member.id, payload, reason="Balance restore")
+            await ctx.send(f"✅ Restored balance for {member.display_name} from `{filename}`")
+        else:
+            await ctx.send("⚠️ Balance already matches backup.")
+
     async def deduct_flat_fee(self, member: discord.Member, cash: int, bank: int, log: List[str], amount: int = BASELINE_LIVING_COST, *, dry_run: bool = False) -> tuple[bool, int, int]:
         total = (cash or 0) + (bank or 0)
         if total < amount:
