@@ -66,7 +66,8 @@ Main commands:
 * `!collect_rent [@user] [-v]` – run the monthly rent cycle. Supply a user mention to limit the collection to that member. Pass `-v` to print every deduction step in detail.
 * `!simulate_rent [@user] [-v]` – identical to `!collect_rent` but performs a dry run without updating balances.
 * `!collect_housing @user`, `!collect_business @user`, `!collect_trauma @user` – immediately charge a single user's housing rent, business rent or Trauma Team subscription.
-* `!backup_balances` – save all member balances to a timestamped JSON file.
+* `!backup_balances` – save all member balances to a timestamped JSON file. Each
+  backup entry records the balance and the `change` since the previous entry.
 * `!restore_balances <file>` – restore balances from a previous backup file.
 
 The cog stores logs in JSON files such as `business_open_log.json` and `attendance_log.json` and consults `NightCityBot/utils/constants.py` for role costs.
