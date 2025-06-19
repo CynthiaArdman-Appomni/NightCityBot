@@ -20,6 +20,8 @@ from NightCityBot.utils.constants import (
 )
 from NightCityBot.utils import helpers
 
+safe_filename = helpers.safe_filename
+
 # Expose helper functions for tests that patch them directly
 load_json_file = helpers.load_json_file
 save_json_file = helpers.save_json_file
@@ -325,7 +327,7 @@ class Economy(commands.Cog):
             bal = await self.unbelievaboat.get_balance(m.id)
             if not bal:
                 continue
-            file_path = backup_dir / f"{m.id}_{m.display_name}.json"
+            file_path = backup_dir / f"{m.id}_{safe_filename(m.display_name)}.json"
 
             prev_entries = await load_json_file(file_path, default=[])
             if not isinstance(prev_entries, list):
@@ -363,7 +365,7 @@ class Economy(commands.Cog):
     ) -> bool:
         """Return ``True`` if the given label was used within ``days`` days."""
         backup_dir = Path(config.BALANCE_BACKUP_DIR)
-        file_path = backup_dir / f"{member.id}_{member.display_name}.json"
+        file_path = backup_dir / f"{member.id}_{safe_filename(member.display_name)}.json"
         entries = await load_json_file(file_path, default=[])
         if not isinstance(entries, list):
             return False
