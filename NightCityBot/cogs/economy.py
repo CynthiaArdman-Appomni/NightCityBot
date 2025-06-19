@@ -386,8 +386,21 @@ class Economy(commands.Cog):
         members = ctx.guild.members
         backup_dir = Path(config.BALANCE_BACKUP_DIR)
         backup_dir.mkdir(exist_ok=True)
-        file_path = backup_dir / f"manual_{datetime.utcnow():%Y%m%d_%H%M%S}.json"
-        await self.backup_balances(members, file_path)
+        filename = f"manual_{datetime.utcnow():%Y%m%d_%H%M%S}.json"
+        file_path = backup_dir / filename
+
+        data = {}
+        for m in members:
+            bal = await self.unbelievaboat.get_balance(m.id)
+            if not bal:
+                continue
+            data[str(m.id)] = {
+                "cash": bal.get("cash", 0),
+                "bank": bal.get("bank", 0),
+            }
+
+        await save_json_file(file_path, data)
+        await self.backup_balances(members, label=filename)
         await ctx.send(f"✅ Balances backed up to `{file_path.name}`")
 
     @commands.command(name="restore_balances")
