@@ -5,3 +5,4 @@ pytest
 aiofiles
 tzdata
 discord
+python-dotenv

@@ -5,6 +5,12 @@ from environment variables if available so they don't need to be hard coded.
 """
 
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Automatically load variables from a `.env` file located next to this
+# config module so local development doesn't require exporting them.
+load_dotenv(Path(__file__).with_name('.env'))
 
 # Secrets can be provided via environment variables.  They default to ``None``
 # so running the bot locally can still work if these values are assigned below

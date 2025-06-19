@@ -22,7 +22,8 @@ Create a `config.py` file with your role and channel IDs. The bot uses an IANA
 timezone string via `TIMEZONE` to schedule weekly tasks such as `!open_shop`.
 Credentials like the Discord bot token and UnbelievaBoat API token can be
 provided through the environment variables `TOKEN` and
-`UNBELIEVABOAT_API_TOKEN`. Example `config.py`:
+`UNBELIEVABOAT_API_TOKEN`.  If a `.env` file exists in the project root its
+contents will be loaded automatically. Example `config.py`:
 
 ```python
 import os
