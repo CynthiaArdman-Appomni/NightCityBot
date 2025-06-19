@@ -176,8 +176,7 @@ class CyberwareManager(commands.Cog):
     async def simulate_cyberware(
         self,
         ctx,
-        member: Optional[str] = None,
-        weeks: Optional[int] = None,
+        *args: str,
     ):
         """Simulate weekly cyberware costs.
 
@@ -185,6 +184,20 @@ class CyberwareManager(commands.Cog):
         ``member`` and ``weeks`` are provided, it simply calculates how much that
         user would owe on the given week.
         """
+
+        member: Optional[str] = None
+        weeks: Optional[int] = None
+        verbose = False
+        remaining = []
+        for arg in args:
+            if arg.lower() in {"-v", "--verbose", "verbose"}:
+                verbose = True
+            elif arg.isdigit() and weeks is None:
+                weeks = int(arg)
+            else:
+                remaining.append(arg)
+        if remaining:
+            member = remaining[0]
 
         resolved_member: Optional[discord.Member] = None
         if member:
@@ -222,7 +235,10 @@ class CyberwareManager(commands.Cog):
         logs: List[str] = []
         await self.process_week(dry_run=True, log=logs, target_member=resolved_member)
         summary = "\n".join(logs) if logs else "✅ Simulation complete."
-        await ctx.send(summary)
+        if verbose:
+            await ctx.send(summary)
+        else:
+            await ctx.send("✅ Simulation complete.")
         admin_cog = self.bot.get_cog('Admin')
         if admin_cog:
             await admin_cog.log_audit(ctx.author, summary)

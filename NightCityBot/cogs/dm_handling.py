@@ -13,6 +13,17 @@ from NightCityBot.utils.helpers import load_json_file, save_json_file
 logger = logging.getLogger(__name__)
 
 
+def _relay_description(message: discord.Message) -> str:
+    """Return a short description for audit logs when deleting a relay."""
+    if message.content.strip():
+        return message.content
+    if message.attachments:
+        if len(message.attachments) == 1:
+            return message.attachments[0].filename
+        return "attachment"
+    return ""
+
+
 class DMHandler(commands.Cog):
     """Cog handling anonymous DM relays and logging threads."""
 
@@ -128,7 +139,7 @@ class DMHandler(commands.Cog):
                     await message.delete()
                     admin = self.bot.get_cog('Admin')
                     if admin:
-                        await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {message.content}")
+                        await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
                 except Exception:
                     pass
                 return
@@ -148,7 +159,7 @@ class DMHandler(commands.Cog):
                     await message.delete()
                     admin = self.bot.get_cog('Admin')
                     if admin:
-                        await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {message.content}")
+                        await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
                 except Exception:
                     pass
                 return
@@ -165,7 +176,7 @@ class DMHandler(commands.Cog):
                     await message.delete()
                     admin = self.bot.get_cog('Admin')
                     if admin:
-                        await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {message.content}")
+                        await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
                 except Exception:
                     pass
                 return
@@ -194,7 +205,7 @@ class DMHandler(commands.Cog):
                 await message.delete()
                 admin = self.bot.get_cog('Admin')
                 if admin:
-                    await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {message.content}")
+                    await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
             except Exception:
                 pass
 
