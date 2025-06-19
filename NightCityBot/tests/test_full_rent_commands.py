@@ -25,13 +25,13 @@ async def run(suite, ctx) -> List[str]:
         await economy.collect_rent(ctx, target_user=user)
         logs.append("✅ collect_rent (specific user) executed")
 
-        await economy.collect_housing(ctx, user)
+        await economy.collect_housing(ctx, f"<@{user.id}>")
         logs.append("✅ collect_housing executed")
 
-        await economy.collect_business(ctx, user)
+        await economy.collect_business(ctx, f"<@{user.id}>")
         logs.append("✅ collect_business executed")
 
-        await economy.collect_trauma(ctx, user)
+        await economy.collect_trauma(ctx, f"<@{user.id}>")
         logs.append("✅ collect_trauma executed")
 
         logs.append("→ Result: ✅ All rent commands executed.")
