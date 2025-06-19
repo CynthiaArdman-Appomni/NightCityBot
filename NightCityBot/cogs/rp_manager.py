@@ -88,6 +88,7 @@ class RPManager(commands.Cog):
         fixer_mention = fixer_role.mention if fixer_role else ""
 
         await channel.send(f"✅ RP session created! {mentions} {fixer_mention}")
+
         admin = self.bot.get_cog('Admin')
         if admin:
             await admin.log_audit(ctx.author, f"✅ RP channel created: {channel.mention}")
@@ -98,6 +99,7 @@ class RPManager(commands.Cog):
                 await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
         except Exception:
             pass
+
         return channel
 
     @commands.command(

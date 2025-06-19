@@ -212,7 +212,7 @@ class DMHandler(commands.Cog):
                 if chunk.strip().startswith("!"):
                     continue
                 await msg_target.send(
-                    f"📥 **Received from {message.author.display_name} ({message.author.id})**:\n{chunk}"
+                    f"📥 **Received from {message.author.display_name}**:\n{chunk}"
                 )
 
             for att in message.attachments:
@@ -291,7 +291,6 @@ class DMHandler(commands.Cog):
                 fake_ctx.author = member
                 fake_ctx.channel = await user.create_dm()
                 setattr(fake_ctx, "original_author", ctx.author)
-                thread = await self.get_or_create_dm_thread(user)
                 await roll_cog.roll(fake_ctx, dice=dice)
                 admin = self.bot.get_cog('Admin')
                 if admin:
@@ -299,7 +298,6 @@ class DMHandler(commands.Cog):
                         ctx.author,
                         f"✅ Rolled `{dice}` anonymously for {user.display_name}.",
                     )
-
             try:
                 await ctx.message.delete()
                 admin = self.bot.get_cog('Admin')
@@ -322,7 +320,7 @@ class DMHandler(commands.Cog):
             thread = await self.get_or_create_dm_thread(user)
             if isinstance(thread, (discord.Thread, discord.TextChannel)):
                 await thread.send(
-                    f"📤 **Sent to {user.display_name} ({user.id}) by {ctx.author.display_name} ({ctx.author.id}):**\n{dm_content}"
+                    f"📤 **Sent to {user.display_name} by {ctx.author.display_name}:**\n{dm_content}"
                 )
             else:
                 logger.error("Cannot log DM — thread type is %s", type(thread))

@@ -26,19 +26,14 @@ class Admin(commands.Cog):
         """Posts a message to the specified channel or thread."""
         dest_channel = None
 
-        # Normalize destination string
-        destination = destination.strip()
-        if destination.startswith("<#") and destination.endswith(">"):
-            destination = destination[2:-1]
-        if destination.startswith("#"):
-            destination = destination[1:]
-
+        # Resolve by ID
         if destination.isdigit():
             try:
                 dest_channel = await ctx.guild.fetch_channel(int(destination))
             except discord.NotFound:
                 dest_channel = None
         else:
+            # Try finding by name or as a thread
             dest_channel = discord.utils.get(ctx.guild.text_channels, name=destination)
             if dest_channel is None:
                 for channel in ctx.guild.text_channels:
@@ -116,6 +111,15 @@ class Admin(commands.Cog):
             inline=False,
         )
     
+        embed.add_field(
+            name="🦾 Cyberware Maintenance",
+            value=(
+                "Players with cyberware roles receive a **Checkup** role every Monday. Remove it after your in-game check-up.\n"
+                "If you still have the role the following week, immunosuppressant costs double each week. They start at about $15 for Medium, $40 for High, and $80 for Extreme.\n"
+                "Costs cap after roughly 8 weeks at $2,000 / $5,000 / $10,000 respectively."
+            ),
+            inline=False,
+        )
     
         embed.add_field(
             name="🏖️ Leave of Absence",
@@ -144,7 +148,7 @@ class Admin(commands.Cog):
             (
                 "✉️ Messaging Tools",
                 "`!dm @user <text>` – send an anonymous DM with optional attachments. The conversation is logged in a private thread. Use `!roll` within that thread to relay dice results.\n"
-                "`!post <channel|thread> <message>` – send a message or execute a command in another location.",
+                "`!post <channel|thread> <message>` – send a message or execute a command in another location. Prefix the text with `!` to run it as a command.",
             ),
             (
                 "📑 RP Management",

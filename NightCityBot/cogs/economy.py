@@ -73,7 +73,6 @@ class Economy(commands.Cog):
                         message.author,
                         f"🗑️ Deleted message in {message.channel.mention}: {message.content}"
                     )
-
     def cog_unload(self):
         self.bot.loop.create_task(self.unbelievaboat.close())
 
@@ -130,7 +129,7 @@ class Economy(commands.Cog):
             return current["cash"], current["bank"]
         return None, None
 
-    @commands.command(aliases=["openshop", "os"])
+    @commands.command(aliases=["openshop"])
     @commands.has_permissions(send_messages=True)
     async def open_shop(self, ctx):
         """Log a business opening and grant income immediately."""
@@ -205,11 +204,13 @@ class Economy(commands.Cog):
         if control and not control.is_enabled('attend'):
             await ctx.send("⚠️ The attend system is currently disabled.")
             return
+
         if ctx.channel.id != config.ATTENDANCE_CHANNEL_ID:
             ch = ctx.guild.get_channel(config.ATTENDANCE_CHANNEL_ID)
             mention = ch.mention if ch else "#attend"
             await ctx.send(f"❌ Please use {mention} for this command.")
             return
+
         if not any(r.id == config.VERIFIED_ROLE_ID for r in ctx.author.roles):
             await ctx.send("❌ You must be verified to use this command.")
             return

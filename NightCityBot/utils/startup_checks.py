@@ -42,13 +42,12 @@ async def verify_config(bot: discord.Client) -> None:
         print(f"⚠️ Guild with ID {config.GUILD_ID} not found.")
         return
 
-    issues = False
+    # Check that configured roles exist
     for field in ROLE_ID_FIELDS:
         role_id = getattr(config, field, 0)
         print(f"Checking role {field}: {role_id}")
         if role_id and guild.get_role(role_id) is None:
             print(f"⚠️ Missing role for {field}: {role_id}")
-            issues = True
 
     # Check that configured channels exist
     for field in CHANNEL_ID_FIELDS:
@@ -56,7 +55,6 @@ async def verify_config(bot: discord.Client) -> None:
         print(f"Checking channel {field}: {ch_id}")
         if ch_id and guild.get_channel(ch_id) is None:
             print(f"⚠️ Missing channel for {field}: {ch_id}")
-            issues = True
 
     # Check bot permissions
     required_perms = [
@@ -72,10 +70,6 @@ async def verify_config(bot: discord.Client) -> None:
         print(f"Checking permission: {perm}")
         if not getattr(me.guild_permissions, perm, False):
             print(f"⚠️ Bot missing permission: {perm}")
-            issues = True
-
-    if not issues:
-        print("✅ Configuration verified with no issues.")
 
 async def cleanup_logs(bot: discord.Client) -> None:
     guild = bot.get_guild(config.GUILD_ID)
