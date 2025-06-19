@@ -1,6 +1,4 @@
 import logging
-import io
-import contextlib
 
 import discord
 from discord.ext import commands
@@ -8,7 +6,6 @@ from typing import Optional
 import config
 from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.utils import constants
-from NightCityBot.utils import startup_checks
 
 logger = logging.getLogger(__name__)
 

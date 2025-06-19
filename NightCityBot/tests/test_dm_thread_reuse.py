@@ -1,8 +1,5 @@
 from typing import List
-import discord
 from unittest.mock import AsyncMock, MagicMock, patch
-import config
-from NightCityBot.utils.constants import ROLE_COSTS_BUSINESS, ROLE_COSTS_HOUSING
 
 async def run(suite, ctx) -> List[str]:
     """Ensure DM threads are reused instead of duplicated."""

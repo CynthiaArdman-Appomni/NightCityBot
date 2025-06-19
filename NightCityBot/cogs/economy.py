@@ -1,5 +1,4 @@
 import logging
-import os
 import json
 from datetime import datetime, timedelta
 import asyncio
@@ -8,7 +7,6 @@ from typing import Optional, List, Dict
 import discord
 from discord.ext import commands
 from pathlib import Path
-from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.utils.constants import (
     ROLE_COSTS_BUSINESS,
     ROLE_COSTS_HOUSING,
@@ -763,7 +761,7 @@ class Economy(commands.Cog):
         audit_lines: List[str] = []
         if not target_user:
             if Path(config.OPEN_LOG_FILE).exists():
-                business_open_log = await load_json_file(config.OPEN_LOG_FILE, default={})
+                await load_json_file(config.OPEN_LOG_FILE, default={})
                 if not dry_run:
                     backup_base = f"open_history_{datetime.utcnow():%B_%Y}.json"
                     backup_path = Path(backup_base)
@@ -772,16 +770,11 @@ class Economy(commands.Cog):
                         backup_path = Path(f"{backup_base}_{counter}")
                         counter += 1
                     Path(config.OPEN_LOG_FILE).rename(backup_path)
-            else:
-                business_open_log = {}
-
             if not dry_run:
                 await save_json_file(config.OPEN_LOG_FILE, {})
         else:
             if Path(config.OPEN_LOG_FILE).exists():
-                business_open_log = await load_json_file(config.OPEN_LOG_FILE, default={})
-            else:
-                business_open_log = {}
+                await load_json_file(config.OPEN_LOG_FILE, default={})
 
         if not target_user and Path(config.LAST_RENT_FILE).exists():
             try:

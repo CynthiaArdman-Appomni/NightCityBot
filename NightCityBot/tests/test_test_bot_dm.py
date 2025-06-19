@@ -1,5 +1,4 @@
 from typing import List
-import discord
 from unittest.mock import AsyncMock, MagicMock, patch
 from NightCityBot import tests
 

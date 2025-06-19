@@ -1,12 +1,9 @@
-import inspect
 from NightCityBot.cogs.loa import LOA
 from NightCityBot.cogs.rp_manager import RPManager
 from NightCityBot.cogs.economy import Economy
 from NightCityBot.cogs.cyberware import CyberwareManager
 from NightCityBot.cogs.system_control import SystemControl
 from NightCityBot.cogs.test_suite import TestSuite
-from NightCityBot.cogs.dm_handling import DMHandler
-import discord
 import pytest
 
 @pytest.mark.parametrize("cls, method, aliases", [

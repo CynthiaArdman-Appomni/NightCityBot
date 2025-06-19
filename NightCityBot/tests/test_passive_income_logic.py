@@ -1,13 +1,9 @@
 from typing import List
-import discord
-from unittest.mock import AsyncMock, MagicMock, patch
-import config
-from NightCityBot.utils.constants import ROLE_COSTS_BUSINESS, ROLE_COSTS_HOUSING
+from NightCityBot.utils.constants import ROLE_COSTS_BUSINESS
 
 async def run(suite, ctx) -> List[str]:
     """Test passive income calculations."""
     logs = []
-    user = await suite.get_test_user(ctx)
     economy = suite.bot.get_cog('Economy')
 
     for role in ROLE_COSTS_BUSINESS.keys():
