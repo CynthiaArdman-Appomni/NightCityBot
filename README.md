@@ -18,12 +18,16 @@ pip install -r requirements.txt
 
 ## Configuration
 
-Create a `config.py` file with your bot token, role and channel IDs. The bot uses
-an IANA timezone string via `TIMEZONE` to schedule weekly tasks such as
-`!open_shop`. Example:
+Create a `config.py` file with your role and channel IDs. The bot uses an IANA
+timezone string via `TIMEZONE` to schedule weekly tasks such as `!open_shop`.
+Credentials like the Discord bot token and UnbelievaBoat API token can be
+provided through the environment variables `TOKEN` and
+`UNBELIEVABOAT_API_TOKEN`. Example `config.py`:
 
 ```python
-BOT_TOKEN = "..."
+import os
+TOKEN = os.environ.get("TOKEN")
+UNBELIEVABOAT_API_TOKEN = os.environ.get("UNBELIEVABOAT_API_TOKEN")
 GUILD_ID = 1234567890
 TIMEZONE = "America/New_York"  # or your preferred zone
 ```

@@ -1,3 +1,17 @@
+"""Bot configuration values.
+
+Sensitive tokens such as ``TOKEN`` and ``UNBELIEVABOAT_API_TOKEN`` are loaded
+from environment variables if available so they don't need to be hard coded.
+"""
+
+import os
+
+# Secrets can be provided via environment variables.  They default to ``None``
+# so running the bot locally can still work if these values are assigned below
+# or patched in tests.
+TOKEN = os.getenv("TOKEN")
+UNBELIEVABOAT_API_TOKEN = os.getenv("UNBELIEVABOAT_API_TOKEN")
+
 AUDIT_LOG_CHANNEL_ID = 1341160960924319804
 GROUP_AUDIT_LOG_CHANNEL_ID = 1366880900599517214
 FIXER_ROLE_NAME = "Fixer"
