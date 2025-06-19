@@ -44,6 +44,7 @@ async def verify_config(bot: discord.Client) -> None:
     issues = False
     for field in ROLE_ID_FIELDS:
         role_id = getattr(config, field, 0)
+        print(f"Checking role {field}: {role_id}")
         if role_id and guild.get_role(role_id) is None:
             print(f"⚠️ Missing role for {field}: {role_id}")
             issues = True
@@ -51,6 +52,7 @@ async def verify_config(bot: discord.Client) -> None:
     # Check that configured channels exist
     for field in CHANNEL_ID_FIELDS:
         ch_id = getattr(config, field, 0)
+        print(f"Checking channel {field}: {ch_id}")
         if ch_id and guild.get_channel(ch_id) is None:
             print(f"⚠️ Missing channel for {field}: {ch_id}")
             issues = True
@@ -66,6 +68,7 @@ async def verify_config(bot: discord.Client) -> None:
     ]
     me = guild.me
     for perm in required_perms:
+        print(f"Checking permission: {perm}")
         if not getattr(me.guild_permissions, perm, False):
             print(f"⚠️ Bot missing permission: {perm}")
             issues = True
@@ -91,5 +94,6 @@ async def cleanup_logs(bot: discord.Client) -> None:
             print(f"✅ Cleaned orphaned entries from {path.name}")
 
 async def perform_startup_checks(bot: discord.Client) -> None:
+    await bot.wait_until_ready()
     await verify_config(bot)
     await cleanup_logs(bot)

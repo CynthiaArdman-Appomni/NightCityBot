@@ -54,6 +54,12 @@ class Economy(commands.Cog):
                     await message.delete()
                 except Exception:
                     pass
+                admin = self.bot.get_cog('Admin')
+                if admin:
+                    await admin.log_audit(
+                        message.author,
+                        f"🗑️ Deleted message in {message.channel.mention}"
+                    )
         if channel_id == config.ATTENDANCE_CHANNEL_ID or parent_id == config.ATTENDANCE_CHANNEL_ID:
 
             if not message.content.strip().startswith("!attend"):
@@ -61,6 +67,12 @@ class Economy(commands.Cog):
                     await message.delete()
                 except Exception:
                     pass
+                admin = self.bot.get_cog('Admin')
+                if admin:
+                    await admin.log_audit(
+                        message.author,
+                        f"🗑️ Deleted message in {message.channel.mention}"
+                    )
 
     def cog_unload(self):
         self.bot.loop.create_task(self.unbelievaboat.close())
