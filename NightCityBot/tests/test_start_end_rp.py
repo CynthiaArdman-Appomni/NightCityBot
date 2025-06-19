@@ -9,14 +9,14 @@ async def run(suite, ctx) -> List[str]:
     logs = []
     rp_manager = suite.bot.get_cog('RPManager')
     channel = MagicMock(spec=discord.TextChannel)
-    ctx.guild.create_text_channel = AsyncMock(return_value=channel)
-    await rp_manager.start_rp(ctx, f"<@{config.TEST_USER_ID}>")
-    if ctx.guild.create_text_channel.await_count:
-        logs.append("✅ start_rp created channel")
-        ctx.channel = channel
-        rp_manager.end_rp_session = AsyncMock()
-        await rp_manager.end_rp(ctx)
-        suite.assert_called(logs, rp_manager.end_rp_session, "end_rp_session")
-    else:
-        logs.append("❌ start_rp failed to create channel")
+    with patch.object(ctx.guild, "create_text_channel", AsyncMock(return_value=channel)) as mock_create:
+        await rp_manager.start_rp(ctx, f"<@{config.TEST_USER_ID}>")
+        if mock_create.await_count:
+            logs.append("✅ start_rp created channel")
+            ctx.channel = channel
+            rp_manager.end_rp_session = AsyncMock()
+            await rp_manager.end_rp(ctx)
+            suite.assert_called(logs, rp_manager.end_rp_session, "end_rp_session")
+        else:
+            logs.append("❌ start_rp failed to create channel")
     return logs

@@ -173,7 +173,6 @@ class Admin(commands.Cog):
             ),
             (
                 "🛠️ Admin Tools",
-                "`!check_config` – re-run startup checks to verify channel and role IDs.\n"
                 "`!test_bot [tests] [-silent] [-verbose]` – execute the built-in test suite. Results can be DMed when `-silent` is used and step details are shown with `-verbose`.\n"
                 "`!test__bot [pattern]` – run the PyTest suite optionally filtering by pattern.",
             ),
@@ -244,14 +243,4 @@ class Admin(commands.Cog):
                 config.AUDIT_LOG_CHANNEL_ID,
             )
         logger.info("AUDIT %s: %s", user, action_desc)
-
-    @commands.command(name="check_config", aliases=["config_check"])
-    @commands.has_permissions(administrator=True)
-    async def check_config(self, ctx):
-        """Re-run startup configuration checks."""
-        buf = io.StringIO()
-        with contextlib.redirect_stdout(buf):
-            await startup_checks.verify_config(self.bot)
-        output = buf.getvalue().strip() or "(no output)"
-        await self.log_audit(ctx.author, f"`check_config` output:\n```{output}```")
 

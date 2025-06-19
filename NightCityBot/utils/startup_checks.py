@@ -119,4 +119,5 @@ async def perform_startup_checks(bot: discord.Client) -> None:
     admin = bot.get_cog('Admin')
     if admin:
         await admin.log_audit(bot.user, "✅ Bot successfully started.")
+    print("✅ Bot successfully started and ready.")
 
