@@ -1,4 +1,6 @@
 import logging
+import io
+import contextlib
 
 import discord
 from discord.ext import commands
@@ -248,5 +250,9 @@ class Admin(commands.Cog):
     async def check_config(self, ctx):
         """Re-run startup configuration checks."""
         await ctx.send("🔍 Running configuration checks...")
-        await startup_checks.verify_config(self.bot)
-        await ctx.send("✅ Configuration check complete. See console for details.")
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            await startup_checks.verify_config(self.bot)
+        output = buf.getvalue().strip() or "(no output)"
+        await ctx.send(f"```{output}```")
+        await ctx.send("✅ Configuration check complete.")
