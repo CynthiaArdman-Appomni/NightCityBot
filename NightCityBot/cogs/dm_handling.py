@@ -96,6 +96,7 @@ class DMHandler(commands.Cog):
 
     async def handle_thread_message(self, message: discord.Message):
         """Handle messages sent in DM logging threads."""
+        await self.load_event.wait()
         for uid, thread_id in self.dm_threads.items():
             if message.channel.id != thread_id:
                 continue

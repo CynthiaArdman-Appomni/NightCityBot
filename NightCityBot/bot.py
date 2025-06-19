@@ -74,6 +74,9 @@ class NightCityBot(commands.Bot):
 
     async def on_ready(self):
         logger.info("%s is running!", self.user.name)
+        admin = self.get_cog('Admin')
+        if admin:
+            await admin.log_audit(self.user, "✅ Bot started and ready.")
 
 
 app = Flask('')
