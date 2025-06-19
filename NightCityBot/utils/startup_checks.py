@@ -1,6 +1,9 @@
 import discord
 from pathlib import Path
 from typing import Iterable
+import logging
+
+logger = logging.getLogger(__name__)
 
 import config
 from .helpers import load_json_file, save_json_file
@@ -39,23 +42,23 @@ LOG_FILES = [
 async def verify_config(bot: discord.Client) -> None:
     guild = bot.get_guild(config.GUILD_ID)
     if not guild:
-        print(f"⚠️ Guild with ID {config.GUILD_ID} not found.")
+        logger.warning("\u26a0\ufe0f Guild with ID %s not found.", config.GUILD_ID)
         return
 
     issues = False
     for field in ROLE_ID_FIELDS:
         role_id = getattr(config, field, 0)
-        print(f"Checking role {field}: {role_id}")
+        logger.info("Checking role %s: %s", field, role_id)
         if role_id and guild.get_role(role_id) is None:
-            print(f"⚠️ Missing role for {field}: {role_id}")
+            logger.warning("\u26a0\ufe0f Missing role for %s: %s", field, role_id)
             issues = True
 
     # Check that configured channels exist
     for field in CHANNEL_ID_FIELDS:
         ch_id = getattr(config, field, 0)
-        print(f"Checking channel {field}: {ch_id}")
+        logger.info("Checking channel %s: %s", field, ch_id)
         if ch_id and guild.get_channel(ch_id) is None:
-            print(f"⚠️ Missing channel for {field}: {ch_id}")
+            logger.warning("\u26a0\ufe0f Missing channel for %s: %s", field, ch_id)
             issues = True
 
     # Check bot permissions
@@ -69,13 +72,13 @@ async def verify_config(bot: discord.Client) -> None:
     ]
     me = guild.me
     for perm in required_perms:
-        print(f"Checking permission: {perm}")
+        logger.info("Checking permission: %s", perm)
         if not getattr(me.guild_permissions, perm, False):
-            print(f"⚠️ Bot missing permission: {perm}")
+            logger.warning("\u26a0\ufe0f Bot missing permission: %s", perm)
             issues = True
 
     if not issues:
-        print("✅ Configuration verified with no issues.")
+        logger.info("\u2705 Configuration verified with no issues.")
 
 async def cleanup_logs(bot: discord.Client) -> None:
     guild = bot.get_guild(config.GUILD_ID)
@@ -92,22 +95,22 @@ async def cleanup_logs(bot: discord.Client) -> None:
         cleaned = {uid: val for uid, val in data.items() if uid in member_ids}
         if cleaned != data:
             await save_json_file(path, cleaned)
-            print(f"✅ Cleaned orphaned entries from {path.name}")
+            logger.info("\u2705 Cleaned orphaned entries from %s", path.name)
 
 async def check_unbelievaboat(bot: discord.Client) -> None:
     """Verify we can reach the UnbelievaBoat API."""
     token = getattr(config, "UNBELIEVABOAT_API_TOKEN", None)
     if not token:
-        print("⚠️ UNBELIEVABOAT_API_TOKEN not configured.")
+        logger.warning("\u26a0\ufe0f UNBELIEVABOAT_API_TOKEN not configured.")
         return
     api = UnbelievaBoatAPI(token)
     try:
-        print("Checking UnbelievaBoat connection...")
+        logger.info("Checking UnbelievaBoat connection...")
         result = await api.get_balance(getattr(config, "TEST_USER_ID", 0))
         if result is not None:
-            print("✅ Connected to UnbelievaBoat successfully.")
+            logger.info("\u2705 Connected to UnbelievaBoat successfully.")
         else:
-            print("⚠️ Failed to fetch balance from UnbelievaBoat.")
+            logger.warning("\u26a0\ufe0f Failed to fetch balance from UnbelievaBoat.")
     finally:
         await api.close()
 
@@ -119,5 +122,5 @@ async def perform_startup_checks(bot: discord.Client) -> None:
     admin = bot.get_cog('Admin')
     if admin:
         await admin.log_audit(bot.user, "✅ Bot successfully started.")
-    print("✅ Bot successfully started and ready.")
+    logger.info("\u2705 Bot successfully started and ready.")
 
