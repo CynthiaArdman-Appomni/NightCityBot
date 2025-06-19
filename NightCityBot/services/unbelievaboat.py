@@ -71,6 +71,7 @@ class UnbelievaBoatAPI:
 
         # Choose a field with at least $1 to avoid invalid negative balances
         target_field = "cash" if balance.get("cash", 0) > 0 else "bank"
+        start_value = balance.get(target_field, 0)
 
         minus = await self.update_balance(
             user_id,
@@ -85,4 +86,11 @@ class UnbelievaBoatAPI:
             {target_field: 1},
             reason="Simulation check",
         )
-        return minus and plus
+        if not plus:
+            return False
+
+        final = await self.get_balance(user_id)
+        if not final:
+            return False
+
+        return final.get(target_field, 0) == start_value
