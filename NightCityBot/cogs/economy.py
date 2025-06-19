@@ -326,11 +326,21 @@ class Economy(commands.Cog):
             if not bal:
                 continue
             file_path = backup_dir / f"{m.id}_{m.display_name}.json"
+
+            prev_entries = await load_json_file(file_path, default=[])
+            if isinstance(prev_entries, list) and prev_entries:
+                last = prev_entries[-1]
+                prev_total = (last.get("cash", 0) + last.get("bank", 0))
+                change = (bal.get("cash", 0) + bal.get("bank", 0)) - prev_total
+            else:
+                change = 0
+
             entry = {
                 "timestamp": datetime.utcnow().isoformat(),
                 "label": label,
                 "cash": bal.get("cash", 0),
                 "bank": bal.get("bank", 0),
+                "change": change,
             }
             await append_json_file(file_path, entry)
 
