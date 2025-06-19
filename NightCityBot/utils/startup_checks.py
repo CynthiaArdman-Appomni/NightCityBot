@@ -4,6 +4,7 @@ from typing import Iterable
 
 import config
 from .helpers import load_json_file, save_json_file
+from NightCityBot.services.unbelievaboat import UnbelievaBoatAPI
 
 # Role and channel identifiers to verify
 ROLE_ID_FIELDS: Iterable[str] = [
@@ -93,7 +94,29 @@ async def cleanup_logs(bot: discord.Client) -> None:
             await save_json_file(path, cleaned)
             print(f"✅ Cleaned orphaned entries from {path.name}")
 
+async def check_unbelievaboat(bot: discord.Client) -> None:
+    """Verify we can reach the UnbelievaBoat API."""
+    token = getattr(config, "UNBELIEVABOAT_API_TOKEN", None)
+    if not token:
+        print("⚠️ UNBELIEVABOAT_API_TOKEN not configured.")
+        return
+    api = UnbelievaBoatAPI(token)
+    try:
+        print("Checking UnbelievaBoat connection...")
+        result = await api.get_balance(getattr(config, "TEST_USER_ID", 0))
+        if result is not None:
+            print("✅ Connected to UnbelievaBoat successfully.")
+        else:
+            print("⚠️ Failed to fetch balance from UnbelievaBoat.")
+    finally:
+        await api.close()
+
 async def perform_startup_checks(bot: discord.Client) -> None:
     await bot.wait_until_ready()
     await verify_config(bot)
+    await check_unbelievaboat(bot)
     await cleanup_logs(bot)
+    admin = bot.get_cog('Admin')
+    if admin:
+        await admin.log_audit(bot.user, "✅ Bot successfully started.")
+

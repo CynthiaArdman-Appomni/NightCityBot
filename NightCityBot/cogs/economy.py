@@ -58,7 +58,7 @@ class Economy(commands.Cog):
                 if admin:
                     await admin.log_audit(
                         message.author,
-                        f"🗑️ Deleted message in {message.channel.mention}"
+                        f"🗑️ Deleted message in {message.channel.mention}: {message.content}"
                     )
         if channel_id == config.ATTENDANCE_CHANNEL_ID or parent_id == config.ATTENDANCE_CHANNEL_ID:
 
@@ -71,7 +71,7 @@ class Economy(commands.Cog):
                 if admin:
                     await admin.log_audit(
                         message.author,
-                        f"🗑️ Deleted message in {message.channel.mention}"
+                        f"🗑️ Deleted message in {message.channel.mention}: {message.content}"
                     )
 
     def cog_unload(self):

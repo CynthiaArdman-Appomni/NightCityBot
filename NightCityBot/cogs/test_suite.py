@@ -64,12 +64,16 @@ class TestSuite(commands.Cog):
         test_names = list(test_names)
         silent = False
         verbose = False
+        dry_run = False
         if "-silent" in test_names:
             test_names.remove("-silent")
             silent = True
         if "-verbose" in test_names:
             test_names.remove("-verbose")
             verbose = True
+        if "-dry" in test_names:
+            test_names.remove("-dry")
+            dry_run = True
 
         self.verbose = verbose
         ctx.verbose = verbose
@@ -86,6 +90,12 @@ class TestSuite(commands.Cog):
             "test_post_executes_command",
             "test_post_roll_execution",
         }
+
+        if dry_run:
+            await output_channel.send(
+                f"🧪 Dry run — would execute: {', '.join(test_names) if test_names else 'all tests'}"
+            )
+            return
 
         if test_names:
             await output_channel.send(
