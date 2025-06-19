@@ -25,6 +25,13 @@ class TestSuite(commands.Cog):
         self.test_descriptions = tests.TEST_DESCRIPTIONS
         self.verbose = False
 
+    @commands.command(name="list_tests")
+    @commands.is_owner()
+    async def list_tests(self, ctx):
+        """List available self-tests and descriptions."""
+        lines = [f"`{name}` - {desc}" for name, desc in self.test_descriptions.items()]
+        await ctx.send("\n".join(lines))
+
     def debug(self, logs: List[str], message: str) -> None:
         """Append a debug message when verbose output is enabled."""
         if self.verbose:

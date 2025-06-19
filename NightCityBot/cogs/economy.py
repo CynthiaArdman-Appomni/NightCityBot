@@ -328,6 +328,47 @@ class Economy(commands.Cog):
                 }
         await save_json_file(path, data)
 
+    @commands.command(name="backup_balances")
+    @commands.has_permissions(administrator=True)
+    async def backup_balances_command(self, ctx):
+        """Back up all member balances to a timestamped file."""
+        members = ctx.guild.members
+        backup_dir = Path(config.BALANCE_BACKUP_DIR)
+        backup_dir.mkdir(exist_ok=True)
+        file_path = backup_dir / f"manual_{datetime.utcnow():%Y%m%d_%H%M%S}.json"
+        await self.backup_balances(members, file_path)
+        await ctx.send(f"✅ Balances backed up to `{file_path.name}`")
+
+    @commands.command(name="restore_balances")
+    @commands.has_permissions(administrator=True)
+    async def restore_balances_command(self, ctx, filename: str):
+        """Restore member balances from a backup file."""
+        backup_path = Path(config.BALANCE_BACKUP_DIR) / filename
+        if not backup_path.exists():
+            await ctx.send("❌ Backup file not found.")
+            return
+        data = await load_json_file(backup_path, default={})
+        restored = 0
+        for uid_str, bal in data.items():
+            try:
+                uid = int(uid_str)
+            except ValueError:
+                continue
+            current = await self.unbelievaboat.get_balance(uid)
+            if not current:
+                continue
+            payload = {}
+            delta_cash = bal.get("cash", 0) - current.get("cash", 0)
+            delta_bank = bal.get("bank", 0) - current.get("bank", 0)
+            if delta_cash:
+                payload["cash"] = delta_cash
+            if delta_bank:
+                payload["bank"] = delta_bank
+            if payload:
+                await self.unbelievaboat.update_balance(uid, payload, reason="Balance restore")
+                restored += 1
+        await ctx.send(f"✅ Restored balances for {restored} members from `{filename}`")
+
     async def deduct_flat_fee(self, member: discord.Member, cash: int, bank: int, log: List[str], amount: int = BASELINE_LIVING_COST, *, dry_run: bool = False) -> tuple[bool, int, int]:
         total = (cash or 0) + (bank or 0)
         if total < amount:
@@ -716,6 +757,7 @@ class Economy(commands.Cog):
         """
         await ctx.send("🧪 Starting rent simulation..." if dry_run else "🚦 Starting rent collection...")
 
+        audit_lines: List[str] = []
         if not target_user:
             if Path(config.OPEN_LOG_FILE).exists():
                 business_open_log = await load_json_file(config.OPEN_LOG_FILE, default={})
@@ -739,9 +781,12 @@ class Economy(commands.Cog):
                 business_open_log = {}
 
         if not target_user and Path(config.LAST_RENT_FILE).exists():
-            with open(config.LAST_RENT_FILE) as f:
-                last_run = datetime.fromisoformat(json.load(f)["last_run"])
-            if datetime.utcnow() - last_run < timedelta(days=30):
+            try:
+                data = await load_json_file(config.LAST_RENT_FILE, default=None)
+                last_run = datetime.fromisoformat(data["last_run"])
+            except Exception:
+                last_run = None
+            if last_run and datetime.utcnow() - last_run < timedelta(days=30):
                 await ctx.send("⚠️ Rent already collected in the last 30 days.")
                 return
         if not target_user and not dry_run:
@@ -840,16 +885,25 @@ class Economy(commands.Cog):
                     await ctx.send(f"✅ Completed for <@{member.id}>")
                 if dry_run and admin_cog:
                     await admin_cog.log_audit(ctx.author, summary)
+                audit_lines.append(summary)
 
             except Exception as e:
                 await ctx.send(f"❌ Error processing <@{member.id}>: `{e}`")
                 if dry_run and admin_cog:
                     await admin_cog.log_audit(ctx.author, f"Error processing <@{member.id}>: {e}")
+                audit_lines.append(f"Error processing <@{member.id}>: {e}")
 
         end_msg = "✅ Rent simulation completed." if dry_run else "✅ Rent collection completed."
         await ctx.send(end_msg)
         if dry_run and admin_cog:
             await admin_cog.log_audit(ctx.author, end_msg)
+        if not dry_run:
+            audit_lines.append(end_msg)
+            audit_dir = Path(getattr(config, "RENT_AUDIT_DIR", "rent_audits"))
+            audit_dir.mkdir(exist_ok=True)
+            log_file = audit_dir / f"rent_audit_{datetime.utcnow():%B_%Y}.log"
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write("\n".join(audit_lines) + "\n")
 
     @commands.command(aliases=["collectrent"])
     @commands.has_permissions(administrator=True)
