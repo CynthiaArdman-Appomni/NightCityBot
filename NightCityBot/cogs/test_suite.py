@@ -30,7 +30,15 @@ class TestSuite(commands.Cog):
     async def list_tests(self, ctx):
         """List available self-tests and descriptions."""
         lines = [f"`{name}` - {desc}" for name, desc in self.test_descriptions.items()]
-        await ctx.send("\n".join(lines))
+        current = ""
+        for line in lines:
+            if len(current) + len(line) + 1 > 1900:
+                await ctx.send(f"```\n{current.strip()}\n```")
+                current = line + "\n"
+            else:
+                current += line + "\n"
+        if current:
+            await ctx.send(f"```\n{current.strip()}\n```")
 
     def debug(self, logs: List[str], message: str) -> None:
         """Append a debug message when verbose output is enabled."""
@@ -104,33 +112,46 @@ class TestSuite(commands.Cog):
             )
             return
 
+        tests = list(self.tests.items())
+        tests_dict = self.tests
+
+        expanded_names = []
         if test_names:
+            selected = []
+            unknown = []
+            for pattern in test_names:
+                matched = [
+                    (n, tests_dict[n])
+                    for n in tests_dict
+                    if n == pattern or n.startswith(pattern)
+                ]
+                if matched:
+                    selected.extend(matched)
+                else:
+                    unknown.append(pattern)
+            if unknown:
+                await output_channel.send(
+                    f"⚠️ Unknown tests: {', '.join(unknown)}"
+                )
+            # deduplicate while preserving order
+            seen = set()
+            filtered = []
+            for name, func in selected:
+                if name not in seen:
+                    seen.add(name)
+                    filtered.append((name, func))
+            tests = filtered
+            expanded_names = [n for n, _ in filtered]
+            if not tests:
+                return
+
             await output_channel.send(
-                f"🧪 Running selected tests on <@{config.TEST_USER_ID}>: {', '.join(test_names)}"
+                f"🧪 Running selected tests on <@{config.TEST_USER_ID}>: {', '.join(expanded_names)}"
             )
         else:
             await output_channel.send(
                 f"🧪 Running full self-test on user <@{config.TEST_USER_ID}>..."
             )
-
-        tests = list(self.tests.items())
-        tests_dict = self.tests
-
-        if test_names:
-            filtered = []
-            unknown = []
-            for name in test_names:
-                if name in tests_dict:
-                    filtered.append((name, tests_dict[name]))
-                else:
-                    unknown.append(name)
-            if unknown:
-                await output_channel.send(
-                    f"⚠️ Unknown tests: {', '.join(unknown)}"
-                )
-            tests = filtered
-            if not tests:
-                return
 
         rp_manager = self.bot.get_cog('RPManager')
         rp_channel = None
