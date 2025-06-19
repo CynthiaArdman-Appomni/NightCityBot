@@ -385,11 +385,12 @@ class Economy(commands.Cog):
 
         success = True
         if not dry_run:
-            success = await self.unbelievaboat.update_balance(member.id, payload, reason="Flat Monthly Fee")
+            success = await self.unbelievaboat.update_balance(
+                member.id, payload, reason="Flat Monthly Fee"
+            )
         if success:
-            if not dry_run:
-                cash -= deduct_cash
-                bank -= deduct_bank
+            cash -= deduct_cash
+            bank -= deduct_bank
             log.append(
                 f"{'💸 Would deduct' if dry_run else '💸 Deducted'} flat monthly fee of ${amount} (Cash: ${deduct_cash}, Bank: ${deduct_bank})."
             )
@@ -444,11 +445,12 @@ class Economy(commands.Cog):
 
         success = True
         if not dry_run:
-            success = await self.unbelievaboat.update_balance(member.id, payload, reason="Housing Rent")
+            success = await self.unbelievaboat.update_balance(
+                member.id, payload, reason="Housing Rent"
+            )
         if success:
-            if not dry_run:
-                cash -= deduct_cash
-                bank -= deduct_bank
+            cash -= deduct_cash
+            bank -= deduct_bank
             log.append(
                 f"🧮 {'Would subtract' if dry_run else 'Subtracted'} housing rent ${housing_total} — ${deduct_cash} from cash, ${deduct_bank} from bank."
             )
@@ -508,11 +510,12 @@ class Economy(commands.Cog):
 
         success = True
         if not dry_run:
-            success = await self.unbelievaboat.update_balance(member.id, payload, reason="Business Rent")
+            success = await self.unbelievaboat.update_balance(
+                member.id, payload, reason="Business Rent"
+            )
         if success:
-            if not dry_run:
-                cash -= deduct_cash
-                bank -= deduct_bank
+            cash -= deduct_cash
+            bank -= deduct_bank
             log.append(
                 f"🧮 {'Would subtract' if dry_run else 'Subtracted'} business rent ${business_total} — ${deduct_cash} from cash, ${deduct_bank} from bank."
             )
@@ -871,12 +874,15 @@ class Economy(commands.Cog):
                 if not on_loa:
                     await self.trauma_service.process_trauma_team_payment(member, log=log, dry_run=dry_run)
 
-                final = await self.unbelievaboat.get_balance(member.id)
-                if final:
-                    cash = final.get("cash", 0)
-                    bank = final.get("bank", 0)
+                if not dry_run:
+                    final = await self.unbelievaboat.get_balance(member.id)
+                    if final:
+                        cash = final.get("cash", 0)
+                        bank = final.get("bank", 0)
 
-                log.append(f"📊 Final balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}")
+                log.append(
+                    f"📊 {'Projected' if dry_run else 'Final'} balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}"
+                )
 
                 summary = "\n".join(log)
                 if verbose:
