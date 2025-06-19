@@ -187,6 +187,7 @@ class RPManager(commands.Cog):
             log_thread = created.thread if hasattr(created, "thread") else created
             log_thread = cast(discord.Thread, log_thread)
 
+            batches: List[str] = []
             buffer = ""
             async for msg in channel.history(limit=None, oldest_first=True):
                 ts = msg.created_at.strftime("%Y-%m-%d %H:%M:%S")
@@ -201,22 +202,22 @@ class RPManager(commands.Cog):
                     chunks = [entry[i:i + 1900] for i in range(0, len(entry), 1900)]
                     for chunk in chunks:
                         if buffer:
-                            await log_thread.send(buffer)
+                            batches.append(buffer)
                             buffer = ""
-                            await asyncio.sleep(1)
-                        await log_thread.send(chunk)
-                        await asyncio.sleep(1)
+                        batches.append(chunk)
                     continue
 
                 if len(buffer) + len(entry) + 1 > 1900:
-                    await log_thread.send(buffer)
+                    batches.append(buffer)
                     buffer = entry
-                    await asyncio.sleep(1)
                 else:
                     buffer += entry + "\n"
 
             if buffer:
-                await log_thread.send(buffer)
+                batches.append(buffer)
+
+            for batch in batches:
+                await log_thread.send(batch)
 
             logger.debug("deleting RP channel %s after logging", channel)
             await channel.delete(reason="RP session ended and logged.")
