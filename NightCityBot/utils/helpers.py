@@ -22,6 +22,11 @@ def build_channel_name(usernames, max_length=100):
 
     return re.sub(r"[^a-z0-9\-]", "", simple_name.lower())
 
+def safe_filename(name: str) -> str:
+    """Return a filesystem-safe version of ``name``."""
+    cleaned = re.sub(r"[\\/*?:\"<>|]", "", name).strip()
+    return cleaned or "unnamed"
+
 async def load_json_file(file_path: Path | str, default=None):
     """Safely load a JSON file with fallback to default value.
 

@@ -31,6 +31,13 @@ class UnbelievaBoatAPI:
                 async with self.session.get(url, headers=self.headers) as resp:
                     if resp.status == 200:
                         return await resp.json()
+                    if resp.status == 429:
+                        data = await resp.json()
+                        retry = float(data.get("retry_after", 1))
+                        if retry > 1000:
+                            retry /= 1000
+                        await asyncio.sleep(retry)
+                        continue
                     logger.warning(
                         "Balance fetch failed (%s): %s", resp.status, await resp.text()
                     )
@@ -38,7 +45,7 @@ class UnbelievaBoatAPI:
                 logger.warning(
                     "Balance request error on attempt %s: %s", attempt + 1, e
                 )
-                await asyncio.sleep(1)
+            await asyncio.sleep(1)
         return None
 
     async def update_balance(
@@ -56,6 +63,13 @@ class UnbelievaBoatAPI:
                 ) as resp:
                     if resp.status == 200:
                         return True
+                    if resp.status == 429:
+                        data = await resp.json()
+                        retry = float(data.get("retry_after", 1))
+                        if retry > 1000:
+                            retry /= 1000
+                        await asyncio.sleep(retry)
+                        continue
                     error = await resp.text()
                     logger.warning("PATCH failed (%s): %s", resp.status, error)
             except aiohttp.ClientError as e:
