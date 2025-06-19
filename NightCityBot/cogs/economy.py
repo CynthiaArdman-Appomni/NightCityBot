@@ -487,8 +487,23 @@ class Economy(commands.Cog):
 
     @commands.command(aliases=["collecthousing"])
     @commands.has_permissions(administrator=True)
-    async def collect_housing(self, ctx, user: discord.Member):
+    async def collect_housing(self, ctx, *args):
         """Manually collect housing rent from a single user"""
+        converter = commands.MemberConverter()
+        user = None
+        verbose = False
+        for arg in args:
+            if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
+                verbose = True
+            elif user is None:
+                try:
+                    user = await converter.convert(ctx, arg)
+                except commands.BadArgument:
+                    continue
+        if user is None:
+            await ctx.send("❌ Could not resolve user.")
+            return
+
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('housing_rent'):
             await ctx.send('⚠️ The housing_rent system is currently disabled.')
@@ -522,19 +537,44 @@ class Economy(commands.Cog):
             final_cash = final.get("cash", 0)
             final_bank = final.get("bank", 0)
             final_total = final_cash + final_bank
-            log.append(
-                f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}"
-            )
+        else:
+            final_cash = cash
+            final_bank = bank
+            final_total = final_cash + final_bank
+        log.append(
+            f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}"
+        )
 
         summary = "\n".join(log)
-        await ctx.send(f"✅ Completed for <@{user.id}>")
+        if verbose:
+            await ctx.send(summary)
+        else:
+            await ctx.send(
+                f"✅ Completed for <@{user.id}>\n"
+                f"Before: Cash ${cash:,}, Bank ${bank:,}\n"
+                f"After: Cash ${final_cash:,}, Bank ${final_bank:,}"
+            )
         if admin_cog:
             await admin_cog.log_audit(ctx.author, summary)
 
     @commands.command(aliases=["collectbusiness"])
     @commands.has_permissions(administrator=True)
-    async def collect_business(self, ctx, user: discord.Member):
+    async def collect_business(self, ctx, *args):
         """Manually collect business rent from a single user"""
+        converter = commands.MemberConverter()
+        user = None
+        verbose = False
+        for arg in args:
+            if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
+                verbose = True
+            elif user is None:
+                try:
+                    user = await converter.convert(ctx, arg)
+                except commands.BadArgument:
+                    continue
+        if user is None:
+            await ctx.send("❌ Could not resolve user.")
+            return
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('business_rent'):
             await ctx.send('⚠️ The business_rent system is currently disabled.')
@@ -568,18 +608,43 @@ class Economy(commands.Cog):
             final_cash = final.get("cash", 0)
             final_bank = final.get("bank", 0)
             final_total = final_cash + final_bank
-            log.append(
-                f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}"
-            )
+        else:
+            final_cash = cash
+            final_bank = bank
+            final_total = final_cash + final_bank
+        log.append(
+            f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}"
+        )
 
         summary = "\n".join(log)
-        await ctx.send(f"✅ Completed for <@{user.id}>")
+        if verbose:
+            await ctx.send(summary)
+        else:
+            await ctx.send(
+                f"✅ Completed for <@{user.id}>\n"
+                f"Before: Cash ${cash:,}, Bank ${bank:,}\n"
+                f"After: Cash ${final_cash:,}, Bank ${final_bank:,}"
+            )
         if admin_cog:
             await admin_cog.log_audit(ctx.author, summary)
 
     @commands.command(aliases=["collecttrauma"])
     @commands.has_permissions(administrator=True)
-    async def collect_trauma(self, ctx, user: discord.Member):
+    async def collect_trauma(self, ctx, *args):
+        converter = commands.MemberConverter()
+        user = None
+        verbose = False
+        for arg in args:
+            if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
+                verbose = True
+            elif user is None:
+                try:
+                    user = await converter.convert(ctx, arg)
+                except commands.BadArgument:
+                    continue
+        if user is None:
+            await ctx.send("❌ Could not resolve user.")
+            return
         """Manually collect Trauma Team subscription"""
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('trauma_team'):
@@ -608,12 +673,23 @@ class Economy(commands.Cog):
             final_cash = final.get("cash", 0)
             final_bank = final.get("bank", 0)
             final_total = final_cash + final_bank
-            log.append(
-                f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}"
-            )
+        else:
+            final_cash = cash
+            final_bank = bank
+            final_total = final_cash + final_bank
+        log.append(
+            f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}"
+        )
 
         summary = "\n".join(log)
-        await ctx.send(f"✅ Completed for <@{user.id}>")
+        if verbose:
+            await ctx.send(summary)
+        else:
+            await ctx.send(
+                f"✅ Completed for <@{user.id}>\n"
+                f"Before: Cash ${cash:,}, Bank ${bank:,}\n"
+                f"After: Cash ${final_cash:,}, Bank ${final_bank:,}"
+            )
         if admin_cog:
             await admin_cog.log_audit(ctx.author, summary)
 

@@ -33,6 +33,9 @@ class RollSystem(commands.Cog):
         if original_sender:
             try:
                 await ctx.message.delete()
+                admin = self.bot.get_cog('Admin')
+                if admin:
+                    await admin.log_audit(ctx.author, f"🗑️ Deleted message: {ctx.message.content}")
             except Exception as e:
                 logger.warning("Couldn't delete relayed !roll command: %s", e)
             await self.loggable_roll(

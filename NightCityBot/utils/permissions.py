@@ -7,21 +7,25 @@ def is_fixer():
     async def predicate(ctx):
         # in-guild messages
         if isinstance(ctx.author, discord.Member):
-            return discord.utils.get(ctx.author.roles, name=config.FIXER_ROLE_NAME) is not None
+            if discord.utils.get(ctx.author.roles, name=config.FIXER_ROLE_NAME) is not None:
+                return True
+            raise commands.CheckFailure("Fixer role required")
 
         # DMs or thread-posts: fetch member object from main guild
         guild = ctx.bot.get_guild(config.GUILD_ID)
         if not guild:
-            return False
+            raise commands.CheckFailure("Fixer role required")
 
         member = guild.get_member(ctx.author.id)
         if not member:
             try:
                 member = await guild.fetch_member(ctx.author.id)
             except discord.NotFound:
-                return False
+                raise commands.CheckFailure("Fixer role required")
 
-        return discord.utils.get(member.roles, name=config.FIXER_ROLE_NAME) is not None
+        if discord.utils.get(member.roles, name=config.FIXER_ROLE_NAME) is not None:
+            return True
+        raise commands.CheckFailure("Fixer role required")
 
     return commands.check(predicate)
 
@@ -31,7 +35,7 @@ def is_ripperdoc():
     async def predicate(ctx):
         guild = ctx.bot.get_guild(config.GUILD_ID)
         if not guild:
-            return False
+            raise commands.CheckFailure("Ripperdoc role required")
 
         member = ctx.author
         if not isinstance(member, discord.Member):
@@ -40,8 +44,10 @@ def is_ripperdoc():
                 try:
                     member = await guild.fetch_member(ctx.author.id)
                 except discord.NotFound:
-                    return False
+                    raise commands.CheckFailure("Ripperdoc role required")
 
-        return any(r.id == config.RIPPERDOC_ROLE_ID for r in getattr(member, "roles", []))
+        if any(r.id == config.RIPPERDOC_ROLE_ID for r in getattr(member, "roles", [])):
+            return True
+        raise commands.CheckFailure("Ripperdoc role required")
 
     return commands.check(predicate)

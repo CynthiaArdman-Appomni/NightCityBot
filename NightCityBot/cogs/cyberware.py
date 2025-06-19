@@ -227,7 +227,7 @@ class CyberwareManager(commands.Cog):
         if admin_cog:
             await admin_cog.log_audit(ctx.author, summary)
 
-    @commands.command()
+    @commands.command(aliases=["check-up", "check_up", "cu", "cup"])
     @is_ripperdoc()
     async def checkup(self, ctx, member: discord.Member):
         """Remove the weekly cyberware checkup role from a member."""
@@ -260,7 +260,7 @@ class CyberwareManager(commands.Cog):
         self.data[str(member.id)] = 0
         await save_json_file(Path(config.CYBERWARE_LOG_FILE), self.data)
 
-    @commands.command(aliases=["weekswithoutcheckup"])
+    @commands.command(aliases=["weekswithoutcheckup", "wwocup", "wwc"])
     @commands.check_any(is_ripperdoc(), is_fixer())
     async def weeks_without_checkup(self, ctx, member: discord.Member):
         """Show how many weeks a member has gone without a checkup."""

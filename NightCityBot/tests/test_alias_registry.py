@@ -19,9 +19,10 @@ import pytest
     (Economy, "collect_housing", ["collecthousing"]),
     (Economy, "collect_business", ["collectbusiness"]),
     (Economy, "collect_trauma", ["collecttrauma"]),
-    (CyberwareManager, "weeks_without_checkup", ["weekswithoutcheckup"]),
-    (SystemControl, "enable_system", ["enablesystem"]),
-    (SystemControl, "disable_system", ["disablesystem"]),
+    (CyberwareManager, "checkup", ["check-up", "check_up", "cu", "cup"]),
+    (CyberwareManager, "weeks_without_checkup", ["weekswithoutcheckup", "wwocup", "wwc"]),
+    (SystemControl, "enable_system", ["enablesystem", "es", "systemenable"]),
+    (SystemControl, "disable_system", ["disablesystem", "ds", "systemdisable"]),
     (SystemControl, "system_status", ["systemstatus"]),
     (TestSuite, "test_bot", ["testbot"]),
 ])

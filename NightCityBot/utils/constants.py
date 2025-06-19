@@ -30,7 +30,7 @@ ATTEND_REWARD = 250
 # Commands from UnbelievaBoat to ignore in unknown command handler
 UNBELIEVABOAT_COMMANDS = {
     "add-cash-role", "add-fail-reply", "add-failed-reply", "add-fine-reply",
-    "add-money", "add-money-role", "add-payout-reply", "add-reply", "agree",
+    "add-money", "addmoney", "add-money-role", "add-payout-reply", "add-reply", "agree",
     "agree-channel", "agree-role", "aki", "akinator", "amped-fm", "amped.fm", "animal",
     "animal-race", "animal-scale", "animals", "animals-scale", "ass",
     "assignable-role", "assignable-roles", "auto-mod-ignore", "auto-mod-ignored",
@@ -93,7 +93,7 @@ UNBELIEVABOAT_COMMANDS = {
     "random-user", "random-user-reaction", "reason", "reason-edit", "reason-set",
     "reddit", "remind", "remind-me", "reminder-delete", "reminder-forget",
     "reminder-list", "reminders", "remove-ban", "remove-case", "remove-cash-role",
-    "remove-item", "remove-money", "remove-money-role", "remove-punishment",
+    "remove-item", "remove-money", "removemoney", "remove-money-role", "remove-punishment",
     "remove-replies", "remove-reply", "remove-warning", "repeat", "repeat-queue",
     "reply-add", "request", "requests", "reset-balance", "reset-economy",
     "reset-money", "resume", "rm-ban", "rm-case", "rm-cash-role", "rm-item",
