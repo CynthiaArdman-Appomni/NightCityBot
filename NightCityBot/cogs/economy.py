@@ -23,6 +23,7 @@ from NightCityBot.utils import helpers
 # Expose helper functions for tests that patch them directly
 load_json_file = helpers.load_json_file
 save_json_file = helpers.save_json_file
+append_json_file = helpers.append_json_file
 import config
 from NightCityBot.services.unbelievaboat import UnbelievaBoatAPI
 from NightCityBot.services.trauma_team import TraumaTeamService
@@ -316,17 +317,22 @@ class Economy(commands.Cog):
         lines = [f"💸 **Estimated Due:** ${total}"] + [f"• {d}" for d in details]
         await ctx.send("\n".join(lines))
 
-    async def backup_balances(self, members: List[discord.Member], path: Path) -> None:
-        """Save current cash and bank balances for members."""
-        data: Dict[str, Dict[str, int]] = {}
+    async def backup_balances(self, members: List[discord.Member], *, label: str) -> None:
+        """Append current balances for members to their backup files."""
+        backup_dir = Path(config.BALANCE_BACKUP_DIR)
+        backup_dir.mkdir(exist_ok=True)
         for m in members:
             bal = await self.unbelievaboat.get_balance(m.id)
-            if bal:
-                data[str(m.id)] = {
-                    "cash": bal.get("cash", 0),
-                    "bank": bal.get("bank", 0),
-                }
-        await save_json_file(path, data)
+            if not bal:
+                continue
+            file_path = backup_dir / f"{m.id}_{m.display_name}.json"
+            entry = {
+                "timestamp": datetime.utcnow().isoformat(),
+                "label": label,
+                "cash": bal.get("cash", 0),
+                "bank": bal.get("bank", 0),
+            }
+            await append_json_file(file_path, entry)
 
     async def deduct_flat_fee(self, member: discord.Member, cash: int, bank: int, log: List[str], amount: int = BASELINE_LIVING_COST, *, dry_run: bool = False) -> tuple[bool, int, int]:
         total = (cash or 0) + (bank or 0)
@@ -525,6 +531,12 @@ class Economy(commands.Cog):
                 await admin_cog.log_audit(ctx.author, "\n".join(log))
             return
 
+        await self.backup_balances([user], label="collect_trauma_before")
+
+        await self.backup_balances([user], label="collect_business_before")
+
+        await self.backup_balances([user], label="collect_housing_before")
+
         cash = balance_data["cash"]
         bank = balance_data["bank"]
         start_cash = cash
@@ -548,6 +560,12 @@ class Economy(commands.Cog):
         log.append(
             f"📊 Final balance — Cash: ${final_cash:,}, Bank: ${final_bank:,}, Total: ${final_total:,}"
         )
+
+        await self.backup_balances([user], label="collect_trauma_after")
+
+        await self.backup_balances([user], label="collect_business_after")
+
+        await self.backup_balances([user], label="collect_housing_after")
 
         summary = "\n".join(log)
         if verbose:
@@ -759,11 +777,8 @@ class Economy(commands.Cog):
             await ctx.send("❌ No matching members found.")
             return
 
-        backup_dir = Path(config.BALANCE_BACKUP_DIR)
-        backup_dir.mkdir(exist_ok=True)
-        backup_file = backup_dir / f"balances_{datetime.utcnow():%Y%m%d_%H%M%S}.json"
         if not dry_run:
-            await self.backup_balances(members_to_process, backup_file)
+            await self.backup_balances(members_to_process, label="collect_rent_before")
 
         eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
         rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
@@ -846,6 +861,8 @@ class Economy(commands.Cog):
                 if dry_run and admin_cog:
                     await admin_cog.log_audit(ctx.author, f"Error processing <@{member.id}>: {e}")
 
+        if not dry_run:
+            await self.backup_balances(members_to_process, label="collect_rent_after")
         end_msg = "✅ Rent simulation completed." if dry_run else "✅ Rent collection completed."
         await ctx.send(end_msg)
         if dry_run and admin_cog:

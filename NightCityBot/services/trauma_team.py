@@ -79,12 +79,16 @@ class TraumaTeamService:
             "bank": -(cost - min(cash, cost)),
         }
         success = True
-        if not dry_run:
-            success = await self.bot.get_cog('Economy').unbelievaboat.update_balance(
+        economy = self.bot.get_cog("Economy")
+        if not dry_run and economy:
+            await economy.backup_balances([member], label="cyberware_before")
+            success = await economy.unbelievaboat.update_balance(
                 member.id,
                 payload,
-                reason="Trauma Team Subscription"
+                reason="Trauma Team Subscription",
             )
+            if success:
+                await economy.backup_balances([member], label="cyberware_after")
 
         if success:
             if not dry_run:
