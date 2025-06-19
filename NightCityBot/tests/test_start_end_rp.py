@@ -11,9 +11,10 @@ async def run(suite, ctx) -> List[str]:
     channel = MagicMock(spec=discord.TextChannel)
     channel.send = AsyncMock()
     ctx.send = AsyncMock()
-    ctx.message.delete = AsyncMock()
-    with patch.object(discord.Guild, "create_text_channel", AsyncMock(return_value=channel)) as mock_create:
-        await rp_manager.start_rp(ctx, f"<@{config.TEST_USER_ID}>")
+    # ctx.message.delete is a coroutine on real Message objects; patch via patch.object
+    with patch.object(ctx.message, "delete", new=AsyncMock()):
+        with patch.object(discord.Guild, "create_text_channel", AsyncMock(return_value=channel)) as mock_create:
+            await rp_manager.start_rp(ctx, f"<@{config.TEST_USER_ID}>")
         if mock_create.await_count:
             logs.append("✅ start_rp created channel")
             ctx.channel = channel
