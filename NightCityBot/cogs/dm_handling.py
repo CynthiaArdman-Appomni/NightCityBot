@@ -257,12 +257,14 @@ class DMHandler(commands.Cog):
                     await thread.send(
                         f"✅ Rolled `{dice}` anonymously for {user.display_name}."
                     )
+
                 admin = self.bot.get_cog('Admin')
                 if admin:
                     await admin.log_audit(
                         ctx.author,
                         f"✅ Rolled `{dice}` anonymously for {user.display_name}.",
                     )
+
             try:
                 await ctx.message.delete()
             except Exception:

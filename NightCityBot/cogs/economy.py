@@ -48,12 +48,14 @@ class Economy(commands.Cog):
         channel_id = message.channel.id
         parent_id = getattr(message.channel, 'parent_id', None)
         if channel_id == config.BUSINESS_ACTIVITY_CHANNEL_ID or parent_id == config.BUSINESS_ACTIVITY_CHANNEL_ID:
+
             if not message.content.strip().startswith(("!open_shop", "!openshop", "!os")):
                 try:
                     await message.delete()
                 except Exception:
                     pass
         if channel_id == config.ATTENDANCE_CHANNEL_ID or parent_id == config.ATTENDANCE_CHANNEL_ID:
+
             if not message.content.strip().startswith("!attend"):
                 try:
                     await message.delete()
