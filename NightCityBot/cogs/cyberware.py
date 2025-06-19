@@ -24,7 +24,7 @@ class CyberwareManager(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.unbelievaboat = UnbelievaBoatAPI(os.environ['UNBELIEVABOAT_API_TOKEN'])
+        self.unbelievaboat = UnbelievaBoatAPI(config.UNBELIEVABOAT_API_TOKEN)
         self.data: Dict[str, int] = {}
         self.bot.loop.create_task(self.load_data())
         self.weekly_check.start()

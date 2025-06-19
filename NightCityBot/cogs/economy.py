@@ -1,11 +1,13 @@
-import discord
-from discord.ext import commands
+import logging
+import os
+import json
 from datetime import datetime, timedelta
 import asyncio
 from typing import Optional, List, Dict
+
+import discord
+from discord.ext import commands
 from pathlib import Path
-import json
-import os
 from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.utils.constants import (
     ROLE_COSTS_BUSINESS,
@@ -25,11 +27,16 @@ import config
 from NightCityBot.services.unbelievaboat import UnbelievaBoatAPI
 from NightCityBot.services.trauma_team import TraumaTeamService
 
+logger = logging.getLogger(__name__)
+
 
 class Economy(commands.Cog):
-    def __init__(self, bot):
+    """Cog managing player economy and automated rent."""
+
+    def __init__(self, bot: commands.Bot) -> None:
+        """Initialize the economy cog."""
         self.bot = bot
-        self.unbelievaboat = UnbelievaBoatAPI(os.environ['UNBELIEVABOAT_API_TOKEN'])
+        self.unbelievaboat = UnbelievaBoatAPI(config.UNBELIEVABOAT_API_TOKEN)
         self.trauma_service = TraumaTeamService(bot)
         self.open_log_lock = asyncio.Lock()
         self.attend_lock = asyncio.Lock()
@@ -38,13 +45,17 @@ class Economy(commands.Cog):
     async def on_message(self, message: discord.Message):
         if message.author == self.bot.user or message.author.bot:
             return
-        if message.channel.id == config.BUSINESS_ACTIVITY_CHANNEL_ID:
+        channel_id = message.channel.id
+        parent_id = getattr(message.channel, 'parent_id', None)
+        if channel_id == config.BUSINESS_ACTIVITY_CHANNEL_ID or parent_id == config.BUSINESS_ACTIVITY_CHANNEL_ID:
+
             if not message.content.strip().startswith(("!open_shop", "!openshop", "!os")):
                 try:
                     await message.delete()
                 except Exception:
                     pass
-        if message.channel.id == config.ATTENDANCE_CHANNEL_ID:
+        if channel_id == config.ATTENDANCE_CHANNEL_ID or parent_id == config.ATTENDANCE_CHANNEL_ID:
+
             if not message.content.strip().startswith("!attend"):
                 try:
                     await message.delete()
@@ -116,7 +127,9 @@ class Economy(commands.Cog):
             await ctx.send("⚠️ The open_shop system is currently disabled.")
             return
         if ctx.channel.id != config.BUSINESS_ACTIVITY_CHANNEL_ID:
-            await ctx.send("❌ You can only log business openings in the designated business activity channel.")
+            ch = ctx.guild.get_channel(config.BUSINESS_ACTIVITY_CHANNEL_ID)
+            mention = ch.mention if ch else "#open_shop"
+            await ctx.send(f"❌ Please use {mention} for this command.")
             return
 
         if not any(r.name.startswith("Business") for r in ctx.author.roles):
@@ -181,7 +194,9 @@ class Economy(commands.Cog):
             await ctx.send("⚠️ The attend system is currently disabled.")
             return
         if ctx.channel.id != config.ATTENDANCE_CHANNEL_ID:
-            await ctx.send("❌ You can only log attendance in the designated channel.")
+            ch = ctx.guild.get_channel(config.ATTENDANCE_CHANNEL_ID)
+            mention = ch.mention if ch else "#attend"
+            await ctx.send(f"❌ Please use {mention} for this command.")
             return
         if not any(r.id == config.VERIFIED_ROLE_ID for r in ctx.author.roles):
             await ctx.send("❌ You must be verified to use this command.")
@@ -278,9 +293,12 @@ class Economy(commands.Cog):
 
         Includes upcoming cyberware medication costs if applicable.
         """
-        print(
-            f"[DEBUG] due command invoked by {ctx.author} ({ctx.author.id})"
-            f" in {getattr(ctx.channel, 'name', ctx.channel.id)} ({ctx.channel.id})"
+        logger.debug(
+            "due command invoked by %s (%s) in %s (%s)",
+            ctx.author,
+            ctx.author.id,
+            getattr(ctx.channel, 'name', ctx.channel.id),
+            ctx.channel.id,
         )
         total, details = self.calculate_due(ctx.author)
         lines = [f"💸 **Estimated Due:** ${total}"] + [f"• {d}" for d in details]

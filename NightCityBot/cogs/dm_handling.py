@@ -1,68 +1,81 @@
+import asyncio
+import logging
+
 import discord
 from discord.ext import commands
 from discord.abc import Messageable
-from typing import Union, Dict
+
 import config
 from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.utils.helpers import load_json_file, save_json_file
 
+logger = logging.getLogger(__name__)
+
 
 class DMHandler(commands.Cog):
-    def __init__(self, bot):
+    """Cog handling anonymous DM relays and logging threads."""
+
+    def __init__(self, bot: commands.Bot) -> None:
+        """Initialize the DM handler."""
         self.bot = bot
-        self.dm_threads: Dict[str, int] = {}
+        self.dm_threads: dict[str, int] = {}
+        self.load_event = asyncio.Event()
+        self.thread_lock = asyncio.Lock()
         self.bot.loop.create_task(self.load_thread_cache())
 
-    async def load_thread_cache(self):
+    async def load_thread_cache(self) -> None:
         """Load the thread mapping cache on startup."""
         self.dm_threads = await load_json_file(config.THREAD_MAP_FILE, default={})
+        self.load_event.set()
 
     async def get_or_create_dm_thread(
             self,
             user: discord.abc.User
-    ) -> Union[discord.Thread, discord.TextChannel]:
+    ) -> discord.Thread | discord.TextChannel:
         """Return the logging thread for a DM sender, creating it if necessary."""
-        log_channel = self.bot.get_channel(config.DM_INBOX_CHANNEL_ID)
-        user_id = str(user.id)
+        await self.load_event.wait()
+        async with self.thread_lock:
+            log_channel = self.bot.get_channel(config.DM_INBOX_CHANNEL_ID)
+            user_id = str(user.id)
 
-        if user_id in self.dm_threads:
-            try:
-                thread = await self.bot.fetch_channel(self.dm_threads[user_id])
-                return thread
-            except discord.NotFound:
-                pass  # Thread was deleted, create new one
+            if user_id in self.dm_threads:
+                try:
+                    thread = await self.bot.fetch_channel(self.dm_threads[user_id])
+                    return thread
+                except discord.NotFound:
+                    pass  # Thread was deleted, create new one
 
-        # Look for an existing thread if it's not in the cache
-        expected_name = f"{user.name}-{user.id}".replace(" ", "-").lower()[:100]
-        if isinstance(log_channel, (discord.TextChannel, discord.ForumChannel)):
-            for t in log_channel.threads:
-                if t.name == expected_name:
-                    self.dm_threads[user_id] = t.id
-                    await save_json_file(config.THREAD_MAP_FILE, self.dm_threads)
-                    return t
+            # Look for an existing thread if it's not in the cache
+            expected_name = f"{user.name}-{user.id}".replace(" ", "-").lower()[:100]
+            if isinstance(log_channel, (discord.TextChannel, discord.ForumChannel)):
+                for t in log_channel.threads:
+                    if t.name == expected_name:
+                        self.dm_threads[user_id] = t.id
+                        await save_json_file(config.THREAD_MAP_FILE, self.dm_threads)
+                        return t
 
-        thread_name = f"{user.name}-{user.id}".replace(" ", "-").lower()[:100]
+            thread_name = f"{user.name}-{user.id}".replace(" ", "-").lower()[:100]
 
-        if isinstance(log_channel, discord.TextChannel):
-            thread = await log_channel.create_thread(
-                name=thread_name,
-                type=discord.ChannelType.private_thread,
-                reason=f"Logging DM history for {user}"
-            )
-        elif isinstance(log_channel, discord.ForumChannel):
-            created = await log_channel.create_thread(
-                name=thread_name,
-                content=f"📥 DM started with {user}.",
-                reason=f"Logging DM history for {user}"
-            )
-            thread = created.thread if hasattr(created, "thread") else created
-        else:
-            raise RuntimeError("DM inbox must be a TextChannel or ForumChannel")
+            if isinstance(log_channel, discord.TextChannel):
+                thread = await log_channel.create_thread(
+                    name=thread_name,
+                    type=discord.ChannelType.private_thread,
+                    reason=f"Logging DM history for {user}"
+                )
+            elif isinstance(log_channel, discord.ForumChannel):
+                created = await log_channel.create_thread(
+                    name=thread_name,
+                    content=f"📥 DM started with {user}.",
+                    reason=f"Logging DM history for {user}"
+                )
+                thread = created.thread if hasattr(created, "thread") else created
+            else:
+                raise RuntimeError("DM inbox must be a TextChannel or ForumChannel")
 
-        self.dm_threads[user_id] = thread.id
-        await save_json_file(config.THREAD_MAP_FILE, self.dm_threads)
+            self.dm_threads[user_id] = thread.id
+            await save_json_file(config.THREAD_MAP_FILE, self.dm_threads)
 
-        return thread
+            return thread
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -188,7 +201,7 @@ class DMHandler(commands.Cog):
             for att in message.attachments:
                 await msg_target.send(f"📎 Received attachment: {att.url}")
         except Exception as e:
-            print(f"[ERROR] DM logging failed: {e}")
+            logger.exception("DM logging failed: %s", e)
 
     @commands.command()
     @is_fixer()
@@ -244,6 +257,14 @@ class DMHandler(commands.Cog):
                     await thread.send(
                         f"✅ Rolled `{dice}` anonymously for {user.display_name}."
                     )
+
+                admin = self.bot.get_cog('Admin')
+                if admin:
+                    await admin.log_audit(
+                        ctx.author,
+                        f"✅ Rolled `{dice}` anonymously for {user.display_name}.",
+                    )
+
             try:
                 await ctx.message.delete()
             except Exception:
@@ -266,7 +287,7 @@ class DMHandler(commands.Cog):
                     f"📤 **Sent to {user.display_name} ({user.id}) by {ctx.author.display_name} ({ctx.author.id}):**\n{dm_content}"
                 )
             else:
-                print(f"[ERROR] Cannot log DM — thread type is {type(thread)}")
+                logger.error("Cannot log DM — thread type is %s", type(thread))
 
             admin = self.bot.get_cog('Admin')
             if admin:

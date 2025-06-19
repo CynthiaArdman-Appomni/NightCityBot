@@ -1,10 +1,17 @@
-import discord
-from discord.ext import commands
+import logging
 import random
 import re
 
+import discord
+from discord.ext import commands
+
+logger = logging.getLogger(__name__)
+
 class RollSystem(commands.Cog):
-    def __init__(self, bot):
+    """Cog providing dice rolling utilities."""
+
+    def __init__(self, bot: commands.Bot) -> None:
+        """Initialize the roll system."""
         self.bot = bot
 
     @commands.command()
@@ -27,7 +34,7 @@ class RollSystem(commands.Cog):
             try:
                 await ctx.message.delete()
             except Exception as e:
-                print(f"[WARN] Couldn't delete relayed !roll command: {e}")
+                logger.warning("Couldn't delete relayed !roll command: %s", e)
             await self.loggable_roll(
                 roller,
                 ctx.channel,

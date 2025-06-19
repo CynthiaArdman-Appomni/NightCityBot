@@ -12,7 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 class RPManager(commands.Cog):
-    def __init__(self, bot):
+    """Cog for managing temporary RP channels."""
+
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
     @commands.Cog.listener()
@@ -113,12 +115,19 @@ class RPManager(commands.Cog):
             if role.name in allowed_roles:
                 overwrites[role] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
 
-        return await guild.create_text_channel(
-            name=channel_name,
-            overwrites=overwrites,
-            category=category,
-            reason="Creating private RP group channel"
-        )
+        try:
+            return await guild.create_text_channel(
+                name=channel_name,
+                overwrites=overwrites,
+                category=category,
+                reason="Creating private RP group channel"
+            )
+        except discord.Forbidden:
+            logger.warning("Missing permissions to create RP channel")
+            return None
+        except discord.HTTPException as e:
+            logger.exception("Failed to create RP channel: %s", e)
+            return None
 
     async def end_rp_session(
             self, channel: discord.TextChannel

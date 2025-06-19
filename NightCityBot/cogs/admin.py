@@ -1,3 +1,7 @@
+import logging
+import io
+import contextlib
+
 import discord
 from discord.ext import commands
 from typing import Optional
@@ -6,9 +10,14 @@ from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.utils import constants
 from NightCityBot.utils import startup_checks
 
+logger = logging.getLogger(__name__)
+
 
 class Admin(commands.Cog):
-    def __init__(self, bot):
+    """Administrative commands and global error handler."""
+
+    def __init__(self, bot: commands.Bot) -> None:
+        """Initialize the admin cog."""
         self.bot = bot
 
     @commands.command()
@@ -204,10 +213,12 @@ class Admin(commands.Cog):
             if cmd in constants.UNBELIEVABOAT_COMMANDS:
                 return
             # Otherwise show a basic notice but do not audit
-            print(
-                f"[DEBUG] Unknown command from {ctx.author}"
-                f" in {getattr(ctx.channel, 'name', ctx.channel.id)}"
-                f" ({ctx.channel.id}) → {ctx.message.content!r}"
+            logger.debug(
+                "Unknown command from %s in %s (%s) → %r",
+                ctx.author,
+                getattr(ctx.channel, 'name', ctx.channel.id),
+                ctx.channel.id,
+                ctx.message.content,
             )
             await ctx.send("❌ Unknown command.")
             return
@@ -228,14 +239,20 @@ class Admin(commands.Cog):
             embed.add_field(name="Action", value=action_desc, inline=False)
             await audit_channel.send(embed=embed)
         else:
-            print(f"[AUDIT] Skipped: Channel {config.AUDIT_LOG_CHANNEL_ID} is not a TextChannel")
-
-        print(f"[AUDIT] {user}: {action_desc}")
+            logger.warning(
+                "Skipped audit log: channel %s is not a TextChannel",
+                config.AUDIT_LOG_CHANNEL_ID,
+            )
+        logger.info("AUDIT %s: %s", user, action_desc)
 
     @commands.command(name="check_config", aliases=["config_check"])
     @commands.has_permissions(administrator=True)
     async def check_config(self, ctx):
         """Re-run startup configuration checks."""
         await ctx.send("🔍 Running configuration checks...")
-        await startup_checks.verify_config(self.bot)
-        await ctx.send("✅ Configuration check complete. See console for details.")
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            await startup_checks.verify_config(self.bot)
+        output = buf.getvalue().strip() or "(no output)"
+        await ctx.send(f"```{output}```")
+        await ctx.send("✅ Configuration check complete.")
