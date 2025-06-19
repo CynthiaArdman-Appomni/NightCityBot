@@ -328,12 +328,24 @@ class Economy(commands.Cog):
             file_path = backup_dir / f"{m.id}_{m.display_name}.json"
 
             prev_entries = await load_json_file(file_path, default=[])
-            if isinstance(prev_entries, list) and prev_entries:
-                last = prev_entries[-1]
-                prev_total = (last.get("cash", 0) + last.get("bank", 0))
-                change = (bal.get("cash", 0) + bal.get("bank", 0)) - prev_total
+            if not isinstance(prev_entries, list):
+                prev_entries = []
+
+            insert_index = len(prev_entries)
+            if label.endswith("_after") and label.startswith("collect_"):
+                before_label = label.replace("_after", "_before")
+                for i in range(len(prev_entries) - 1, -1, -1):
+                    if prev_entries[i].get("label") == before_label:
+                        insert_index = i + 1
+                        break
+
+            if prev_entries and insert_index > 0:
+                ref = prev_entries[insert_index - 1]
+                prev_total = ref.get("cash", 0) + ref.get("bank", 0)
             else:
-                change = 0
+                prev_total = 0
+
+            change = (bal.get("cash", 0) + bal.get("bank", 0)) - prev_total
 
             entry = {
                 "timestamp": datetime.utcnow().isoformat(),
@@ -342,7 +354,30 @@ class Economy(commands.Cog):
                 "bank": bal.get("bank", 0),
                 "change": change,
             }
-            await append_json_file(file_path, entry)
+
+            prev_entries.insert(insert_index, entry)
+            await save_json_file(file_path, prev_entries)
+
+    async def _label_used_recently(
+        self, member: discord.Member, label: str, days: int = 30
+    ) -> bool:
+        """Return ``True`` if the given label was used within ``days`` days."""
+        backup_dir = Path(config.BALANCE_BACKUP_DIR)
+        file_path = backup_dir / f"{member.id}_{member.display_name}.json"
+        entries = await load_json_file(file_path, default=[])
+        if not isinstance(entries, list):
+            return False
+        for entry in reversed(entries):
+            if entry.get("label") == label:
+                ts = entry.get("timestamp")
+                if not ts:
+                    return False
+                try:
+                    dt = datetime.fromisoformat(ts)
+                except Exception:
+                    return False
+                return datetime.utcnow() - dt < timedelta(days=days)
+        return False
 
     @commands.command(name="backup_balances")
     @commands.has_permissions(administrator=True)
@@ -564,6 +599,10 @@ class Economy(commands.Cog):
             await ctx.send("❌ Could not resolve user.")
             return
 
+        if await self._label_used_recently(user, "collect_housing_after"):
+            await ctx.send("⚠️ Housing rent already collected in the last 30 days.")
+            return
+
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('housing_rent'):
             await ctx.send('⚠️ The housing_rent system is currently disabled.')
@@ -651,6 +690,10 @@ class Economy(commands.Cog):
         if user is None:
             await ctx.send("❌ Could not resolve user.")
             return
+
+        if await self._label_used_recently(user, "collect_business_after"):
+            await ctx.send("⚠️ Business rent already collected in the last 30 days.")
+            return
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('business_rent'):
             await ctx.send('⚠️ The business_rent system is currently disabled.')
@@ -724,6 +767,10 @@ class Economy(commands.Cog):
                     continue
         if user is None:
             await ctx.send("❌ Could not resolve user.")
+            return
+
+        if await self._label_used_recently(user, "collect_trauma_after"):
+            await ctx.send("⚠️ Trauma subscription already processed in the last 30 days.")
             return
         """Manually collect Trauma Team subscription"""
         control = self.bot.get_cog('SystemControl')
@@ -965,6 +1012,10 @@ class Economy(commands.Cog):
                 if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
                     verbose = True
                     break
+
+        if target_user and await self._label_used_recently(target_user, "collect_rent_after"):
+            await ctx.send("⚠️ Rent already collected for this user in the last 30 days.")
+            return
         await self.run_rent_collection(ctx, target_user=target_user, dry_run=False, verbose=verbose)
 
     @commands.command(aliases=["simulaterent"])
