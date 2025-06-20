@@ -444,19 +444,61 @@ class Economy(commands.Cog):
 
     @commands.command(name="restore_balances")
     @commands.has_permissions(administrator=True)
-    async def restore_balances_command(self, ctx, filename: str):
-        """Restore member balances from a backup file."""
-        backup_path = Path(config.BALANCE_BACKUP_DIR) / filename
-        if not backup_path.exists():
-            await ctx.send("❌ Backup file not found.")
+    async def restore_balances_command(self, ctx, identifier: str) -> None:
+        """Restore member balances from a backup file or by label."""
+
+        backup_dir = Path(config.BALANCE_BACKUP_DIR)
+
+        # If the identifier looks like a filename, use the old behaviour
+        if identifier.endswith(".json"):
+            backup_path = backup_dir / identifier
+            if not backup_path.exists():
+                await ctx.send("❌ Backup file not found.")
+                return
+
+            data = await load_json_file(backup_path, default={})
+            restored = 0
+            for uid_str, bal in data.items():
+                try:
+                    uid = int(uid_str)
+                except ValueError:
+                    continue
+                current = await self.unbelievaboat.get_balance(uid)
+                if not current:
+                    continue
+                payload = {}
+                delta_cash = bal.get("cash", 0) - current.get("cash", 0)
+                delta_bank = bal.get("bank", 0) - current.get("bank", 0)
+                if delta_cash:
+                    payload["cash"] = delta_cash
+                if delta_bank:
+                    payload["bank"] = delta_bank
+                if payload:
+                    await self.unbelievaboat.update_balance(uid, payload, reason="Balance restore")
+                    restored += 1
+            await ctx.send(f"✅ Restored balances for {restored} members from `{identifier}`")
             return
-        data = await load_json_file(backup_path, default={})
+
+        # Otherwise treat it as a label that should be searched in member logs
+        label = identifier
         restored = 0
-        for uid_str, bal in data.items():
+        for path in backup_dir.glob("balance_backup_*.json"):
+            entries = await load_json_file(path, default=[])
+            if not isinstance(entries, list):
+                continue
+            bal = None
+            for entry in reversed(entries):
+                if entry.get("label") == label:
+                    bal = {"cash": entry.get("cash", 0), "bank": entry.get("bank", 0)}
+                    break
+            if not bal:
+                continue
+
             try:
-                uid = int(uid_str)
+                uid = int(path.stem.split("_")[-1])
             except ValueError:
                 continue
+
             current = await self.unbelievaboat.get_balance(uid)
             if not current:
                 continue
@@ -470,20 +512,28 @@ class Economy(commands.Cog):
             if payload:
                 await self.unbelievaboat.update_balance(uid, payload, reason="Balance restore")
                 restored += 1
-        await ctx.send(f"✅ Restored balances for {restored} members from `{filename}`")
+
+        await ctx.send(f"✅ Restored balances for {restored} members using label `{label}`")
 
     @commands.command(name="restore_balance")
     @commands.has_permissions(administrator=True)
     async def restore_balance_command(
-        self, ctx, member: discord.Member, filename: Optional[str] = None
+        self, ctx, member: discord.Member, identifier: Optional[str] = None
     ) -> None:
-        """Restore a single member's balance from a backup file.
+        """Restore a single member's balance from a backup file or label.
 
-        If ``filename`` is omitted (or points to the member's automatic backup
-        file) the most recent entry from that file will be used.
+        If ``identifier`` is omitted (or points to the member's automatic backup
+        file) the most recent entry from that file will be used. If a label is
+        provided instead, the latest entry with that label will be restored.
         """
-        if not filename:
+
+        label = None
+        if identifier and not identifier.endswith(".json"):
+            label = identifier
             filename = f"balance_backup_{member.id}.json"
+        else:
+            filename = identifier or f"balance_backup_{member.id}.json"
+
         backup_path = Path(config.BALANCE_BACKUP_DIR) / filename
         if not backup_path.exists():
             await ctx.send("❌ Backup file not found.")
@@ -491,7 +541,19 @@ class Economy(commands.Cog):
 
         data = await load_json_file(backup_path, default={})
         bal = None
-        if isinstance(data, list):
+        if label:
+            if isinstance(data, list):
+                for entry in reversed(data):
+                    if entry.get("label") == label:
+                        bal = {"cash": entry.get("cash", 0), "bank": entry.get("bank", 0)}
+                        break
+                if not bal:
+                    await ctx.send("❌ Label not found in backup file.")
+                    return
+            else:
+                await ctx.send("❌ Invalid backup file format for label restore.")
+                return
+        elif isinstance(data, list):
             if data:
                 last = data[-1]
                 bal = {"cash": last.get("cash", 0), "bank": last.get("bank", 0)}
@@ -516,7 +578,8 @@ class Economy(commands.Cog):
             payload["bank"] = delta_bank
         if payload:
             await self.unbelievaboat.update_balance(member.id, payload, reason="Balance restore")
-            await ctx.send(f"✅ Restored balance for {member.display_name} from `{filename}`")
+            source = label if label else filename
+            await ctx.send(f"✅ Restored balance for {member.display_name} from `{source}`")
         else:
             await ctx.send("⚠️ Balance already matches backup.")
 
