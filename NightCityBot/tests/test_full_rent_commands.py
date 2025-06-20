@@ -18,7 +18,9 @@ async def run(suite, ctx) -> List[str]:
         economy = suite.bot.get_cog('Economy')
         cyber = suite.bot.get_cog('CyberwareManager')
         with (
+            patch.object(economy.unbelievaboat, "get_balance", new=AsyncMock(return_value={"cash": 1000, "bank": 0})),
             patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock(return_value=True)),
+            patch.object(cyber.unbelievaboat, "get_balance", new=AsyncMock(return_value={"cash": 1000, "bank": 0})),
             patch.object(cyber.unbelievaboat, "update_balance", new=AsyncMock(return_value=True)),
             patch("NightCityBot.cogs.cyberware.save_json_file", new=AsyncMock()),
         ):
