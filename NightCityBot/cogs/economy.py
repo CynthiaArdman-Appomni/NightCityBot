@@ -327,7 +327,7 @@ class Economy(commands.Cog):
             bal = await self.unbelievaboat.get_balance(m.id)
             if not bal:
                 continue
-            file_path = backup_dir / f"{m.id}_{safe_filename(m.display_name)}.json"
+            file_path = backup_dir / f"balance_backup_{m.id}.json"
 
             prev_entries = await load_json_file(file_path, default=[])
             if not isinstance(prev_entries, list):
@@ -365,7 +365,7 @@ class Economy(commands.Cog):
     ) -> bool:
         """Return ``True`` if the given label was used within ``days`` days."""
         backup_dir = Path(config.BALANCE_BACKUP_DIR)
-        file_path = backup_dir / f"{member.id}_{safe_filename(member.display_name)}.json"
+        file_path = backup_dir / f"balance_backup_{member.id}.json"
         entries = await load_json_file(file_path, default=[])
         if not isinstance(entries, list):
             return False
@@ -407,6 +407,26 @@ class Economy(commands.Cog):
         await save_json_file(file_path, data)
         await self.backup_balances(members, label=filename)
         await ctx.send(f"✅ Balances backed up to `{file_path.name}`")
+
+    @commands.command(name="backup_balance")
+    @commands.has_permissions(administrator=True)
+    async def backup_balance_command(self, ctx, member: discord.Member):
+        """Back up a single member's balance to a timestamped file."""
+        backup_dir = Path(config.BALANCE_BACKUP_DIR)
+        backup_dir.mkdir(exist_ok=True)
+        filename = f"manual_{datetime.utcnow():%Y%m%d_%H%M%S}.json"
+        file_path = backup_dir / filename
+
+        bal = await self.unbelievaboat.get_balance(member.id)
+        if not bal:
+            await ctx.send(f"⚠️ Failed to fetch balance for {member.display_name}")
+            return
+
+        data = {str(member.id): {"cash": bal.get("cash", 0), "bank": bal.get("bank", 0)}}
+
+        await save_json_file(file_path, data)
+        await self.backup_balances([member], label=filename)
+        await ctx.send(f"✅ Balance backed up to `{file_path.name}` for {member.display_name}")
 
     @commands.command(name="restore_balances")
     @commands.has_permissions(administrator=True)
