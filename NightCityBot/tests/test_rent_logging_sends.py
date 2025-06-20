@@ -1,8 +1,9 @@
 from typing import List
 import discord
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 import config
 from NightCityBot.utils.constants import ROLE_COSTS_BUSINESS, ROLE_COSTS_HOUSING
+
 
 async def run(suite, ctx) -> List[str]:
     """Test rent logging functionality."""
@@ -12,22 +13,47 @@ async def run(suite, ctx) -> List[str]:
         rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
         eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
 
-        logs.append("→ Expected: collect_rent should post messages to rent and eviction log channels.")
+        logs.append(
+            "→ Expected: collect_rent should post messages to rent and eviction log channels."
+        )
 
         if not rent_log_channel or not eviction_channel:
             logs.append("→ Result: ❌ Rent or eviction channels not found.")
             return logs
 
-        economy = suite.bot.get_cog('Economy')
+        economy = suite.bot.get_cog("Economy")
         with (
-            patch.object(economy.unbelievaboat, "get_balance", new=AsyncMock(return_value={"cash": 1000, "bank": 0})),
-            patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock(return_value=True)),
-            patch.object(rent_log_channel, "send", new=AsyncMock()) as rent_send,
-            patch.object(eviction_channel, "send", new=AsyncMock()) as evict_send,
+            patch.object(
+                economy.unbelievaboat,
+                "get_balance",
+                new=AsyncMock(return_value={"cash": 1000, "bank": 0}),
+            ),
+            patch.object(
+                economy.unbelievaboat,
+                "update_balance",
+                new=AsyncMock(return_value=True),
+            ),
+            patch.object(discord.TextChannel, "send", new=AsyncMock()) as send_mock,
         ):
             await economy.simulate_rent(ctx, target_user=user)
-            suite.assert_send(logs, rent_send, "rent_log_channel.send")
-            suite.assert_send(logs, evict_send, "eviction_channel.send")
+            rent_calls = [
+                c
+                for c in send_mock.await_args_list
+                if c.args and c.args[0] is rent_log_channel
+            ]
+            evict_calls = [
+                c
+                for c in send_mock.await_args_list
+                if c.args and c.args[0] is eviction_channel
+            ]
+            if rent_calls:
+                logs.append("✅ rent_log_channel.send was called")
+            else:
+                logs.append("❌ rent_log_channel.send was not called")
+            if evict_calls:
+                logs.append("✅ eviction_channel.send was called")
+            else:
+                logs.append("❌ eviction_channel.send was not called")
         logs.append("→ Result: ✅ Rent logic executed and logging channels present.")
     except Exception as e:
         logs.append(f"❌ Exception in test_rent_logging_sends: {e}")

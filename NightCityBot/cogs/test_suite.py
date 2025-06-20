@@ -18,6 +18,7 @@ from NightCityBot import tests
 
 logger = logging.getLogger(__name__)
 
+
 class TestSuite(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -70,7 +71,7 @@ class TestSuite(commands.Cog):
 
     async def audit_log(self, ctx, message: str) -> None:
         """Send a message to the audit log channel via the Admin cog."""
-        admin = self.bot.get_cog('Admin')
+        admin = self.bot.get_cog("Admin")
         if not admin:
             return
         for i in range(0, len(message), 900):
@@ -104,14 +105,22 @@ class TestSuite(commands.Cog):
         await self.audit_log(
             ctx,
             f"Started test_bot: {', '.join(test_names) if test_names else 'all tests'};"
-            f" silent={silent}, verbose={verbose}, dry_run={dry_run}"
+            f" silent={silent}, verbose={verbose}, dry_run={dry_run}",
         )
 
         output_channel = ctx.channel
         if silent:
             output_channel = await ctx.author.create_dm()
-            await ctx.send("🧪 Running tests in silent mode. Results will be sent via DM.")
+            await ctx.send(
+                "🧪 Running tests in silent mode. Results will be sent via DM."
+            )
             ctx.send = AsyncMock()
+        elif ctx.channel.id != config.AUDIT_LOG_CHANNEL_ID:
+            output_channel = None
+
+        async def maybe_send(*args, **kwargs):
+            if output_channel:
+                await output_channel.send(*args, **kwargs)
 
         ctx.message.attachments = []
 
@@ -121,12 +130,12 @@ class TestSuite(commands.Cog):
         }
 
         if dry_run:
-            await output_channel.send(
+            await maybe_send(
                 f"🧪 Dry run — would execute: {', '.join(test_names) if test_names else 'all tests'}"
             )
             await self.audit_log(
                 ctx,
-                f"Dry run — would execute: {', '.join(test_names) if test_names else 'all tests'}"
+                f"Dry run — would execute: {', '.join(test_names) if test_names else 'all tests'}",
             )
             return
 
@@ -148,9 +157,7 @@ class TestSuite(commands.Cog):
                 else:
                     unknown.append(pattern)
             if unknown:
-                await output_channel.send(
-                    f"⚠️ Unknown tests: {', '.join(unknown)}"
-                )
+                await maybe_send(f"⚠️ Unknown tests: {', '.join(unknown)}")
             # deduplicate while preserving order
             seen = set()
             filtered = []
@@ -163,25 +170,26 @@ class TestSuite(commands.Cog):
             if not tests:
                 return
 
-            await output_channel.send(
+            await maybe_send(
                 f"🧪 Running selected tests on <@{config.TEST_USER_ID}>: {', '.join(expanded_names)}"
             )
             await self.audit_log(
-                ctx,
-                f"Running selected tests: {', '.join(expanded_names)}"
+                ctx, f"Running selected tests: {', '.join(expanded_names)}"
             )
         else:
-            await output_channel.send(
+            await maybe_send(
                 f"🧪 Running full self-test on user <@{config.TEST_USER_ID}>..."
             )
             await self.audit_log(ctx, "Running full self-test")
 
-        rp_manager = self.bot.get_cog('RPManager')
+        rp_manager = self.bot.get_cog("RPManager")
         rp_channel = None
         ctx.initial_rp_channels = {
             ch.id for ch in ctx.guild.text_channels if ch.name.startswith("text-rp-")
         }
-        needs_rp = (not test_names) or any(name in rp_required_tests for name, _ in tests)
+        needs_rp = (not test_names) or any(
+            name in rp_required_tests for name, _ in tests
+        )
         if needs_rp:
             rp_channel = await rp_manager.start_rp(ctx, f"<@{config.TEST_USER_ID}>")
         ctx.test_rp_channel = rp_channel
@@ -189,18 +197,20 @@ class TestSuite(commands.Cog):
         try:
             for name, func in tests:
                 if verbose:
-                    await output_channel.send(
+                    await maybe_send(
                         f"🧪 `{name}` — {self.test_descriptions.get(name, 'No description.')}"
                     )
                 await self.audit_log(
                     ctx,
-                    f"Running test {name}: {self.test_descriptions.get(name, 'No description.')}"
+                    f"Running test {name}: {self.test_descriptions.get(name, 'No description.')}",
                 )
                 try:
                     logs = await func(self, ctx)
                 except Exception as e:
                     logs = [f"❌ Exception in `{name}`: {e}"]
-                await self.audit_log(ctx, f"Results for {name}:\n" + "\n".join(str(l) for l in logs))
+                await self.audit_log(
+                    ctx, f"Results for {name}:\n" + "\n".join(str(l) for l in logs)
+                )
                 all_logs.append(f"{name} — {self.test_descriptions.get(name, '')}")
                 all_logs.extend(logs)
                 all_logs.append("────────────")
@@ -212,22 +222,22 @@ class TestSuite(commands.Cog):
                 for line in all_logs:
                     line = str(line)
                     if len(current_chunk) + len(line) + 1 > 1900:
-                        await output_channel.send(f"```\n{current_chunk.strip()}\n```")
+                        await maybe_send(f"```\n{current_chunk.strip()}\n```")
                         current_chunk = line
                     else:
                         current_chunk += line + "\n"
                 if current_chunk:
-                    await output_channel.send(f"```\n{current_chunk.strip()}\n```")
+                    await maybe_send(f"```\n{current_chunk.strip()}\n```")
             else:
                 current_chunk = ""
                 for line in summary_text.split("\n"):
                     if len(current_chunk) + len(line) + 1 > 1900:
-                        await output_channel.send(f"```\n{current_chunk.strip()}\n```")
+                        await maybe_send(f"```\n{current_chunk.strip()}\n```")
                         current_chunk = line
                     else:
                         current_chunk += line + "\n"
                 if current_chunk:
-                    await output_channel.send(f"```\n{current_chunk.strip()}\n```")
+                    await maybe_send(f"```\n{current_chunk.strip()}\n```")
             await self.audit_log(ctx, summary_text)
 
             # Summary embed
@@ -235,21 +245,25 @@ class TestSuite(commands.Cog):
             failed = sum(1 for r in all_logs if "❌" in r)
             duration = time.time() - start
 
-            title = "🧪 Full Bot Self-Test Summary" if not test_names else "🧪 Selected Test Summary"
+            title = (
+                "🧪 Full Bot Self-Test Summary"
+                if not test_names
+                else "🧪 Selected Test Summary"
+            )
             embed = discord.Embed(
                 title=title,
-                color=discord.Color.green() if failed == 0 else discord.Color.red()
+                color=discord.Color.green() if failed == 0 else discord.Color.red(),
             )
             embed.add_field(
                 name="Result",
                 value=f"✅ Passed: {passed}\n❌ Failed: {failed}",
-                inline=False
+                inline=False,
             )
             embed.set_footer(text=f"⏱️ Completed in {duration:.2f}s")
-            await output_channel.send(embed=embed)
+            await maybe_send(embed=embed)
             await self.audit_log(
                 ctx,
-                f"Summary: Passed {passed}, Failed {failed}, Duration {duration:.2f}s"
+                f"Summary: Passed {passed}, Failed {failed}, Duration {duration:.2f}s",
             )
         finally:
             if ctx.test_rp_channel:
@@ -273,7 +287,9 @@ class TestSuite(commands.Cog):
                             try:
                                 await thread.delete(reason="Test cleanup")
                             except Exception:
-                                logger.exception("Failed to delete log thread %s", thread)
+                                logger.exception(
+                                    "Failed to delete log thread %s", thread
+                                )
                     except Exception:
                         logger.exception("Failed to clean RP channel %s", ch)
 
@@ -282,6 +298,7 @@ class TestSuite(commands.Cog):
     async def test__bot(self, ctx, *patterns: str):
         """Run the self tests through PyTest."""
         import pytest
+
         await ctx.send("🧪 Running tests with PyTest...")
         args = ["-q", str(Path(__file__).resolve().parents[1] / "tests")]
         if patterns:
