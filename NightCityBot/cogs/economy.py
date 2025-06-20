@@ -642,7 +642,7 @@ class Economy(commands.Cog):
         total = (cash or 0) + (bank or 0)
         if total < housing_total:
             log.append(f"❌ Cannot pay housing rent of ${housing_total}. Would result in negative balance.")
-            if eviction_channel:
+            if eviction_channel and not dry_run:
                 await eviction_channel.send(
                     f"🚨 <@{member.id}> — Housing Rent due: ${housing_total} — **FAILED** (insufficient funds) 🚨\n## You have **7 days** to pay or face eviction."
                 )
@@ -707,7 +707,7 @@ class Economy(commands.Cog):
         total = (cash or 0) + (bank or 0)
         if total < business_total:
             log.append(f"❌ Cannot pay business rent of ${business_total}. Would result in negative balance.")
-            if eviction_channel:
+            if eviction_channel and not dry_run:
                 await eviction_channel.send(
                     f"🚨 <@{member.id}> — Business Rent due: ${business_total} — **FAILED** (insufficient funds) 🚨\n## You have **7 days** to pay or face eviction."
                 )
