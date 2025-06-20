@@ -52,26 +52,35 @@ class TraumaTeamService:
             log.append(f"🔎 {trauma_role.name} → Subscription: ${cost}")
             log.append(f"💊 Deducting ${cost} for Trauma Team plan: {trauma_role.name}")
 
+        async def find_thread() -> Optional[discord.Thread]:
+            def matches(t: discord.Thread) -> bool:
+                return t.name.rsplit(" - ", 1)[-1] == str(member.id)
+
+            for t in trauma_channel.threads:
+                if matches(t):
+                    return t
+
+            async for t in trauma_channel.archived_threads(limit=None):
+                if matches(t):
+                    return t
+
+            return None
+
         # Find user's trauma thread
-        target_thread = next(
-            (
-                t
-                for t in trauma_channel.threads
-                if t.name.rsplit(" - ", 1)[-1] == str(member.id)
-            ),
-            None,
-        )
+        target_thread = await find_thread()
         if not target_thread:
             if log is not None:
-                log.append(f"⚠️ Could not locate Trauma Team thread for <@{member.id}>")
-            return
+                log.append(
+                    f"⚠️ Could not locate Trauma Team thread for <@{member.id}>."
+                    " Proceeding without thread."
+                )
 
         if cash + bank < cost:
             mention = f"<@&{config.TRAUMA_TEAM_ROLE_ID}>"
-            if not dry_run:
+            if not dry_run and target_thread:
                 await target_thread.send(
-                    f"❌ Payment for **{trauma_role.name}** (${cost}) by <@{member.id}> failed."
-                    f"\n## {mention} Subscription suspended."
+                    f"❌ Payment for **{trauma_role.name}** (${cost}) by <@{member.id}> failed.",
+                    f"\n## {mention} Subscription suspended.",
                 )
             if log is not None:
                 log.append("❌ Insufficient funds for Trauma payment.")
@@ -94,7 +103,7 @@ class TraumaTeamService:
                 await economy.backup_balances([member], label="cyberware_after")
 
         if success:
-            if not dry_run:
+            if not dry_run and target_thread:
                 await target_thread.send(
                     f"✅ **Payment Successful** — <@{member.id}> paid `${cost}` for **{trauma_role.name}** coverage."
                 )
@@ -103,7 +112,7 @@ class TraumaTeamService:
                     "✅ Trauma Team payment completed." if not dry_run else "✅ (Simulated) Trauma Team payment would succeed."
                 )
         else:
-            if not dry_run:
+            if not dry_run and target_thread:
                 await target_thread.send(
                     f"⚠️ **Deduction failed** for <@{member.id}> despite available funds."
                 )
