@@ -460,18 +460,35 @@ class Economy(commands.Cog):
 
     @commands.command(name="restore_balance")
     @commands.has_permissions(administrator=True)
-    async def restore_balance_command(self, ctx, member: discord.Member, filename: str):
-        """Restore a single member's balance from a backup file."""
+    async def restore_balance_command(
+        self, ctx, member: discord.Member, filename: Optional[str] = None
+    ) -> None:
+        """Restore a single member's balance from a backup file.
+
+        If ``filename`` is omitted (or points to the member's automatic backup
+        file) the most recent entry from that file will be used.
+        """
+        if not filename:
+            filename = f"balance_backup_{member.id}.json"
         backup_path = Path(config.BALANCE_BACKUP_DIR) / filename
         if not backup_path.exists():
             await ctx.send("❌ Backup file not found.")
             return
 
         data = await load_json_file(backup_path, default={})
-        bal = data.get(str(member.id))
-        if not bal:
-            await ctx.send("❌ User not found in backup file.")
-            return
+        bal = None
+        if isinstance(data, list):
+            if data:
+                last = data[-1]
+                bal = {"cash": last.get("cash", 0), "bank": last.get("bank", 0)}
+            else:
+                await ctx.send("❌ No entries found in backup file.")
+                return
+        else:
+            bal = data.get(str(member.id))
+            if not bal:
+                await ctx.send("❌ User not found in backup file.")
+                return
         current = await self.unbelievaboat.get_balance(member.id)
         if not current:
             await ctx.send("❌ Failed to fetch current balance.")

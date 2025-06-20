@@ -43,6 +43,7 @@ TEST_MODULES = {
     "test_backup_balance_command": "Runs !backup_balance for a single user.",
     "test_backup_balances_command": "Runs !backup_balances and saves a snapshot.",
     "test_restore_balance_command": "Restores a single user's balance from backup.",
+    "test_restore_balance_latest": "Restores the latest entry from a user's backup log.",
     "test_test_bot_dm": "Runs test_bot in silent mode and checks DM output.",
     "test_open_shop_concurrency": "Runs open_shop concurrently to ensure locking.",
 }
