@@ -7,6 +7,7 @@ from discord.ext import commands
 
 logger = logging.getLogger(__name__)
 
+
 class RollSystem(commands.Cog):
     """Cog providing dice rolling utilities."""
 
@@ -33,9 +34,11 @@ class RollSystem(commands.Cog):
         if original_sender:
             try:
                 await ctx.message.delete()
-                admin = self.bot.get_cog('Admin')
+                admin = self.bot.get_cog("Admin")
                 if admin:
-                    await admin.log_audit(ctx.author, f"🗑️ Deleted message: {ctx.message.content}")
+                    await admin.log_audit(
+                        ctx.author, f"🗑️ Deleted message: {ctx.message.content}"
+                    )
             except Exception as e:
                 logger.warning("Couldn't delete relayed !roll command: %s", e)
             await self.loggable_roll(
@@ -65,10 +68,12 @@ class RollSystem(commands.Cog):
         log_user=None,
         skip_log=False,
     ):
-        pattern = r'(?:(\d*)d)?(\d+)([+-]\d+)?'
-        m = re.fullmatch(pattern, dice.replace(' ', ''))
+        pattern = r"(?:(\d*)d)?(\d+)([+-]\d+)?"
+        m = re.fullmatch(pattern, dice.replace(" ", ""))
         if not m:
-            await channel.send('🎲 Format: `!roll XdY+Z` (e.g. `!roll 2d6+3`)')
+            await channel.send(
+                "🎲 Invalid format. Use: `!roll XdY+Z` (e.g. `!roll 2d6+3`)"
+            )
             return
 
         n_dice, sides, mod = m.groups()
@@ -77,7 +82,11 @@ class RollSystem(commands.Cog):
         mod = int(mod) if mod else 0
 
         role_names = [getattr(r, "name", "") for r in getattr(author, "roles", [])]
-        bonus = 2 if "Netrunner Level 3" in role_names else 1 if "Netrunner Level 2" in role_names else 0
+        bonus = (
+            2
+            if "Netrunner Level 3" in role_names
+            else 1 if "Netrunner Level 2" in role_names else 0
+        )
 
         rolls = [random.randint(1, sides) for _ in range(n_dice)]
         total = sum(rolls) + mod + bonus
@@ -86,7 +95,7 @@ class RollSystem(commands.Cog):
         header = f'🎲 {name} rolled: {n_dice}d{sides}{f"+{mod}" if mod else ""}\n'
         body = f'**Results:** {", ".join(map(str, rolls))}\n**Total:** {total}'
         if bonus:
-            body += f' (includes +{bonus} Netrunner bonus)'
+            body += f" (includes +{bonus} Netrunner bonus)"
         result = header + body
 
         await channel.send(result)
@@ -98,15 +107,18 @@ class RollSystem(commands.Cog):
         if skip_log:
             return
         if isinstance(channel, discord.DMChannel) and not original_sender:
-            thread = await self.bot.get_cog('DMHandler').get_or_create_dm_thread(log_target)
+            thread = await self.bot.get_cog("DMHandler").get_or_create_dm_thread(
+                log_target
+            )
             if isinstance(thread, discord.abc.Messageable):
                 await thread.send(
                     f"📥 **{log_target.display_name} used:** `!roll {dice}`\n\n{result}"
                 )
         elif original_sender:
-            thread = await self.bot.get_cog('DMHandler').get_or_create_dm_thread(log_target)
+            thread = await self.bot.get_cog("DMHandler").get_or_create_dm_thread(
+                log_target
+            )
             if isinstance(thread, discord.abc.Messageable):
                 await thread.send(
                     f"📤 **{original_sender.display_name} rolled as {author.display_name}** → `!roll {dice}`\n\n{result}"
                 )
-
