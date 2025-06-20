@@ -319,12 +319,24 @@ class Economy(commands.Cog):
         lines = [f"💸 **Estimated Due:** ${total}"] + [f"• {d}" for d in details]
         await ctx.send("\n".join(lines))
 
-    async def backup_balances(self, members: List[discord.Member], *, label: str) -> None:
-        """Append current balances for members to their backup files."""
+    async def backup_balances(
+        self,
+        members: List[discord.Member],
+        *,
+        label: str,
+        balances: Optional[Dict[int, Dict[str, int]]] = None,
+    ) -> None:
+        """Append current balances for members to their backup files.
+
+        ``balances`` can be supplied to avoid fetching the balance for each
+        member again if it was already retrieved by the caller.
+        """
         backup_dir = Path(config.BALANCE_BACKUP_DIR)
         backup_dir.mkdir(exist_ok=True)
         for m in members:
-            bal = await self.unbelievaboat.get_balance(m.id)
+            bal = balances.get(m.id) if balances else None
+            if bal is None:
+                bal = await self.unbelievaboat.get_balance(m.id)
             if not bal:
                 continue
             file_path = backup_dir / f"balance_backup_{m.id}.json"
@@ -391,21 +403,23 @@ class Economy(commands.Cog):
         filename = f"manual_{datetime.utcnow():%Y%m%d_%H%M%S}.json"
         file_path = backup_dir / filename
 
-        data = {}
+        data: Dict[int, Dict[str, int]] = {}
         total = len(members)
         for idx, m in enumerate(members, start=1):
             bal = await self.unbelievaboat.get_balance(m.id)
             if not bal:
-                await ctx.send(f"⚠️ Failed to fetch balance for {m.display_name} ({idx}/{total})")
+                await ctx.send(
+                    f"⚠️ Failed to fetch balance for {m.display_name} ({idx}/{total})"
+                )
                 continue
-            data[str(m.id)] = {
+            data[m.id] = {
                 "cash": bal.get("cash", 0),
                 "bank": bal.get("bank", 0),
             }
             await ctx.send(f"Backed up {m.display_name} ({idx}/{total})")
 
-        await save_json_file(file_path, data)
-        await self.backup_balances(members, label=filename)
+        await save_json_file(file_path, {str(k): v for k, v in data.items()})
+        await self.backup_balances(members, label=filename, balances=data)
         await ctx.send(f"✅ Balances backed up to `{file_path.name}`")
 
     @commands.command(name="backup_balance")
@@ -422,10 +436,10 @@ class Economy(commands.Cog):
             await ctx.send(f"⚠️ Failed to fetch balance for {member.display_name}")
             return
 
-        data = {str(member.id): {"cash": bal.get("cash", 0), "bank": bal.get("bank", 0)}}
+        data = {member.id: {"cash": bal.get("cash", 0), "bank": bal.get("bank", 0)}}
 
-        await save_json_file(file_path, data)
-        await self.backup_balances([member], label=filename)
+        await save_json_file(file_path, {str(member.id): data[member.id]})
+        await self.backup_balances([member], label=filename, balances=data)
         await ctx.send(f"✅ Balance backed up to `{file_path.name}` for {member.display_name}")
 
     @commands.command(name="restore_balances")
