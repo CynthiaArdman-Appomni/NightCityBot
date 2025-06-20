@@ -1,8 +1,6 @@
 from typing import List
-import discord
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 import config
-from NightCityBot.utils.constants import ROLE_COSTS_BUSINESS, ROLE_COSTS_HOUSING
 
 async def run(suite, ctx) -> List[str]:
     """Test rent logging functionality."""

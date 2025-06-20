@@ -20,7 +20,6 @@ def get_loa_role(guild: discord.Guild) -> Optional[discord.abc.Snowflake]:
     return role
 
 import config
-from NightCityBot.utils.permissions import is_fixer
 
 logger = logging.getLogger(__name__)
 

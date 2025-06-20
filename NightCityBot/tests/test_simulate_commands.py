@@ -1,6 +1,5 @@
 from typing import List
 from unittest.mock import AsyncMock, patch
-import discord
 
 async def run(suite, ctx) -> List[str]:
     """Run rent and cyberware simulations and ensure audit logging."""

@@ -1,6 +1,5 @@
 from typing import List
 from unittest.mock import AsyncMock, patch
-import config
 
 async def run(suite, ctx) -> List[str]:
     """Ensure collect_rent backs up member balances."""

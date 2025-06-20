@@ -1,7 +1,6 @@
 from typing import List
 from discord.ext import commands
 from unittest.mock import AsyncMock
-import config
 
 async def run(suite, ctx) -> List[str]:
     """Ensure UnbelievaBoat economy commands are ignored."""

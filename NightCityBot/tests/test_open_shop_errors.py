@@ -3,7 +3,6 @@ import discord
 from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
 import config
-from NightCityBot.utils.constants import ROLE_COSTS_BUSINESS, ROLE_COSTS_HOUSING
 
 async def run(suite, ctx) -> List[str]:
     """Verify open_shop fails in wrong channel or on wrong day."""

@@ -10,7 +10,6 @@ if package_root not in sys.path:
     sys.path.insert(0, package_root)
 
 import config
-from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.cogs.dm_handling import DMHandler
 from NightCityBot.cogs.economy import Economy
 from NightCityBot.cogs.rp_manager import RPManager
