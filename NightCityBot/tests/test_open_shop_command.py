@@ -21,9 +21,11 @@ async def run(suite, ctx) -> List[str]:
 
         original_channel = ctx.channel
         ctx.channel = correct_channel
+        ctx.send = AsyncMock()
 
         economy = suite.bot.get_cog('Economy')
         await economy.open_shop(ctx)
+        suite.assert_send(logs, ctx.send, "ctx.send")
         logs.append("→ Result: ✅ !open_shop executed in correct channel")
 
         ctx.channel = original_channel
