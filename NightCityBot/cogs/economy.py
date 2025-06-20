@@ -159,6 +159,7 @@ class Economy(commands.Cog):
         user_id = str(ctx.author.id)
         now_str = now.isoformat()
 
+        duplicate = False
         async with self.open_log_lock:
             data = await load_json_file(config.OPEN_LOG_FILE, default={})
 
@@ -166,21 +167,24 @@ class Economy(commands.Cog):
             this_month_opens = [
                 datetime.fromisoformat(ts)
                 for ts in all_opens
-                if datetime.fromisoformat(ts).month == now.month and
-                   datetime.fromisoformat(ts).year == now.year
+                if datetime.fromisoformat(ts).month == now.month
+                and datetime.fromisoformat(ts).year == now.year
             ]
 
             if any(ts.date() == now.date() for ts in this_month_opens):
-                await ctx.send("❌ You've already logged a business opening today.")
-                return
+                duplicate = True
+            else:
+                open_count_before = min(len(this_month_opens), 4)
+                open_count_after = min(open_count_before + 1, 4)
+                open_count_total = len(this_month_opens) + 1
 
-            open_count_before = min(len(this_month_opens), 4)
-            open_count_after = min(open_count_before + 1, 4)
-            open_count_total = len(this_month_opens) + 1
+                all_opens.append(now_str)
+                data[user_id] = all_opens
+                await save_json_file(config.OPEN_LOG_FILE, data)
 
-            all_opens.append(now_str)
-            data[user_id] = all_opens
-            await save_json_file(config.OPEN_LOG_FILE, data)
+        if duplicate:
+            await ctx.send("❌ You've already logged a business opening today.")
+            return
 
         reward = 0
         role_names = [r.name for r in ctx.author.roles]
