@@ -14,10 +14,12 @@ async def run(suite, ctx) -> List[str]:
     economy = suite.bot.get_cog('Economy')
     wrong_channel = ctx.channel
     monday = datetime(2025, 6, 16)
+    ctx.send = AsyncMock()
     with patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock()), \
          patch("NightCityBot.utils.helpers.get_tz_now", return_value=monday):
         # Wrong channel
         await economy.open_shop(ctx)
+        suite.assert_send(logs, ctx.send, "ctx.send")
         logs.append("✅ open_shop rejected outside business channel")
 
         ctx.channel = ctx.guild.get_channel(config.BUSINESS_ACTIVITY_CHANNEL_ID)

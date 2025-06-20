@@ -21,8 +21,12 @@ async def run(suite, ctx) -> List[str]:
         economy = suite.bot.get_cog('Economy')
         with (
             patch.object(economy.unbelievaboat, "update_balance", new=AsyncMock(return_value=True)),
+            patch.object(rent_log_channel, "send", new=AsyncMock()) as rent_send,
+            patch.object(eviction_channel, "send", new=AsyncMock()) as evict_send,
         ):
             await economy.simulate_rent(ctx, target_user=user)
+            suite.assert_send(logs, rent_send, "rent_log_channel.send")
+            suite.assert_send(logs, evict_send, "eviction_channel.send")
         logs.append("→ Result: ✅ Rent logic executed and logging channels present.")
     except Exception as e:
         logs.append(f"❌ Exception in test_rent_logging_sends: {e}")
