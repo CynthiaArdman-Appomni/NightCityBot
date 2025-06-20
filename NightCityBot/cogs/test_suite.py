@@ -86,6 +86,13 @@ class TestSuite(commands.Cog):
 
         ctx.message.attachments = []
 
+        # Suppress audit logging during test runs unless explicitly patched
+        admin_cog = self.bot.get_cog("Admin")
+        audit_patch = None
+        if admin_cog:
+            audit_patch = patch.object(admin_cog, "log_audit", new=AsyncMock())
+            audit_patch.start()
+
         rp_required_tests = {
             "test_post_executes_command",
             "test_post_roll_execution",
@@ -191,6 +198,8 @@ class TestSuite(commands.Cog):
             embed.set_footer(text=f"⏱️ Completed in {duration:.2f}s")
             await output_channel.send(embed=embed)
         finally:
+            if audit_patch:
+                audit_patch.stop()
             if ctx.test_rp_channel:
                 logger.debug("Cleaning up test RP channel %s", ctx.test_rp_channel)
                 thread = await rp_manager.end_rp_session(ctx.test_rp_channel)
