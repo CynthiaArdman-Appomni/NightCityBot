@@ -1,28 +1,63 @@
-import discord
-from discord.ext import commands
-import os
-import sys
-import logging
+print("🔥 BOT.PY: Starting imports...")
 
+import discord
+print("✅ discord imported")
+from discord.ext import commands
+print("✅ discord.ext.commands imported")
+import os
+print("✅ os imported")
+import sys
+print("✅ sys imported")
+import logging
+print("✅ logging imported")
+
+print("🔍 Setting up Python path...")
 # Ensure the package root is on the path when executed as a script
 package_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+print(f"📁 Package root: {package_root}")
 if package_root not in sys.path:
     sys.path.insert(0, package_root)
+    print("✅ Package root added to sys.path")
 
+print("🔍 Importing config...")
 import config
+print("✅ config imported")
+
+print("🔍 Importing utils...")
 from NightCityBot.utils.permissions import is_fixer
+print("✅ permissions imported")
+
+print("🔍 Importing cogs...")
 from NightCityBot.cogs.dm_handling import DMHandler
+print("✅ DMHandler imported")
 from NightCityBot.cogs.economy import Economy
+print("✅ Economy imported")
 from NightCityBot.cogs.rp_manager import RPManager
+print("✅ RPManager imported")
 from NightCityBot.cogs.roll_system import RollSystem
+print("✅ RollSystem imported")
 from NightCityBot.cogs.admin import Admin
+print("✅ Admin imported")
 from NightCityBot.cogs.test_suite import TestSuite
+print("✅ TestSuite imported")
 from NightCityBot.cogs.cyberware import CyberwareManager
+print("✅ CyberwareManager imported")
 from NightCityBot.cogs.loa import LOA
+print("✅ LOA imported")
 from NightCityBot.cogs.system_control import SystemControl
+print("✅ SystemControl imported")
+
+print("🔍 Importing startup checks...")
 from NightCityBot.utils.startup_checks import perform_startup_checks
+print("✅ startup_checks imported")
+
+print("🔍 Importing Flask...")
 from flask import Flask
+print("✅ Flask imported")
 from threading import Thread
+print("✅ Thread imported")
+
+print("🎉 ALL IMPORTS COMPLETED SUCCESSFULLY!")
 
 logger = logging.getLogger(__name__)
 
