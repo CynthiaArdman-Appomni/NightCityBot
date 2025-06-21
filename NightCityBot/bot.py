@@ -97,9 +97,24 @@ def keep_alive():
 
 
 def main():
+    # Add startup logging
+    logging.basicConfig(level=logging.INFO)
+    logger.info("Starting NightCityBot...")
+    
+    if not config.TOKEN:
+        logger.error("❌ No Discord token found! Please set TOKEN in Secrets.")
+        return
+    
+    logger.info("✅ Token found, connecting to Discord...")
     bot = NightCityBot()
     keep_alive()
-    bot.run(config.TOKEN)
+    
+    try:
+        bot.run(config.TOKEN)
+    except discord.LoginFailure:
+        logger.error("❌ Invalid Discord token!")
+    except Exception as e:
+        logger.error(f"❌ Bot startup failed: {e}")
 
 
 if __name__ == "__main__":
