@@ -98,23 +98,51 @@ def keep_alive():
 
 def main():
     # Add startup logging
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    print("🚀 Starting NightCityBot initialization...")
     logger.info("Starting NightCityBot...")
     
+    # Check token
+    print(f"🔑 Checking for Discord token...")
     if not config.TOKEN:
+        print("❌ No Discord token found! Please set TOKEN in Secrets.")
         logger.error("❌ No Discord token found! Please set TOKEN in Secrets.")
         return
     
+    print("✅ Token found!")
     logger.info("✅ Token found, connecting to Discord...")
-    bot = NightCityBot()
-    keep_alive()
     
+    # Initialize bot
+    print("🤖 Creating bot instance...")
+    try:
+        bot = NightCityBot()
+        print("✅ Bot instance created successfully")
+    except Exception as e:
+        print(f"❌ Failed to create bot instance: {e}")
+        logger.error(f"❌ Failed to create bot instance: {e}")
+        return
+    
+    # Start keep-alive server
+    print("🌐 Starting keep-alive server...")
+    try:
+        keep_alive()
+        print("✅ Keep-alive server started")
+    except Exception as e:
+        print(f"❌ Failed to start keep-alive server: {e}")
+        logger.error(f"❌ Failed to start keep-alive server: {e}")
+    
+    # Connect to Discord
+    print("🔗 Connecting to Discord...")
     try:
         bot.run(config.TOKEN)
     except discord.LoginFailure:
+        print("❌ Invalid Discord token!")
         logger.error("❌ Invalid Discord token!")
     except Exception as e:
+        print(f"❌ Bot startup failed: {e}")
         logger.error(f"❌ Bot startup failed: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 if __name__ == "__main__":
