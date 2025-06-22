@@ -46,6 +46,8 @@ from NightCityBot.cogs.loa import LOA
 print("✅ LOA imported")
 from NightCityBot.cogs.system_control import SystemControl
 print("✅ SystemControl imported")
+from NightCityBot.cogs.role_buttons import RoleButtons
+print("✅ RoleButtons imported")
 
 print("🔍 Importing startup checks...")
 from NightCityBot.utils.startup_checks import perform_startup_checks
@@ -87,6 +89,7 @@ class NightCityBot(commands.Bot):
         await self.add_cog(RollSystem(self))
         await self.add_cog(CyberwareManager(self))
         await self.add_cog(LOA(self))
+        await self.add_cog(RoleButtons(self))
         await self.add_cog(Admin(self))
         await self.add_cog(TestSuite(self))
         # Verify configuration and clean up logs after all cogs are loaded
