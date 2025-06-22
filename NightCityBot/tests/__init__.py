@@ -48,6 +48,7 @@ TEST_MODULES = {
     "test_restore_balances_label": "Restores all users' balances using a label.",
     "test_test_bot_dm": "Runs test_bot in silent mode and checks DM output.",
     "test_open_shop_concurrency": "Runs open_shop concurrently to ensure locking.",
+    "test_npc_button": "Assign NPC role via button.",
 }
 
 for name in TEST_MODULES:
