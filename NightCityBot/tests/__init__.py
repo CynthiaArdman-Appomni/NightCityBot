@@ -49,6 +49,7 @@ TEST_MODULES = {
     "test_test_bot_dm": "Runs test_bot in silent mode and checks DM output.",
     "test_open_shop_concurrency": "Runs open_shop concurrently to ensure locking.",
     "test_npc_button": "Assign NPC role via button.",
+    "test_call_trauma": "Pings Trauma Team with the user's plan.",
 }
 
 for name in TEST_MODULES:
