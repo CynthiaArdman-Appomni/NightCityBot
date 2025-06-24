@@ -41,5 +41,4 @@ class TraumaTeam(commands.Cog):
         else:
             await ctx.send("⚠️ Trauma Team channel not found.")
             return
-
         await ctx.send("🚑 Trauma Team notified.")

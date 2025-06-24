@@ -43,6 +43,13 @@ class Economy(commands.Cog):
         self.trauma_service = TraumaTeamService(bot)
         self.open_log_lock = asyncio.Lock()
         self.attend_lock = asyncio.Lock()
+        self.event_expires_at: Optional[datetime] = None
+
+    def event_active(self) -> bool:
+        """Return ``True`` if a fixer event is currently active."""
+        if self.event_expires_at is None:
+            return False
+        return helpers.get_tz_now() < self.event_expires_at
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -133,6 +140,19 @@ class Economy(commands.Cog):
             return current["cash"], current["bank"]
         return None, None
 
+    @commands.command(aliases=["eventstart", "open_event", "start_event"])
+    @is_fixer()
+    async def event_start(self, ctx):
+        """Temporarily enable !attend and !open_shop outside of Sunday."""
+        if ctx.channel.id != config.ATTENDANCE_CHANNEL_ID:
+            ch = ctx.guild.get_channel(config.ATTENDANCE_CHANNEL_ID)
+            mention = ch.mention if ch else "#attendance"
+            await ctx.send(f"❌ Please use {mention} for this command.")
+            return
+        self.event_expires_at = helpers.get_tz_now() + timedelta(hours=4)
+        expires = self.event_expires_at.strftime("%I:%M %p %Z")
+        await ctx.send(f"🟢 Event started! Temporary attendance and shop opens allowed until {expires}.")
+
     @commands.command(aliases=["openshop", "os"])
     @commands.has_permissions(send_messages=True)
     async def open_shop(self, ctx):
@@ -152,7 +172,7 @@ class Economy(commands.Cog):
             return
 
         now = helpers.get_tz_now()
-        if now.weekday() != 6:
+        if now.weekday() != 6 and not self.event_active():
             await ctx.send("❌ Business openings can only be logged on Sundays.")
             return
 
@@ -222,7 +242,7 @@ class Economy(commands.Cog):
             return
 
         now = helpers.get_tz_now()
-        if now.weekday() != 6:
+        if now.weekday() != 6 and not self.event_active():
             await ctx.send("❌ Attendance can only be logged on Sundays.")
             return
 
