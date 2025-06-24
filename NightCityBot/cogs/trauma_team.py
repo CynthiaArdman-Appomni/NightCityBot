@@ -14,7 +14,7 @@ class TraumaTeam(commands.Cog):
     async def call_trauma(self, ctx: commands.Context) -> None:
         """Ping the Trauma Team role with the user's plan."""
         trauma_channel = ctx.guild.get_channel(config.TRAUMA_FORUM_CHANNEL_ID)
-        if not isinstance(trauma_channel, (discord.TextChannel, discord.ForumChannel)):
+        if trauma_channel is None:
             await ctx.send("⚠️ Trauma Team channel not found.")
             return
 
@@ -24,7 +24,21 @@ class TraumaTeam(commands.Cog):
             return
 
         mention = f"<@&{config.TRAUMA_TEAM_ROLE_ID}>"
-        await trauma_channel.send(
-            f"{mention} <@{ctx.author.id}> with **{plan_role.name}** is in need of assistance."
-        )
+        message = f"{mention} <@{ctx.author.id}> with **{plan_role.name}** is in need of assistance."
+
+        if isinstance(trauma_channel, discord.TextChannel):
+            await trauma_channel.send(message)
+        elif isinstance(trauma_channel, discord.ForumChannel):
+            created = await trauma_channel.create_thread(
+                name=f"Trauma-{ctx.author.name}-{ctx.author.id}",
+                content=message,
+                reason="Trauma Team assistance request",
+            )
+            # ensure thread is returned consistently across discord.py versions
+            thread = created.thread if hasattr(created, "thread") else created
+            if isinstance(thread, discord.Thread):
+                await thread.edit(archived=False)
+        else:
+            await ctx.send("⚠️ Trauma Team channel not found.")
+            return
         await ctx.send("🚑 Trauma Team notified.")
