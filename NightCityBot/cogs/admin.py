@@ -155,6 +155,7 @@ class Admin(commands.Cog):
                 "💵 Economy & Rent",
                 "`!open_shop` (aliases: !openshop, !os) – record a business opening on Sunday and grant passive income immediately.\n"
                 "`!attend` – log weekly attendance for a $250 payout.\n"
+                "`!event_start` (aliases: !eventstart, !open_event, !start_event) – allow !attend and !open_shop for 4 hours outside Sunday when run in #attendance.\n"
                 "`!due` – display a detailed breakdown of what a user owes on the 1st.\n"
                 "`!collect_rent [@user] [-v] [-force]` (alias: !collectrent) – run the monthly rent cycle. Use `-force` to ignore the 30 day limit.\n"
                 "`!collect_housing @user [-v] [-force]` / `!collect_business @user [-v] [-force]` / `!collect_trauma @user [-v] [-force]` – charge specific fees with optional verbose logs. (aliases: !collecthousing / !collectbusiness / !collecttrauma)\n"
