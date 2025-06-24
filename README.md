@@ -30,7 +30,7 @@ import os
 TOKEN = os.environ.get("TOKEN")
 UNBELIEVABOAT_API_TOKEN = os.environ.get("UNBELIEVABOAT_API_TOKEN")
 GUILD_ID = 1234567890
-TIMEZONE = "America/New_York"  # or your preferred zone
+TIMEZONE = "America/Los_Angeles"  # or your preferred zone
 ```
 
 Configuration is verified automatically when the bot starts.
@@ -67,6 +67,7 @@ Main commands:
 
 * `!open_shop` – used by business owners on Sundays. Logs a shop opening and immediately awards passive income based on the business tier. Each player can record up to four openings per month.
 * `!attend` – every verified player can run this on Sundays to receive a weekly $250 attendance reward. The command refuses to run more than once per week.
+* `!event_start` – fixers can activate this in the attendance channel to temporarily allow `!attend` and `!open_shop` for four hours outside of Sunday.
 * `!due` – displays a full breakdown of the baseline fee, housing and business rent, Trauma Team subscription and upcoming cyberware medication costs that will be charged on the 1st.
 * `!collect_rent [@user] [-v] [-force]` – run the monthly rent cycle. Supply a user mention to limit the collection to that member. Use `-force` to ignore the 30 day cooldown.
 * `!simulate_rent [@user] [-v]` – identical to `!collect_rent` but performs a dry run without updating balances.
