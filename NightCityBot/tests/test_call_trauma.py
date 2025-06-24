@@ -12,14 +12,14 @@ async def run(suite, ctx) -> List[str]:
         logs.append('❌ TraumaTeam cog not loaded')
         return logs
 
-    trauma_channel = MagicMock(spec=discord.ForumChannel)
-    trauma_channel.create_thread = AsyncMock()
+    trauma_channel = MagicMock(spec=discord.TextChannel)
+    trauma_channel.send = AsyncMock()
     with patch.object(ctx.guild, 'get_channel', return_value=trauma_channel):
         role = MagicMock(spec=discord.Role)
         role.name = 'Trauma Team Gold'
         ctx.author.roles = [role]
         ctx.send = AsyncMock()
         await cog.call_trauma(ctx)
-    suite.assert_send(logs, trauma_channel.create_thread, 'create_thread')
+    suite.assert_send(logs, trauma_channel.send, 'send')
     return logs
 
