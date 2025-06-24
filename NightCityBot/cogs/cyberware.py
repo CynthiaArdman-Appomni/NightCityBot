@@ -44,11 +44,11 @@ class CyberwareManager(commands.Cog):
 
     @tasks.loop(time=time(hour=0, tzinfo=ZoneInfo(getattr(config, "TIMEZONE", "UTC"))))
     async def weekly_check(self):
-        """Run every day and trigger processing each Saturday."""
+        """Run every day and trigger processing each Monday."""
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('cyberware'):
             return
-        if get_tz_now().weekday() != 5:  # Saturday
+        if get_tz_now().weekday() != 0:  # Monday
             return
         await self.process_week()
 
@@ -282,3 +282,38 @@ class CyberwareManager(commands.Cog):
         """Show how many weeks a member has gone without a checkup."""
         weeks = self.data.get(str(member.id), 0)
         await ctx.send(f"{member.display_name} has gone {weeks} week(s) without a checkup.")
+
+    @commands.command(name="give_checkup_role", aliases=["givecheckuprole", "givecheckups", "cuall", "checkupall"])
+    @commands.check_any(is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True))
+    async def give_checkup_role(self, ctx: commands.Context, member: Optional[discord.Member] = None) -> None:
+        """Give the checkup role to a member or everyone with cyberware."""
+        control = self.bot.get_cog('SystemControl')
+        if control and not control.is_enabled('cyberware'):
+            await ctx.send("⚠️ The cyberware system is currently disabled.")
+            return
+
+        guild = ctx.guild
+        checkup_role = guild.get_role(config.CYBER_CHECKUP_ROLE_ID)
+        medium_role = guild.get_role(config.CYBER_MEDIUM_ROLE_ID)
+        high_role = guild.get_role(config.CYBER_HIGH_ROLE_ID)
+        extreme_role = guild.get_role(config.CYBER_EXTREME_ROLE_ID)
+        loa_role = guild.get_role(config.LOA_ROLE_ID)
+        if checkup_role is None:
+            await ctx.send("⚠️ Checkup role is not configured.")
+            return
+
+        members = [member] if member else guild.members
+        count = 0
+        for m in members:
+            if loa_role and loa_role in m.roles:
+                continue
+            has_cyber = any(
+                r for r in (medium_role, high_role, extreme_role) if r and r in m.roles
+            )
+            if not has_cyber:
+                continue
+            if checkup_role not in m.roles:
+                await m.add_roles(checkup_role, reason="Checkup role assign")
+                count += 1
+
+        await ctx.send(f"✅ Gave the checkup role to {count} member(s).")
