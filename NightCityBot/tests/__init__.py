@@ -50,6 +50,7 @@ TEST_MODULES = {
     "test_open_shop_concurrency": "Runs open_shop concurrently to ensure locking.",
     "test_npc_button": "Assign NPC role via button.",
     "test_call_trauma": "Pings Trauma Team with the user's plan.",
+    "test_list_deficits": "Reports members with insufficient funds.",
 }
 
 for name in TEST_MODULES:
