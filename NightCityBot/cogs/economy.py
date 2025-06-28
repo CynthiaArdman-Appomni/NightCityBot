@@ -343,6 +343,79 @@ class Economy(commands.Cog):
         lines = [f"💸 **Estimated Due:** ${total}"] + [f"• {d}" for d in details]
         await ctx.send("\n".join(lines))
 
+    def _list_obligations(self, member: discord.Member) -> List[tuple[str, int]]:
+        """Return a list of (name, cost) tuples for a member's upcoming fees."""
+        obligations: List[tuple[str, int]] = []
+        role_names = [r.name for r in member.roles]
+
+        loa_role = member.guild.get_role(config.LOA_ROLE_ID)
+        on_loa = loa_role in member.roles if loa_role else False
+
+        if not on_loa:
+            obligations.append(("Baseline living cost", BASELINE_LIVING_COST))
+            for role in role_names:
+                if "Housing Tier" in role:
+                    amount = ROLE_COSTS_HOUSING.get(role, 0)
+                    obligations.append((role, amount))
+
+        for role in role_names:
+            if "Business Tier" in role:
+                amount = ROLE_COSTS_BUSINESS.get(role, 0)
+                obligations.append((role, amount))
+
+        if not on_loa:
+            trauma_role = next((r for r in member.roles if r.name in TRAUMA_ROLE_COSTS), None)
+            if trauma_role:
+                obligations.append((trauma_role.name, TRAUMA_ROLE_COSTS[trauma_role.name]))
+
+            cyber = self.bot.get_cog('CyberwareManager')
+            if cyber:
+                guild = member.guild
+                checkup_role = guild.get_role(config.CYBER_CHECKUP_ROLE_ID)
+                medium = guild.get_role(config.CYBER_MEDIUM_ROLE_ID)
+                high = guild.get_role(config.CYBER_HIGH_ROLE_ID)
+                extreme = guild.get_role(config.CYBER_EXTREME_ROLE_ID)
+
+                level = None
+                if extreme and extreme in member.roles:
+                    level = 'extreme'
+                elif high and high in member.roles:
+                    level = 'high'
+                elif medium and medium in member.roles:
+                    level = 'medium'
+
+                if level:
+                    weeks = cyber.data.get(str(member.id), 0)
+                    if checkup_role and checkup_role in member.roles:
+                        upcoming = weeks + 1
+                        cost = cyber.calculate_cost(level, upcoming)
+                        obligations.append((f"Cyberware meds week {upcoming}", cost))
+        return obligations
+
+    async def _evaluate_member_funds(
+        self, member: discord.Member
+    ) -> Optional[tuple[int, int, List[str], List[str]]]:
+        """Return balance, deficit, payable items and unpaid items."""
+        balance = await self.unbelievaboat.get_balance(member.id)
+        if not balance:
+            return None
+
+        total_funds = balance.get("cash", 0) + balance.get("bank", 0)
+        obligations = self._list_obligations(member)
+        remaining = total_funds
+        payable: List[str] = []
+        unpaid: List[str] = []
+        for name, cost in obligations:
+            if remaining >= cost:
+                remaining -= cost
+                payable.append(f"{name} (${cost})")
+            else:
+                unpaid.append(f"{name} (${cost})")
+        deficit = sum(c for _, c in obligations) - total_funds
+        if deficit < 0:
+            deficit = 0
+        return total_funds, deficit, payable, unpaid
+
     async def backup_balances(
         self,
         members: List[discord.Member],
@@ -1266,5 +1339,27 @@ class Economy(commands.Cog):
                     verbose = True
                     break
         await self.run_rent_collection(ctx, target_user=target_user, dry_run=True, verbose=verbose)
+
+    @commands.command(name="list_deficits")
+    @commands.has_permissions(administrator=True)
+    async def list_deficits(self, ctx) -> None:
+        """Show members who cannot pay all upcoming fees."""
+        members = [m for m in ctx.guild.members if any("Tier" in r.name for r in m.roles)]
+        lines: List[str] = []
+        for m in members:
+            result = await self._evaluate_member_funds(m)
+            if not result:
+                continue
+            _total, deficit, payable, unpaid = result
+            if deficit > 0:
+                pay = ", ".join(payable) if payable else "None"
+                fail = ", ".join(unpaid) if unpaid else "None"
+                lines.append(
+                    f"<@{m.id}> short by ${deficit:,}. Can pay: {pay}. Cannot pay: {fail}."
+                )
+        if lines:
+            await ctx.send("\n".join(lines))
+        else:
+            await ctx.send("✅ Everyone can cover their upcoming obligations.")
 
 

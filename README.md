@@ -71,6 +71,7 @@ Main commands:
 * `!due` – displays a full breakdown of the baseline fee, housing and business rent, Trauma Team subscription and upcoming cyberware medication costs that will be charged on the 1st.
 * `!collect_rent [@user] [-v] [-force]` – run the monthly rent cycle. Supply a user mention to limit the collection to that member. Use `-force` to ignore the 30 day cooldown.
 * `!simulate_rent [@user] [-v]` – identical to `!collect_rent` but performs a dry run without updating balances.
+* `!list_deficits` – list members who can't cover upcoming fees, how much they're short and which charges would fail.
 * `!collect_housing @user [-force]`, `!collect_business @user [-force]`, `!collect_trauma @user [-force]` – immediately charge a single user's housing rent, business rent or Trauma Team subscription. Pass `-force` to override the 30 day limit.
 * `!backup_balances` – save all member balances to a timestamped JSON file. Each
   backup entry records the balance and the `change` since the previous entry.
