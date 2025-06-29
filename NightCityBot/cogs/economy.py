@@ -1319,15 +1319,20 @@ class Economy(commands.Cog):
     async def simulate_rent(self, ctx, *args, target_user: Optional[discord.Member] = None):
         """Simulate rent collection without applying changes.
 
-        Pass ``-v``/``--verbose`` to include detailed output.
+        Pass ``-v``/``--verbose`` to include detailed output. Use ``-cyberware``
+        to also preview the upcoming cyberware medication cost for ``target_user``.
         """
         verbose = False
+        include_cyber = False
         if target_user is None:
             converter = commands.MemberConverter()
             remaining = []
             for arg in args:
-                if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
+                lower = arg.lower()
+                if lower in {"-v", "--verbose", "-verbose", "verbose"}:
                     verbose = True
+                elif lower in {"-cyberware", "--cyberware", "cyberware"}:
+                    include_cyber = True
                 else:
                     remaining.append(arg)
             for arg in remaining:
@@ -1338,10 +1343,41 @@ class Economy(commands.Cog):
                     continue
         else:
             for arg in args:
-                if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
+                lower = arg.lower()
+                if lower in {"-v", "--verbose", "-verbose", "verbose"}:
                     verbose = True
-                    break
+                elif lower in {"-cyberware", "--cyberware", "cyberware"}:
+                    include_cyber = True
         await self.run_rent_collection(ctx, target_user=target_user, dry_run=True, verbose=verbose)
+
+        if include_cyber and target_user:
+            cyber = self.bot.get_cog('CyberwareManager')
+            if not cyber:
+                await ctx.send("⚠️ Cyberware system not available.")
+            else:
+                guild = ctx.guild
+                checkup = guild.get_role(config.CYBER_CHECKUP_ROLE_ID)
+                medium = guild.get_role(config.CYBER_MEDIUM_ROLE_ID)
+                high = guild.get_role(config.CYBER_HIGH_ROLE_ID)
+                extreme = guild.get_role(config.CYBER_EXTREME_ROLE_ID)
+                level = None
+                if extreme and extreme in target_user.roles:
+                    level = 'extreme'
+                elif high and high in target_user.roles:
+                    level = 'high'
+                elif medium and medium in target_user.roles:
+                    level = 'medium'
+
+                if level:
+                    weeks = cyber.data.get(str(target_user.id), 0)
+                    if checkup and checkup in target_user.roles:
+                        upcoming = weeks + 1
+                        cost = cyber.calculate_cost(level, upcoming)
+                        await ctx.send(f"💊 Cyberware meds week {upcoming}: ${cost}")
+                    else:
+                        await ctx.send("Cyberware checkup due — no med cost")
+                else:
+                    await ctx.send(f"{target_user.display_name} has no cyberware role.")
 
     @commands.command(name="list_deficits")
     @commands.has_permissions(administrator=True)
