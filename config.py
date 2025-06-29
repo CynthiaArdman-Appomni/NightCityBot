@@ -37,6 +37,7 @@ NPC_ROLE_ID = 1348661508011462769
 THREAD_MAP_FILE = "thread_map.json"
 OPEN_LOG_FILE = "business_open_log.json"
 LAST_RENT_FILE = "last_rent.json"
+LAST_PAYMENT_FILE = "last_payment.json"
 BALANCE_BACKUP_DIR = "backups"
 RENT_AUDIT_DIR = "rent_audits"
 ATTEND_LOG_FILE = "attendance_log.json"
