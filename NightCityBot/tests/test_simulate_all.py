@@ -34,4 +34,9 @@ async def run(suite, ctx) -> List[str]:
     ):
         await economy.simulate_all(ctx, target_user=user)
         suite.assert_called(logs, mock_audit, "log_audit")
+        messages = [c.args[0] for c in ctx.send.await_args_list if c.args]
+        if any("Baseline living cost" in m for m in messages):
+            logs.append("✅ baseline shown")
+        else:
+            logs.append("❌ baseline missing")
     return logs
