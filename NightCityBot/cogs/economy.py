@@ -343,6 +343,16 @@ class Economy(commands.Cog):
         lines = [f"💸 **Estimated Due:** ${total}"] + [f"• {d}" for d in details]
         await ctx.send("\n".join(lines))
 
+    @commands.command(name="last_payment")
+    async def last_payment(self, ctx):
+        """Show the details of your last automated payment."""
+        data = await load_json_file(config.LAST_PAYMENT_FILE, default={})
+        summary = data.get(str(ctx.author.id))
+        if not summary:
+            await ctx.send("❌ No payment record found.")
+        else:
+            await ctx.send(summary)
+
     def _list_obligations(self, member: discord.Member) -> List[tuple[str, int]]:
         """Return a list of (name, cost) tuples for a member's upcoming fees."""
         obligations: List[tuple[str, int]] = []
@@ -468,6 +478,12 @@ class Economy(commands.Cog):
 
             prev_entries.insert(insert_index, entry)
             await save_json_file(file_path, prev_entries)
+
+    async def record_last_payment(self, member: discord.Member, summary: str) -> None:
+        """Store the last payment summary for a member."""
+        data = await load_json_file(config.LAST_PAYMENT_FILE, default={})
+        data[str(member.id)] = summary
+        await save_json_file(config.LAST_PAYMENT_FILE, data)
 
     async def _label_used_recently(
         self, member: discord.Member, label: str, days: int = 30
@@ -1252,6 +1268,16 @@ class Economy(commands.Cog):
                     await ctx.send(f"✅ Completed for <@{member.id}>")
                 if dry_run and admin_cog:
                     await admin_cog.log_audit(ctx.author, summary)
+                if not dry_run:
+                    dm_failed = False
+                    try:
+                        await member.send(summary)
+                    except Exception:
+                        log.append("⚠️ Could not send DM.")
+                        dm_failed = True
+                    if dm_failed:
+                        summary = "\n".join(log)
+                    await self.record_last_payment(member, summary)
                 audit_lines.append(summary)
 
             except Exception as e:
