@@ -1556,7 +1556,12 @@ class Economy(commands.Cog):
         *args,
         target_user: Optional[discord.Member] = None,
     ) -> None:
-        """Run rent and cyberware simulations together."""
+        """Run rent and cyberware simulations together.
+
+        Unlike running ``simulate_rent`` and ``simulate_cyberware`` separately,
+        this groups the rent and cyberware preview for each member into a single
+        block so it's easier to evaluate the full monthly impact.
+        """
         verbose = False
         if target_user is None:
             converter = commands.MemberConverter()
@@ -1578,17 +1583,147 @@ class Economy(commands.Cog):
                 if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
                     verbose = True
 
-        await self.simulate_rent(
-            ctx, *(["-v"] if verbose else []), target_user=target_user
-        )
+        await ctx.send("🧪 Starting combined simulation...")
+        members: List[discord.Member] = []
+        for m in ctx.guild.members:
+            if target_user and m.id == target_user.id:
+                members = [m]
+                break
+            if not target_user:
+                has_verified = any(r.id == config.VERIFIED_ROLE_ID for r in m.roles)
+                has_tier = any("Tier" in r.name for r in m.roles)
+                if has_verified or has_tier:
+                    members.append(m)
+        if not members:
+            await ctx.send("❌ No matching members found.")
+            return
+
         cyber = self.bot.get_cog("CyberwareManager")
         if not cyber:
             await ctx.send("⚠️ Cyberware system not available.")
-        else:
-            if target_user:
-                await cyber.simulate_cyberware(ctx, str(target_user.id))
+            return
+
+        admin_cog = self.bot.get_cog("Admin")
+
+        for member in members:
+            log: List[str] = [f"🔍 **Working on:** <@{member.id}>"]
+            role_names = [r.name for r in member.roles]
+            app_roles = [r for r in role_names if "Tier" in r]
+            log.append(f"🏷️ Detected roles: {', '.join(app_roles) or 'None'}")
+
+            loa_role = member.guild.get_role(config.LOA_ROLE_ID)
+            on_loa = loa_role in member.roles if loa_role else False
+            if on_loa:
+                log.append("🏖️ Member is on LOA — skipping personal fees.")
+
+            bal = await self.unbelievaboat.get_balance(member.id)
+            if not bal:
+                log.append("⚠️ Could not fetch balance.")
+                summary = "\n".join(log)
+                if verbose:
+                    await ctx.send(summary)
+                else:
+                    await ctx.send(f"⚠️ Could not fetch balance for <@{member.id}>")
+                if admin_cog:
+                    await admin_cog.log_audit(ctx.author, summary)
+                continue
+            cash = bal.get("cash", 0)
+            bank = bal.get("bank", 0)
+            log.append(
+                f"💵 Starting balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}"
+            )
+
+            check = await self.unbelievaboat.verify_balance_ops(member.id)
+            log.append(
+                "🔄 Balance check passed."
+                if check
+                else "⚠️ Balance update check failed."
+            )
+
+            if not on_loa:
+                _ok, cash, bank = await self.deduct_flat_fee(
+                    member, cash, bank, log, BASELINE_LIVING_COST, dry_run=True
+                )
+                if not _ok:
+                    log.append(
+                        "⚠️ Baseline living cost unpaid. Continuing with rent steps."
+                    )
+
+            cash, bank = (
+                await self.process_housing_rent(
+                    member,
+                    app_roles,
+                    cash,
+                    bank,
+                    log,
+                    None,
+                    None,
+                    dry_run=True,
+                )
+                if not on_loa
+                else (cash, bank)
+            )
+            cash, bank = await self.process_business_rent(
+                member,
+                app_roles,
+                cash,
+                bank,
+                log,
+                None,
+                None,
+                dry_run=True,
+            )
+
+            if not on_loa:
+                await self.trauma_service.process_trauma_team_payment(
+                    member, log=log, dry_run=True
+                )
+
+            # Cyberware preview
+            checkup = member.guild.get_role(config.CYBER_CHECKUP_ROLE_ID)
+            medium = member.guild.get_role(config.CYBER_MEDIUM_ROLE_ID)
+            high = member.guild.get_role(config.CYBER_HIGH_ROLE_ID)
+            extreme = member.guild.get_role(config.CYBER_EXTREME_ROLE_ID)
+            level = None
+            if extreme and extreme in member.roles:
+                level = "extreme"
+            elif high and high in member.roles:
+                level = "high"
+            elif medium and medium in member.roles:
+                level = "medium"
+            if level and checkup and checkup in member.roles:
+                weeks = cyber.data.get(str(member.id), 0) + 1
+                cost = cyber.calculate_cost(level, weeks)
+                log.append(f"💊 Cyberware meds week {weeks}: ${cost}")
+                total = (cash or 0) + (bank or 0)
+                if total >= cost:
+                    deduct_cash = min(cash, cost)
+                    deduct_bank = cost - deduct_cash
+                    cash -= deduct_cash
+                    bank -= deduct_bank
+                    log.append(
+                        f"🧮 Would subtract cyberware meds ${cost} — ${deduct_cash} from cash, {deduct_bank} from bank."
+                    )
+                else:
+                    log.append(
+                        f"❌ Cannot pay cyberware meds of ${cost}. Would result in negative balance."
+                    )
+            elif level:
+                log.append("Cyberware checkup due — no med cost")
+
+            log.append(
+                f"📊 Projected balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}"
+            )
+
+            summary = "\n".join(log)
+            if verbose:
+                await ctx.send(summary)
             else:
-                await cyber.simulate_cyberware(ctx)
+                await ctx.send(f"✅ Completed for <@{member.id}>")
+            if admin_cog:
+                await admin_cog.log_audit(ctx.author, summary)
+
+        await ctx.send("✅ Simulation complete.")
 
     @commands.command(name="list_deficits")
     @commands.has_permissions(administrator=True)
