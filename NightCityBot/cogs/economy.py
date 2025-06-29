@@ -1201,6 +1201,7 @@ class Economy(commands.Cog):
         dry_run: bool = False,
         verbose: bool = False,
         force: bool = False,
+        preview_dm: bool = False,
     ):
         """Internal helper for rent collection and simulation.
 
@@ -1386,6 +1387,10 @@ class Economy(commands.Cog):
                     f"📊 {'Projected' if dry_run else 'Final'} balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}"
                 )
 
+                if dry_run and preview_dm:
+                    log.append("💌 Would DM summary to user.")
+                    log.append("📝 Would record last_payment entry.")
+
                 summary = "\n".join(log)
                 if verbose:
                     await ctx.send(summary)
@@ -1507,7 +1512,11 @@ class Economy(commands.Cog):
                 elif lower in {"-cyberware", "--cyberware", "cyberware"}:
                     include_cyber = True
         await self.run_rent_collection(
-            ctx, target_user=target_user, dry_run=True, verbose=verbose
+            ctx,
+            target_user=target_user,
+            dry_run=True,
+            verbose=verbose,
+            preview_dm=target_user is not None,
         )
 
         if include_cyber and target_user:
