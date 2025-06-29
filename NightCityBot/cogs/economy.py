@@ -1743,12 +1743,15 @@ class Economy(commands.Cog):
             if any("Tier" in r.name for r in m.roles)
             or any(r.id == config.VERIFIED_ROLE_ID for r in m.roles)
         ]
-        has_deficits = False
+        failures: List[str] = []
         for m in members:
             result = await self._evaluate_member_funds(m)
             if not result:
                 continue
-            _total, deficit, payable, unpaid = result
+            _total, deficit, _payable, unpaid = result
+            if deficit <= 0:
+                continue
+
             fail_items: List[str] = []
             for item in unpaid:
                 name = item.split(" ($")[0]
@@ -1757,14 +1760,12 @@ class Economy(commands.Cog):
                 else:
                     fail_items.append(name)
             fail_desc = ", ".join(fail_items) if fail_items else "None"
-            if deficit > 0:
-                has_deficits = True
-                await ctx.send(
-                    f"{m.display_name} short by ${deficit:,}. Can't pay: {fail_desc}."
-                )
-            else:
-                await ctx.send(
-                    f"✅ {m.display_name} can cover all upcoming obligations."
-                )
-        if not has_deficits:
+            failures.append(
+                f"{m.display_name} short by ${deficit:,}. Can't pay: {fail_desc}."
+            )
+
+        if failures:
+            for line in failures:
+                await ctx.send(line)
+        else:
             await ctx.send("✅ Everyone can cover their upcoming obligations.")
