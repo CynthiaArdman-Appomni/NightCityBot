@@ -1158,8 +1158,11 @@ class Economy(commands.Cog):
             if target_user and m.id == target_user.id:
                 members_to_process = [m]
                 break
-            if not target_user and any("Tier" in r.name for r in m.roles):
-                members_to_process.append(m)
+            if not target_user:
+                has_verified = any(r.id == config.VERIFIED_ROLE_ID for r in m.roles)
+                has_tier = any("Tier" in r.name for r in m.roles)
+                if has_verified or has_tier:
+                    members_to_process.append(m)
         if not members_to_process:
             await ctx.send("❌ No matching members found.")
             return
@@ -1380,7 +1383,12 @@ class Economy(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def list_deficits(self, ctx) -> None:
         """Show members who cannot pay all upcoming fees."""
-        members = [m for m in ctx.guild.members if any("Tier" in r.name for r in m.roles)]
+        members = [
+            m
+            for m in ctx.guild.members
+            if any("Tier" in r.name for r in m.roles)
+            or any(r.id == config.VERIFIED_ROLE_ID for r in m.roles)
+        ]
         lines: List[str] = []
         for m in members:
             result = await self._evaluate_member_funds(m)
