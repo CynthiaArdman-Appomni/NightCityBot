@@ -51,6 +51,7 @@ TEST_MODULES = {
     "test_npc_button": "Assign NPC role via button.",
     "test_call_trauma": "Pings Trauma Team with the user's plan.",
     "test_list_deficits": "Reports members with insufficient funds.",
+    "test_simulate_rent_cyberware": "Runs simulate_rent with the -cyberware flag.",
 }
 
 for name in TEST_MODULES:
