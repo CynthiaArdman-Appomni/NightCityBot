@@ -65,15 +65,22 @@ class Admin(commands.Cog):
                 setattr(fake_ctx, "skip_dm_log", True)
 
                 await self.bot.invoke(fake_ctx)
-                await self.log_audit(ctx.author, f"✅ Executed `{command_text}` in {dest_channel.mention}.")
+                await self.log_audit(
+                    ctx.author,
+                    f"✅ Executed `{command_text}` in {dest_channel.mention}.",
+                )
             else:
                 await dest_channel.send(content=message, files=files)
-                await self.log_audit(ctx.author, f"✅ Posted anonymously to {dest_channel.mention}.")
+                await self.log_audit(
+                    ctx.author, f"✅ Posted anonymously to {dest_channel.mention}."
+                )
         else:
             await ctx.send("❌ Provide a message or attachment.")
         try:
             await ctx.message.delete()
-            await self.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
+            await self.log_audit(
+                ctx.author, f"🗑️ Deleted command: {ctx.message.content}"
+            )
         except Exception:
             pass
 
@@ -87,7 +94,7 @@ class Admin(commands.Cog):
         embed = discord.Embed(
             title="📘 NCRP Bot — Player Help",
             description="Basic commands for RP, rent, and rolling dice. Use `!helpfixer` if you're a Fixer.",
-            color=discord.Color.teal()
+            color=discord.Color.teal(),
         )
 
         embed.add_field(
@@ -115,8 +122,7 @@ class Admin(commands.Cog):
             ),
             inline=False,
         )
-    
-    
+
         embed.add_field(
             name="🏖️ Leave of Absence",
             value=(
@@ -132,6 +138,7 @@ class Admin(commands.Cog):
     @commands.command(name="helpfixer")
     async def helpfixer(self, ctx):
         """Display help for fixers."""
+
         def embed_len(e: discord.Embed) -> int:
             total = len(e.title or "") + len(e.description or "")
             if e.footer and e.footer.text:
@@ -161,6 +168,7 @@ class Admin(commands.Cog):
                 "`!collect_housing @user [-v] [-force]` / `!collect_business @user [-v] [-force]` / `!collect_trauma @user [-v] [-force]` – charge specific fees with optional verbose logs. (aliases: !collecthousing / !collectbusiness / !collecttrauma)\n"
                 "`!simulate_rent [@user] [-v]` (alias: !simulaterent) – perform a dry run of rent collection using the same options.\n"
                 "`!simulate_cyberware [@user] [week]` – preview cyberware medication costs globally or for a certain week.\n"
+                "`!simulate_all [@user]` – run both simulations at once.\n"
                 "`!backup_balances` – save all member balances to a timestamped file.\n"
                 "`!restore_balances <file>` – restore balances from a backup file.",
             ),
@@ -220,7 +228,7 @@ class Admin(commands.Cog):
             logger.debug(
                 "Unknown command from %s in %s (%s) → %r",
                 ctx.author,
-                getattr(ctx.channel, 'name', ctx.channel.id),
+                getattr(ctx.channel, "name", ctx.channel.id),
                 ctx.channel.id,
                 ctx.message.content,
             )
@@ -232,7 +240,9 @@ class Admin(commands.Cog):
             await self.log_audit(ctx.author, f"❌ {reason}: {ctx.message.content}")
         else:
             await ctx.send(f"⚠️ Error: {str(error)}")
-            await self.log_audit(ctx.author, f"⚠️ Error: {ctx.message.content} → {str(error)}")
+            await self.log_audit(
+                ctx.author, f"⚠️ Error: {ctx.message.content} → {str(error)}"
+            )
 
     async def log_audit(self, user, action_desc):
         """Log an audit entry to the audit channel."""
@@ -241,7 +251,10 @@ class Admin(commands.Cog):
         if isinstance(audit_channel, discord.TextChannel):
             embed = discord.Embed(title="📝 Audit Log", color=discord.Color.blue())
             embed.add_field(name="User", value=f"{user} ({user.id})", inline=False)
-            embed.add_field(name="Action", value=action_desc, inline=False)
+            chunks = [action_desc[i : i + 1024] for i in range(0, len(action_desc), 1024)] or [""]
+            embed.add_field(name="Action", value=chunks[0], inline=False)
+            for chunk in chunks[1:]:
+                embed.add_field(name="​", value=chunk, inline=False)
             await audit_channel.send(embed=embed)
         else:
             logger.warning(
@@ -249,4 +262,3 @@ class Admin(commands.Cog):
                 config.AUDIT_LOG_CHANNEL_ID,
             )
         logger.info("AUDIT %s: %s", user, action_desc)
-
