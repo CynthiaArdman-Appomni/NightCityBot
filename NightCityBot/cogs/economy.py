@@ -1729,11 +1729,12 @@ class Economy(commands.Cog):
     @commands.command(name="list_deficits")
     @commands.has_permissions(administrator=True)
     async def list_deficits(self, ctx) -> None:
-        """List members who can't pay all upcoming fees.
+        """Report members whose funds won't cover upcoming obligations.
 
-        Performs the same checks as ``simulate_all`` but only reports members
-        that would fail one or more charges. Each line shows the shortfall and
-        unpaid items, marking housing or business rent with ``(eviction)``.
+        The output lists the shortfall amount and names of unpaid items for each
+        affected member. Unpaid housing or business rent is marked ``(eviction)``
+        and cyberware medication costs are included when relevant. Use
+        ``simulate_all`` for a detailed balance preview.
         """
         await ctx.send("🔎 Checking member funds...")
         members = [
