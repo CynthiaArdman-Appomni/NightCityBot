@@ -251,7 +251,10 @@ class Admin(commands.Cog):
         if isinstance(audit_channel, discord.TextChannel):
             embed = discord.Embed(title="📝 Audit Log", color=discord.Color.blue())
             embed.add_field(name="User", value=f"{user} ({user.id})", inline=False)
-            embed.add_field(name="Action", value=action_desc, inline=False)
+            chunks = [action_desc[i : i + 1024] for i in range(0, len(action_desc), 1024)] or [""]
+            embed.add_field(name="Action", value=chunks[0], inline=False)
+            for chunk in chunks[1:]:
+                embed.add_field(name="​", value=chunk, inline=False)
             await audit_channel.send(embed=embed)
         else:
             logger.warning(
