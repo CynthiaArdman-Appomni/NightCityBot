@@ -1389,27 +1389,30 @@ class Economy(commands.Cog):
             if any("Tier" in r.name for r in m.roles)
             or any(r.id == config.VERIFIED_ROLE_ID for r in m.roles)
         ]
-        lines: List[str] = []
+        has_deficits = False
         for m in members:
             result = await self._evaluate_member_funds(m)
             if not result:
                 continue
             _total, deficit, payable, unpaid = result
+            fail_items: List[str] = []
+            for item in unpaid:
+                name = item.split(" ($")[0]
+                if "Housing Tier" in name or "Business Tier" in name:
+                    fail_items.append(f"{name} (eviction)")
+                else:
+                    fail_items.append(name)
+            fail_desc = ", ".join(fail_items) if fail_items else "None"
             if deficit > 0:
-                fail_items: List[str] = []
-                for item in unpaid:
-                    name = item.split(" ($")[0]
-                    if "Housing Tier" in name or "Business Tier" in name:
-                        fail_items.append(f"{name} (eviction)")
-                    else:
-                        fail_items.append(name)
-                fail_desc = ", ".join(fail_items) if fail_items else "None"
-                lines.append(
+                has_deficits = True
+                await ctx.send(
                     f"{m.display_name} short by ${deficit:,}. Can't pay: {fail_desc}."
                 )
-        if lines:
-            await ctx.send("\n".join(lines))
-        else:
+            else:
+                await ctx.send(
+                    f"✅ {m.display_name} can cover all upcoming obligations."
+                )
+        if not has_deficits:
             await ctx.send("✅ Everyone can cover their upcoming obligations.")
 
 
