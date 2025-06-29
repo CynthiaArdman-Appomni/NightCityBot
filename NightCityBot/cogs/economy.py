@@ -1382,7 +1382,12 @@ class Economy(commands.Cog):
     @commands.command(name="list_deficits")
     @commands.has_permissions(administrator=True)
     async def list_deficits(self, ctx) -> None:
-        """Show members who cannot pay all upcoming fees."""
+        """Show members who cannot pay all upcoming fees.
+
+        A short message is always sent so staff know the command ran. Failing
+        housing or business rent will result in eviction notices.
+        """
+        await ctx.send("🔎 Checking member funds...")
         members = [
             m
             for m in ctx.guild.members
@@ -1396,10 +1401,16 @@ class Economy(commands.Cog):
                 continue
             _total, deficit, payable, unpaid = result
             if deficit > 0:
-                pay = ", ".join(payable) if payable else "None"
-                fail = ", ".join(unpaid) if unpaid else "None"
+                fail_items: List[str] = []
+                for item in unpaid:
+                    name = item.split(" ($")[0]
+                    if "Housing Tier" in name or "Business Tier" in name:
+                        fail_items.append(f"{name} (eviction)")
+                    else:
+                        fail_items.append(name)
+                fail_desc = ", ".join(fail_items) if fail_items else "None"
                 lines.append(
-                    f"<@{m.id}> short by ${deficit:,}. Can pay: {pay}. Cannot pay: {fail}."
+                    f"{m.display_name} short by ${deficit:,}. Can't pay: {fail_desc}."
                 )
         if lines:
             await ctx.send("\n".join(lines))
