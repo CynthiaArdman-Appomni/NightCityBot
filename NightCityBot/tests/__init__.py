@@ -53,6 +53,7 @@ TEST_MODULES = {
     "test_list_deficits": "Reports members with insufficient funds.",
     "test_simulate_rent_cyberware": "Runs simulate_rent with the -cyberware flag.",
     "test_rent_baseline_non_tier": "Baseline living cost deducted for members without Tier roles.",
+    "test_eviction_on_baseline_failure": "Eviction notices sent when baseline deduction fails.",
 }
 
 for name in TEST_MODULES:
