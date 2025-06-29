@@ -56,32 +56,40 @@ class Economy(commands.Cog):
         if message.author == self.bot.user or message.author.bot:
             return
         channel_id = message.channel.id
-        parent_id = getattr(message.channel, 'parent_id', None)
-        if channel_id == config.BUSINESS_ACTIVITY_CHANNEL_ID or parent_id == config.BUSINESS_ACTIVITY_CHANNEL_ID:
+        parent_id = getattr(message.channel, "parent_id", None)
+        if (
+            channel_id == config.BUSINESS_ACTIVITY_CHANNEL_ID
+            or parent_id == config.BUSINESS_ACTIVITY_CHANNEL_ID
+        ):
 
-            if not message.content.strip().startswith(("!open_shop", "!openshop", "!os")):
+            if not message.content.strip().startswith(
+                ("!open_shop", "!openshop", "!os")
+            ):
                 try:
                     await message.delete()
                 except Exception:
                     pass
-                admin = self.bot.get_cog('Admin')
+                admin = self.bot.get_cog("Admin")
                 if admin:
                     await admin.log_audit(
                         message.author,
-                        f"🗑️ Deleted message in {message.channel.mention}: {message.content}"
+                        f"🗑️ Deleted message in {message.channel.mention}: {message.content}",
                     )
-        if channel_id == config.ATTENDANCE_CHANNEL_ID or parent_id == config.ATTENDANCE_CHANNEL_ID:
+        if (
+            channel_id == config.ATTENDANCE_CHANNEL_ID
+            or parent_id == config.ATTENDANCE_CHANNEL_ID
+        ):
 
             if not message.content.strip().startswith("!attend"):
                 try:
                     await message.delete()
                 except Exception:
                     pass
-                admin = self.bot.get_cog('Admin')
+                admin = self.bot.get_cog("Admin")
                 if admin:
                     await admin.log_audit(
                         message.author,
-                        f"🗑️ Deleted message in {message.channel.mention}: {message.content}"
+                        f"🗑️ Deleted message in {message.channel.mention}: {message.content}",
                     )
 
     def cog_unload(self):
@@ -96,11 +104,11 @@ class Economy(commands.Cog):
         return int(base_rent * OPEN_PERCENT[open_count])
 
     async def apply_passive_income(
-            self,
-            member: discord.Member,
-            applicable_roles: List[str],
-            business_open_log: Dict,
-            log: List[str]
+        self,
+        member: discord.Member,
+        applicable_roles: List[str],
+        business_open_log: Dict,
+        log: List[str],
     ) -> tuple[Optional[int], Optional[int]]:
         """Apply passive income based on business opens and roles."""
         total_income = 0
@@ -125,9 +133,7 @@ class Economy(commands.Cog):
 
         if total_income > 0:
             success = await self.unbelievaboat.update_balance(
-                member.id,
-                {"cash": total_income},
-                reason="Passive income"
+                member.id, {"cash": total_income}, reason="Passive income"
             )
             if success:
                 updated = await self.unbelievaboat.get_balance(member.id)
@@ -151,14 +157,16 @@ class Economy(commands.Cog):
             return
         self.event_expires_at = helpers.get_tz_now() + timedelta(hours=4)
         expires = self.event_expires_at.strftime("%I:%M %p %Z")
-        await ctx.send(f"🟢 Event started! Temporary attendance and shop opens allowed until {expires}.")
+        await ctx.send(
+            f"🟢 Event started! Temporary attendance and shop opens allowed until {expires}."
+        )
 
     @commands.command(aliases=["openshop", "os"])
     @commands.has_permissions(send_messages=True)
     async def open_shop(self, ctx):
         """Log a business opening and grant income immediately."""
-        control = self.bot.get_cog('SystemControl')
-        if control and not control.is_enabled('open_shop'):
+        control = self.bot.get_cog("SystemControl")
+        if control and not control.is_enabled("open_shop"):
             await ctx.send("⚠️ The open_shop system is currently disabled.")
             return
         if ctx.channel.id != config.BUSINESS_ACTIVITY_CHANNEL_ID:
@@ -220,16 +228,22 @@ class Economy(commands.Cog):
                 reward += total_after - total_before
 
         if reward > 0:
-            await self.unbelievaboat.update_balance(ctx.author.id, {"cash": reward}, reason="Business activity reward")
-            await ctx.send(f"✅ Business opening logged! You earned ${reward}. ({open_count_total} this month)")
+            await self.unbelievaboat.update_balance(
+                ctx.author.id, {"cash": reward}, reason="Business activity reward"
+            )
+            await ctx.send(
+                f"✅ Business opening logged! You earned ${reward}. ({open_count_total} this month)"
+            )
         else:
-            await ctx.send(f"✅ Business opening logged! ({open_count_total} this month)")
+            await ctx.send(
+                f"✅ Business opening logged! ({open_count_total} this month)"
+            )
 
     @commands.command()
     async def attend(self, ctx):
         """Log attendance for players with the verified role and award cash."""
-        control = self.bot.get_cog('SystemControl')
-        if control and not control.is_enabled('attend'):
+        control = self.bot.get_cog("SystemControl")
+        if control and not control.is_enabled("attend"):
             await ctx.send("⚠️ The attend system is currently disabled.")
             return
         if ctx.channel.id != config.ATTENDANCE_CHANNEL_ID:
@@ -263,7 +277,9 @@ class Economy(commands.Cog):
             await save_json_file(config.ATTEND_LOG_FILE, data)
 
         reward = ATTEND_REWARD
-        await self.unbelievaboat.update_balance(ctx.author.id, {"cash": reward}, reason="Attendance reward")
+        await self.unbelievaboat.update_balance(
+            ctx.author.id, {"cash": reward}, reason="Attendance reward"
+        )
         await ctx.send(f"✅ Attendance logged! You received ${reward}.")
 
     def calculate_due(self, member: discord.Member) -> tuple[int, List[str]]:
@@ -292,13 +308,15 @@ class Economy(commands.Cog):
                 details.append(f"{role}: ${amount}")
 
         if not on_loa:
-            trauma_role = next((r for r in member.roles if r.name in TRAUMA_ROLE_COSTS), None)
+            trauma_role = next(
+                (r for r in member.roles if r.name in TRAUMA_ROLE_COSTS), None
+            )
             if trauma_role:
                 cost = TRAUMA_ROLE_COSTS[trauma_role.name]
                 total += cost
                 details.append(f"{trauma_role.name}: ${cost}")
 
-            cyber = self.bot.get_cog('CyberwareManager')
+            cyber = self.bot.get_cog("CyberwareManager")
             if cyber:
                 guild = member.guild
                 checkup_role = guild.get_role(config.CYBER_CHECKUP_ROLE_ID)
@@ -308,11 +326,11 @@ class Economy(commands.Cog):
 
                 level = None
                 if extreme and extreme in member.roles:
-                    level = 'extreme'
+                    level = "extreme"
                 elif high and high in member.roles:
-                    level = 'high'
+                    level = "high"
                 elif medium and medium in member.roles:
-                    level = 'medium'
+                    level = "medium"
 
                 if level:
                     weeks = cyber.data.get(str(member.id), 0)
@@ -336,7 +354,7 @@ class Economy(commands.Cog):
             "due command invoked by %s (%s) in %s (%s)",
             ctx.author,
             ctx.author.id,
-            getattr(ctx.channel, 'name', ctx.channel.id),
+            getattr(ctx.channel, "name", ctx.channel.id),
             ctx.channel.id,
         )
         total, details = self.calculate_due(ctx.author)
@@ -364,11 +382,15 @@ class Economy(commands.Cog):
                 obligations.append((role, amount))
 
         if not on_loa:
-            trauma_role = next((r for r in member.roles if r.name in TRAUMA_ROLE_COSTS), None)
+            trauma_role = next(
+                (r for r in member.roles if r.name in TRAUMA_ROLE_COSTS), None
+            )
             if trauma_role:
-                obligations.append((trauma_role.name, TRAUMA_ROLE_COSTS[trauma_role.name]))
+                obligations.append(
+                    (trauma_role.name, TRAUMA_ROLE_COSTS[trauma_role.name])
+                )
 
-            cyber = self.bot.get_cog('CyberwareManager')
+            cyber = self.bot.get_cog("CyberwareManager")
             if cyber:
                 guild = member.guild
                 checkup_role = guild.get_role(config.CYBER_CHECKUP_ROLE_ID)
@@ -378,11 +400,11 @@ class Economy(commands.Cog):
 
                 level = None
                 if extreme and extreme in member.roles:
-                    level = 'extreme'
+                    level = "extreme"
                 elif high and high in member.roles:
-                    level = 'high'
+                    level = "high"
                 elif medium and medium in member.roles:
-                    level = 'medium'
+                    level = "medium"
 
                 if level:
                     weeks = cyber.data.get(str(member.id), 0)
@@ -537,7 +559,9 @@ class Economy(commands.Cog):
 
         await save_json_file(file_path, {str(member.id): data[member.id]})
         await self.backup_balances([member], label=filename, balances=data)
-        await ctx.send(f"✅ Balance backed up to `{file_path.name}` for {member.display_name}")
+        await ctx.send(
+            f"✅ Balance backed up to `{file_path.name}` for {member.display_name}"
+        )
 
     @commands.command(name="restore_balances")
     @commands.has_permissions(administrator=True)
@@ -571,9 +595,13 @@ class Economy(commands.Cog):
                 if delta_bank:
                     payload["bank"] = delta_bank
                 if payload:
-                    await self.unbelievaboat.update_balance(uid, payload, reason="Balance restore")
+                    await self.unbelievaboat.update_balance(
+                        uid, payload, reason="Balance restore"
+                    )
                     restored += 1
-            await ctx.send(f"✅ Restored balances for {restored} members from `{identifier}`")
+            await ctx.send(
+                f"✅ Restored balances for {restored} members from `{identifier}`"
+            )
             return
 
         # Otherwise treat it as a label that should be searched in member logs
@@ -607,10 +635,14 @@ class Economy(commands.Cog):
             if delta_bank:
                 payload["bank"] = delta_bank
             if payload:
-                await self.unbelievaboat.update_balance(uid, payload, reason="Balance restore")
+                await self.unbelievaboat.update_balance(
+                    uid, payload, reason="Balance restore"
+                )
                 restored += 1
 
-        await ctx.send(f"✅ Restored balances for {restored} members using label `{label}`")
+        await ctx.send(
+            f"✅ Restored balances for {restored} members using label `{label}`"
+        )
 
     @commands.command(name="restore_balance")
     @commands.has_permissions(administrator=True)
@@ -642,7 +674,10 @@ class Economy(commands.Cog):
             if isinstance(data, list):
                 for entry in reversed(data):
                     if entry.get("label") == label:
-                        bal = {"cash": entry.get("cash", 0), "bank": entry.get("bank", 0)}
+                        bal = {
+                            "cash": entry.get("cash", 0),
+                            "bank": entry.get("bank", 0),
+                        }
                         break
                 if not bal:
                     await ctx.send("❌ Label not found in backup file.")
@@ -674,16 +709,31 @@ class Economy(commands.Cog):
         if delta_bank:
             payload["bank"] = delta_bank
         if payload:
-            await self.unbelievaboat.update_balance(member.id, payload, reason="Balance restore")
+            await self.unbelievaboat.update_balance(
+                member.id, payload, reason="Balance restore"
+            )
             source = label if label else filename
-            await ctx.send(f"✅ Restored balance for {member.display_name} from `{source}`")
+            await ctx.send(
+                f"✅ Restored balance for {member.display_name} from `{source}`"
+            )
         else:
             await ctx.send("⚠️ Balance already matches backup.")
 
-    async def deduct_flat_fee(self, member: discord.Member, cash: int, bank: int, log: List[str], amount: int = BASELINE_LIVING_COST, *, dry_run: bool = False) -> tuple[bool, int, int]:
+    async def deduct_flat_fee(
+        self,
+        member: discord.Member,
+        cash: int,
+        bank: int,
+        log: List[str],
+        amount: int = BASELINE_LIVING_COST,
+        *,
+        dry_run: bool = False,
+    ) -> tuple[bool, int, int]:
         total = (cash or 0) + (bank or 0)
         if total < amount:
-            log.append(f"❌ Insufficient funds for flat fee deduction (${amount}). Current balance: ${total}.")
+            log.append(
+                f"❌ Insufficient funds for flat fee deduction (${amount}). Current balance: ${total}."
+            )
             return False, cash, bank
 
         deduct_cash = min(cash, amount)
@@ -711,20 +761,20 @@ class Economy(commands.Cog):
         return success, cash, bank
 
     async def process_housing_rent(
-            self,
-            member: discord.Member,
-            roles: List[str],
-            cash: int,
-            bank: int,
-            log: List[str],
-            rent_log_channel: Optional[discord.TextChannel],
-            eviction_channel: Optional[discord.TextChannel],
-            *,
-            dry_run: bool = False,
+        self,
+        member: discord.Member,
+        roles: List[str],
+        cash: int,
+        bank: int,
+        log: List[str],
+        rent_log_channel: Optional[discord.TextChannel],
+        eviction_channel: Optional[discord.TextChannel],
+        *,
+        dry_run: bool = False,
     ) -> tuple[int, int]:
-        control = self.bot.get_cog('SystemControl')
-        if control and not control.is_enabled('housing_rent'):
-            log.append('⚠️ Housing rent system disabled.')
+        control = self.bot.get_cog("SystemControl")
+        if control and not control.is_enabled("housing_rent"):
+            log.append("⚠️ Housing rent system disabled.")
             return cash, bank
         housing_total = 0
         for role in roles:
@@ -738,12 +788,16 @@ class Economy(commands.Cog):
 
         total = (cash or 0) + (bank or 0)
         if total < housing_total:
-            log.append(f"❌ Cannot pay housing rent of ${housing_total}. Would result in negative balance.")
+            log.append(
+                f"❌ Cannot pay housing rent of ${housing_total}. Would result in negative balance."
+            )
             if eviction_channel and not dry_run:
                 await eviction_channel.send(
                     f"🚨 <@{member.id}> — Housing Rent due: ${housing_total} — **FAILED** (insufficient funds) 🚨\n## You have **7 days** to pay or face eviction."
                 )
-            log.append(f"⚠️ Housing rent skipped for <@{member.id}> due to insufficient funds.")
+            log.append(
+                f"⚠️ Housing rent skipped for <@{member.id}> due to insufficient funds."
+            )
             return cash, bank
 
         deduct_cash = min(cash, housing_total)
@@ -770,26 +824,30 @@ class Economy(commands.Cog):
             )
             log.append("✅ Housing Rent collection completed. Notice Sent to #rent")
             if rent_log_channel and not dry_run:
-                await rent_log_channel.send(f"✅ <@{member.id}> — Housing Rent paid: ${housing_total}")
+                await rent_log_channel.send(
+                    f"✅ <@{member.id}> — Housing Rent paid: ${housing_total}"
+                )
         else:
-            log.append("❌ Failed to deduct housing rent despite having sufficient funds.")
+            log.append(
+                "❌ Failed to deduct housing rent despite having sufficient funds."
+            )
         return cash, bank
 
     async def process_business_rent(
-            self,
-            member: discord.Member,
-            roles: List[str],
-            cash: int,
-            bank: int,
-            log: List[str],
-            rent_log_channel: Optional[discord.TextChannel],
-            eviction_channel: Optional[discord.TextChannel],
-            *,
-            dry_run: bool = False,
+        self,
+        member: discord.Member,
+        roles: List[str],
+        cash: int,
+        bank: int,
+        log: List[str],
+        rent_log_channel: Optional[discord.TextChannel],
+        eviction_channel: Optional[discord.TextChannel],
+        *,
+        dry_run: bool = False,
     ) -> tuple[int, int]:
-        control = self.bot.get_cog('SystemControl')
-        if control and not control.is_enabled('business_rent'):
-            log.append('⚠️ Business rent system disabled.')
+        control = self.bot.get_cog("SystemControl")
+        if control and not control.is_enabled("business_rent"):
+            log.append("⚠️ Business rent system disabled.")
             return cash, bank
         business_total = 0
         for role in roles:
@@ -803,12 +861,16 @@ class Economy(commands.Cog):
 
         total = (cash or 0) + (bank or 0)
         if total < business_total:
-            log.append(f"❌ Cannot pay business rent of ${business_total}. Would result in negative balance.")
+            log.append(
+                f"❌ Cannot pay business rent of ${business_total}. Would result in negative balance."
+            )
             if eviction_channel and not dry_run:
                 await eviction_channel.send(
                     f"🚨 <@{member.id}> — Business Rent due: ${business_total} — **FAILED** (insufficient funds) 🚨\n## You have **7 days** to pay or face eviction."
                 )
-            log.append(f"⚠️ Business rent skipped for <@{member.id}> due to insufficient funds.")
+            log.append(
+                f"⚠️ Business rent skipped for <@{member.id}> due to insufficient funds."
+            )
             return cash, bank
 
         deduct_cash = min(cash, business_total)
@@ -835,9 +897,13 @@ class Economy(commands.Cog):
             )
             log.append("✅ Business Rent collection completed. Notice Sent to #rent")
             if rent_log_channel and not dry_run:
-                await rent_log_channel.send(f"✅ <@{member.id}> — Business Rent paid: ${business_total}")
+                await rent_log_channel.send(
+                    f"✅ <@{member.id}> — Business Rent paid: ${business_total}"
+                )
         else:
-            log.append("❌ Failed to deduct business rent despite having sufficient funds.")
+            log.append(
+                "❌ Failed to deduct business rent despite having sufficient funds."
+            )
         return cash, bank
 
     @commands.command(aliases=["collecthousing"])
@@ -867,14 +933,16 @@ class Economy(commands.Cog):
             return
 
         if not force and await self._label_used_recently(user, "collect_housing_after"):
-            await ctx.send("⏭️ Housing rent already collected in the last 30 days. Use -force to override.")
+            await ctx.send(
+                "⏭️ Housing rent already collected in the last 30 days. Use -force to override."
+            )
             return
 
-        control = self.bot.get_cog('SystemControl')
-        if control and not control.is_enabled('housing_rent'):
-            await ctx.send('⚠️ The housing_rent system is currently disabled.')
+        control = self.bot.get_cog("SystemControl")
+        if control and not control.is_enabled("housing_rent"):
+            await ctx.send("⚠️ The housing_rent system is currently disabled.")
             return
-        admin_cog = self.bot.get_cog('Admin')
+        admin_cog = self.bot.get_cog("Admin")
         log: List[str] = [f"🏠 Manual Housing Rent Collection for <@{user.id}>"]
         rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
         eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
@@ -902,11 +970,11 @@ class Economy(commands.Cog):
         start_cash = cash
         start_bank = bank
         total = (cash or 0) + (bank or 0)
-        log.append(
-            f"💵 Balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: ${total:,}"
-        )
+        log.append(f"💵 Balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: ${total:,}")
 
-        cash, bank = await self.process_housing_rent(user, role_names, cash, bank, log, rent_log_channel, eviction_channel)
+        cash, bank = await self.process_housing_rent(
+            user, role_names, cash, bank, log, rent_log_channel, eviction_channel
+        )
 
         final = await self.unbelievaboat.get_balance(user.id)
         if final:
@@ -965,14 +1033,18 @@ class Economy(commands.Cog):
             await ctx.send("❌ Could not resolve user.")
             return
 
-        if not force and await self._label_used_recently(user, "collect_business_after"):
-            await ctx.send("⏭️ Business rent already collected in the last 30 days. Use -force to override.")
+        if not force and await self._label_used_recently(
+            user, "collect_business_after"
+        ):
+            await ctx.send(
+                "⏭️ Business rent already collected in the last 30 days. Use -force to override."
+            )
             return
-        control = self.bot.get_cog('SystemControl')
-        if control and not control.is_enabled('business_rent'):
-            await ctx.send('⚠️ The business_rent system is currently disabled.')
+        control = self.bot.get_cog("SystemControl")
+        if control and not control.is_enabled("business_rent"):
+            await ctx.send("⚠️ The business_rent system is currently disabled.")
             return
-        admin_cog = self.bot.get_cog('Admin')
+        admin_cog = self.bot.get_cog("Admin")
         log: List[str] = [f"🏢 Manual Business Rent Collection for <@{user.id}>"]
         rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
         eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
@@ -994,11 +1066,11 @@ class Economy(commands.Cog):
         start_cash = cash
         start_bank = bank
         total = (cash or 0) + (bank or 0)
-        log.append(
-            f"💵 Balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: ${total:,}"
-        )
+        log.append(f"💵 Balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: ${total:,}")
 
-        cash, bank = await self.process_business_rent(user, role_names, cash, bank, log, rent_log_channel, eviction_channel)
+        cash, bank = await self.process_business_rent(
+            user, role_names, cash, bank, log, rent_log_channel, eviction_channel
+        )
 
         final = await self.unbelievaboat.get_balance(user.id)
         if final:
@@ -1052,14 +1124,18 @@ class Economy(commands.Cog):
             return
 
         if not force and await self._label_used_recently(user, "collect_trauma_after"):
-            await ctx.send("⏭️ Trauma subscription already processed in the last 30 days. Use -force to override.")
+            await ctx.send(
+                "⏭️ Trauma subscription already processed in the last 30 days. Use -force to override."
+            )
             return
-        control = self.bot.get_cog('SystemControl')
-        if control and not control.is_enabled('trauma_team'):
-            await ctx.send('⚠️ The trauma_team system is currently disabled.')
+        control = self.bot.get_cog("SystemControl")
+        if control and not control.is_enabled("trauma_team"):
+            await ctx.send("⚠️ The trauma_team system is currently disabled.")
             return
-        admin_cog = self.bot.get_cog('Admin')
-        log: List[str] = [f"💊 Manual Trauma Team Subscription Processing for <@{user.id}>"]
+        admin_cog = self.bot.get_cog("Admin")
+        log: List[str] = [
+            f"💊 Manual Trauma Team Subscription Processing for <@{user.id}>"
+        ]
         balance_data = await self.unbelievaboat.get_balance(user.id)
         if not balance_data:
             log.append("❌ Could not fetch balance.")
@@ -1110,17 +1186,22 @@ class Economy(commands.Cog):
         verbose: bool = False,
         force: bool = False,
     ):
-
         """Internal helper for rent collection and simulation.
 
         When ``verbose`` is ``False`` only minimal status messages are sent.
         """
-        await ctx.send("🧪 Starting rent simulation..." if dry_run else "🚦 Starting rent collection...")
+        await ctx.send(
+            "🧪 Starting rent simulation..."
+            if dry_run
+            else "🚦 Starting rent collection..."
+        )
 
         audit_lines: List[str] = []
         if not target_user:
             if Path(config.OPEN_LOG_FILE).exists():
-                business_open_log = await load_json_file(config.OPEN_LOG_FILE, default={})
+                business_open_log = await load_json_file(
+                    config.OPEN_LOG_FILE, default={}
+                )
                 if not dry_run:
                     backup_base = f"open_history_{datetime.utcnow():%B_%Y}.json"
                     backup_path = Path(backup_base)
@@ -1136,7 +1217,9 @@ class Economy(commands.Cog):
                 await save_json_file(config.OPEN_LOG_FILE, {})
         else:
             if Path(config.OPEN_LOG_FILE).exists():
-                business_open_log = await load_json_file(config.OPEN_LOG_FILE, default={})
+                business_open_log = await load_json_file(
+                    config.OPEN_LOG_FILE, default={}
+                )
             else:
                 business_open_log = {}
 
@@ -1147,7 +1230,9 @@ class Economy(commands.Cog):
             except Exception:
                 last_run = None
             if last_run and datetime.utcnow() - last_run < timedelta(days=30):
-                await ctx.send("⚠️ Rent already collected in the last 30 days. Use -force to override.")
+                await ctx.send(
+                    "⚠️ Rent already collected in the last 30 days. Use -force to override."
+                )
                 return
         if not target_user and not dry_run:
             with open(config.LAST_RENT_FILE, "w") as f:
@@ -1172,17 +1257,27 @@ class Economy(commands.Cog):
 
         eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
         rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
-        admin_cog = self.bot.get_cog('Admin')
+        admin_cog = self.bot.get_cog("Admin")
 
         for member in members_to_process:
             try:
                 if not force:
-                    recent = await self._label_used_recently(member, "collect_rent_after")
-                    recent = recent or await self._label_used_recently(member, "collect_housing_after")
-                    recent = recent or await self._label_used_recently(member, "collect_business_after")
-                    recent = recent or await self._label_used_recently(member, "collect_trauma_after")
+                    recent = await self._label_used_recently(
+                        member, "collect_rent_after"
+                    )
+                    recent = recent or await self._label_used_recently(
+                        member, "collect_housing_after"
+                    )
+                    recent = recent or await self._label_used_recently(
+                        member, "collect_business_after"
+                    )
+                    recent = recent or await self._label_used_recently(
+                        member, "collect_trauma_after"
+                    )
                     if recent:
-                        await ctx.send(f"⏭️ Skipping <@{member.id}> — rent recently collected.")
+                        await ctx.send(
+                            f"⏭️ Skipping <@{member.id}> — rent recently collected."
+                        )
                         continue
 
                 log: List[str] = [f"🔍 **Working on:** <@{member.id}>"]
@@ -1210,11 +1305,17 @@ class Economy(commands.Cog):
                         await admin_cog.log_audit(ctx.author, summary)
                     continue
                 cash, bank = bal["cash"], bal["bank"]
-                log.append(f"💵 Starting balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}")
+                log.append(
+                    f"💵 Starting balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}"
+                )
 
                 if dry_run:
                     check = await self.unbelievaboat.verify_balance_ops(member.id)
-                    log.append("🔄 Balance check passed." if check else "⚠️ Balance update check failed.")
+                    log.append(
+                        "🔄 Balance check passed."
+                        if check
+                        else "⚠️ Balance update check failed."
+                    )
 
                 if not on_loa:
                     base_ok, cash, bank = await self.deduct_flat_fee(
@@ -1229,11 +1330,35 @@ class Economy(commands.Cog):
                             "⚠️ Baseline living cost unpaid. Continuing with rent steps."
                         )
 
-                cash, bank = await self.process_housing_rent(member, app_roles, cash, bank, log, rent_log_channel, eviction_channel, dry_run=dry_run) if not on_loa else (cash, bank)
-                cash, bank = await self.process_business_rent(member, app_roles, cash, bank, log, rent_log_channel, eviction_channel, dry_run=dry_run)
+                cash, bank = (
+                    await self.process_housing_rent(
+                        member,
+                        app_roles,
+                        cash,
+                        bank,
+                        log,
+                        rent_log_channel,
+                        eviction_channel,
+                        dry_run=dry_run,
+                    )
+                    if not on_loa
+                    else (cash, bank)
+                )
+                cash, bank = await self.process_business_rent(
+                    member,
+                    app_roles,
+                    cash,
+                    bank,
+                    log,
+                    rent_log_channel,
+                    eviction_channel,
+                    dry_run=dry_run,
+                )
 
                 if not on_loa:
-                    await self.trauma_service.process_trauma_team_payment(member, log=log, dry_run=dry_run)
+                    await self.trauma_service.process_trauma_team_payment(
+                        member, log=log, dry_run=dry_run
+                    )
 
                 if not dry_run:
                     final = await self.unbelievaboat.get_balance(member.id)
@@ -1257,12 +1382,18 @@ class Economy(commands.Cog):
             except Exception as e:
                 await ctx.send(f"❌ Error processing <@{member.id}>: `{e}`")
                 if dry_run and admin_cog:
-                    await admin_cog.log_audit(ctx.author, f"Error processing <@{member.id}>: {e}")
+                    await admin_cog.log_audit(
+                        ctx.author, f"Error processing <@{member.id}>: {e}"
+                    )
                 audit_lines.append(f"Error processing <@{member.id}>: {e}")
 
         if not dry_run:
             await self.backup_balances(members_to_process, label="collect_rent_after")
-        end_msg = "✅ Rent simulation completed." if dry_run else "✅ Rent collection completed."
+        end_msg = (
+            "✅ Rent simulation completed."
+            if dry_run
+            else "✅ Rent collection completed."
+        )
         await ctx.send(end_msg)
         if dry_run and admin_cog:
             await admin_cog.log_audit(ctx.author, end_msg)
@@ -1276,7 +1407,9 @@ class Economy(commands.Cog):
 
     @commands.command(aliases=["collectrent"])
     @commands.has_permissions(administrator=True)
-    async def collect_rent(self, ctx, *args, target_user: Optional[discord.Member] = None):
+    async def collect_rent(
+        self, ctx, *args, target_user: Optional[discord.Member] = None
+    ):
         """Global or per-member rent collection.
 
         Pass ``-v``/``--verbose`` for detailed output and ``-force`` to ignore the 30 day cooldown.
@@ -1307,11 +1440,15 @@ class Economy(commands.Cog):
                     verbose = True
                 elif lower in {"-force", "--force", "force", "-f"}:
                     force = True
-        await self.run_rent_collection(ctx, target_user=target_user, dry_run=False, verbose=verbose, force=force)
+        await self.run_rent_collection(
+            ctx, target_user=target_user, dry_run=False, verbose=verbose, force=force
+        )
 
     @commands.command(aliases=["simulaterent"])
     @commands.has_permissions(administrator=True)
-    async def simulate_rent(self, ctx, *args, target_user: Optional[discord.Member] = None):
+    async def simulate_rent(
+        self, ctx, *args, target_user: Optional[discord.Member] = None
+    ):
         """Simulate rent collection without applying changes.
 
         Pass ``-v``/``--verbose`` to include detailed output. Use ``-cyberware``
@@ -1343,10 +1480,12 @@ class Economy(commands.Cog):
                     verbose = True
                 elif lower in {"-cyberware", "--cyberware", "cyberware"}:
                     include_cyber = True
-        await self.run_rent_collection(ctx, target_user=target_user, dry_run=True, verbose=verbose)
+        await self.run_rent_collection(
+            ctx, target_user=target_user, dry_run=True, verbose=verbose
+        )
 
         if include_cyber and target_user:
-            cyber = self.bot.get_cog('CyberwareManager')
+            cyber = self.bot.get_cog("CyberwareManager")
             if not cyber:
                 await ctx.send("⚠️ Cyberware system not available.")
             else:
@@ -1357,11 +1496,11 @@ class Economy(commands.Cog):
                 extreme = guild.get_role(config.CYBER_EXTREME_ROLE_ID)
                 level = None
                 if extreme and extreme in target_user.roles:
-                    level = 'extreme'
+                    level = "extreme"
                 elif high and high in target_user.roles:
-                    level = 'high'
+                    level = "high"
                 elif medium and medium in target_user.roles:
-                    level = 'medium'
+                    level = "medium"
 
                 if level:
                     weeks = cyber.data.get(str(target_user.id), 0)
@@ -1373,6 +1512,48 @@ class Economy(commands.Cog):
                         await ctx.send("Cyberware checkup due — no med cost")
                 else:
                     await ctx.send(f"{target_user.display_name} has no cyberware role.")
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def simulate_all(
+        self,
+        ctx,
+        *args,
+        target_user: Optional[discord.Member] = None,
+    ) -> None:
+        """Run rent and cyberware simulations together."""
+        verbose = False
+        if target_user is None:
+            converter = commands.MemberConverter()
+            remaining = []
+            for arg in args:
+                lower = arg.lower()
+                if lower in {"-v", "--verbose", "-verbose", "verbose"}:
+                    verbose = True
+                else:
+                    remaining.append(arg)
+            for arg in remaining:
+                try:
+                    target_user = await converter.convert(ctx, arg)
+                    break
+                except commands.BadArgument:
+                    continue
+        else:
+            for arg in args:
+                if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
+                    verbose = True
+
+        await self.simulate_rent(
+            ctx, *(["-v"] if verbose else []), target_user=target_user
+        )
+        cyber = self.bot.get_cog("CyberwareManager")
+        if not cyber:
+            await ctx.send("⚠️ Cyberware system not available.")
+        else:
+            if target_user:
+                await cyber.simulate_cyberware(ctx, str(target_user.id))
+            else:
+                await cyber.simulate_cyberware(ctx)
 
     @commands.command(name="list_deficits")
     @commands.has_permissions(administrator=True)
@@ -1414,5 +1595,3 @@ class Economy(commands.Cog):
                 )
         if not has_deficits:
             await ctx.send("✅ Everyone can cover their upcoming obligations.")
-
-
