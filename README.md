@@ -72,7 +72,7 @@ Main commands:
 * `!collect_rent [@user] [-v] [-force]` – run the monthly rent cycle. Supply a user mention to limit the collection to that member. Use `-force` to ignore the 30 day cooldown.
 * `!simulate_rent [@user] [-v] [-cyberware]` – identical to `!collect_rent` but performs a dry run without updating balances. When a user is specified the output notes that a DM and last_payment entry would be created. With `-cyberware` the upcoming medication cost for the specified user is also shown.
 * `!simulate_all [@user]` – run both simulations at once. When a user is given the rent output indicates that a DM and last_payment entry would be created.
-* `!list_deficits` – list members who can't cover upcoming fees, how much they're short and which charges would fail. Unpaid housing or business rent is marked "(eviction)". Cyberware medication costs are included and all failing items are shown together.
+* `!list_deficits` – run the same checks as `!simulate_all` but only list members who would fail any charge. Each entry shows the shortfall and unpaid items, marking rent with "(eviction)".
 * `!collect_housing @user [-force]`, `!collect_business @user [-force]`, `!collect_trauma @user [-force]` – immediately charge a single user's housing rent, business rent or Trauma Team subscription. Pass `-force` to override the 30 day limit.
 * `!backup_balances` – save all member balances to a timestamped JSON file. Each
   backup entry records the balance and the `change` since the previous entry.
