@@ -1562,15 +1562,16 @@ class Economy(commands.Cog):
         this groups the rent and cyberware preview for each member into a single
         block so it's easier to evaluate the full monthly impact.
         """
-        verbose = False
+        # Always provide detailed output for each member so the full cost
+        # breakdown is easy to read. The ``-v`` flag is therefore ignored and
+        # verbosity is enabled by default.
+        verbose = True
         if target_user is None:
             converter = commands.MemberConverter()
             remaining = []
             for arg in args:
                 lower = arg.lower()
-                if lower in {"-v", "--verbose", "-verbose", "verbose"}:
-                    verbose = True
-                else:
+                if lower not in {"-v", "--verbose", "-verbose", "verbose"}:
                     remaining.append(arg)
             for arg in remaining:
                 try:
@@ -1580,8 +1581,10 @@ class Economy(commands.Cog):
                     continue
         else:
             for arg in args:
+                # Legacy verbosity flags are ignored but accepted for
+                # compatibility with older usage patterns.
                 if arg.lower() in {"-v", "--verbose", "-verbose", "verbose"}:
-                    verbose = True
+                    continue
 
         await ctx.send("🧪 Starting combined simulation...")
         members: List[discord.Member] = []
@@ -1716,10 +1719,8 @@ class Economy(commands.Cog):
             )
 
             summary = "\n".join(log)
-            if verbose:
-                await ctx.send(summary)
-            else:
-                await ctx.send(f"✅ Completed for <@{member.id}>")
+            # Always send the detailed summary for each member.
+            await ctx.send(summary)
             if admin_cog:
                 await admin_cog.log_audit(ctx.author, summary)
 
