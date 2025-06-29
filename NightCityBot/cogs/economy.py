@@ -1217,22 +1217,17 @@ class Economy(commands.Cog):
                     log.append("🔄 Balance check passed." if check else "⚠️ Balance update check failed.")
 
                 if not on_loa:
-                    base_ok, cash, bank = await self.deduct_flat_fee(member, cash, bank, log, BASELINE_LIVING_COST, dry_run=dry_run)
+                    base_ok, cash, bank = await self.deduct_flat_fee(
+                        member, cash, bank, log, BASELINE_LIVING_COST, dry_run=dry_run
+                    )
                     if not base_ok:
-                        if eviction_channel:
-                            if not dry_run:
-                                await eviction_channel.send(
-                                    f"⚠️ <@{member.id}> could not pay baseline living cost (${BASELINE_LIVING_COST})."
-                                )
-                        log.append("❌ Skipping remaining rent steps.")
-                        summary = "\n".join(log)
-                        if verbose:
-                            await ctx.send(summary)
-                        else:
-                            await ctx.send(f"❌ Skipping remaining rent steps for <@{member.id}>")
-                        if dry_run and admin_cog:
-                            await admin_cog.log_audit(ctx.author, summary)
-                        continue
+                        if eviction_channel and not dry_run:
+                            await eviction_channel.send(
+                                f"⚠️ <@{member.id}> could not pay baseline living cost (${BASELINE_LIVING_COST})."
+                            )
+                        log.append(
+                            "⚠️ Baseline living cost unpaid. Continuing with rent steps."
+                        )
 
                 cash, bank = await self.process_housing_rent(member, app_roles, cash, bank, log, rent_log_channel, eviction_channel, dry_run=dry_run) if not on_loa else (cash, bank)
                 cash, bank = await self.process_business_rent(member, app_roles, cash, bank, log, rent_log_channel, eviction_channel, dry_run=dry_run)
