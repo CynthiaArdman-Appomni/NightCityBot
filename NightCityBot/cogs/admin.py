@@ -198,14 +198,17 @@ class Admin(commands.Cog):
             color=discord.Color.purple(),
         )
         for name, value in fields:
-            if embed_len(current) + len(name) + len(value) > 5800:
-                current.set_footer(text="Fixer tools by MedusaCascade | v1.2")
-                embeds.append(current)
-                current = discord.Embed(
-                    title="🛠️ NCRP Bot — Fixer & Admin Help (cont.)",
-                    color=discord.Color.purple(),
-                )
-            current.add_field(name=name, value=value, inline=False)
+            chunks = [value[i : i + 1024] for i in range(0, len(value), 1024)] or [""]
+            for i, chunk in enumerate(chunks):
+                field_name = name if i == 0 else "\u200b"
+                if embed_len(current) + len(field_name) + len(chunk) > 5800:
+                    current.set_footer(text="Fixer tools by MedusaCascade | v1.2")
+                    embeds.append(current)
+                    current = discord.Embed(
+                        title="🛠️ NCRP Bot — Fixer & Admin Help (cont.)",
+                        color=discord.Color.purple(),
+                    )
+                current.add_field(name=field_name, value=chunk, inline=False)
 
         current.set_footer(text="Fixer tools by MedusaCascade | v1.2")
         embeds.append(current)
