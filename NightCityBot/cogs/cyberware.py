@@ -72,9 +72,7 @@ class CyberwareManager(commands.Cog):
         high_role = guild.get_role(config.CYBER_HIGH_ROLE_ID)
         extreme_role = guild.get_role(config.CYBER_EXTREME_ROLE_ID)
         loa_role = guild.get_role(config.LOA_ROLE_ID)
-        log_channel = guild.get_channel(
-            getattr(config, "RIPPERDOC_LOG_CHANNEL_ID", config.RENT_LOG_CHANNEL_ID)
-        )
+        log_channel = guild.get_channel(config.RIPPERDOC_LOG_CHANNEL_ID)
 
         members = [target_member] if target_member else guild.members
         for member in members:
@@ -265,9 +263,7 @@ class CyberwareManager(commands.Cog):
         await ctx.send(f"✅ Removed checkup role from {member.display_name}.")
 
 
-        log_channel = ctx.guild.get_channel(
-            getattr(config, "RIPPERDOC_LOG_CHANNEL_ID", config.RENT_LOG_CHANNEL_ID)
-        )
+        log_channel = ctx.guild.get_channel(config.RIPPERDOC_LOG_CHANNEL_ID)
         if log_channel:
             await log_channel.send(
                 f"Ripperdoc {ctx.author.display_name} did a checkup on {member.display_name}"
