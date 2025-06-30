@@ -1213,6 +1213,22 @@ class Economy(commands.Cog):
             else "🚦 Starting rent collection..."
         )
 
+        notify_user = None
+        if not dry_run:
+            user_id = getattr(config, "REPORT_USER_ID", 0)
+            if user_id and hasattr(self.bot, "get_user"):
+                notify_user = self.bot.get_user(user_id)
+                if notify_user is None and hasattr(self.bot, "fetch_user"):
+                    try:
+                        notify_user = await self.bot.fetch_user(user_id)
+                    except Exception:
+                        notify_user = None
+            if notify_user:
+                try:
+                    await notify_user.send("🚦 Rent collection starting...")
+                except Exception:
+                    pass
+
         audit_lines: List[str] = []
         if not target_user:
             if Path(config.OPEN_LOG_FILE).exists():
@@ -1435,6 +1451,36 @@ class Economy(commands.Cog):
             log_file = audit_dir / f"rent_audit_{datetime.utcnow():%B_%Y}.log"
             with open(log_file, "a", encoding="utf-8") as f:
                 f.write("\n".join(audit_lines) + "\n")
+
+            if notify_user:
+                summary_lines: List[str] = []
+                for m in members_to_process:
+                    result = await self._evaluate_member_funds(m)
+                    if not result:
+                        continue
+                    _total, deficit, _payable, unpaid = result
+                    if deficit <= 0:
+                        continue
+                    baseline_only = all(
+                        item.startswith("Baseline living cost") for item in unpaid
+                    )
+                    if baseline_only:
+                        has_housing = any("Housing Tier" in r.name for r in m.roles)
+                        has_business = any("Business Tier" in r.name for r in m.roles)
+                        has_trauma = any(r.name in TRAUMA_ROLE_COSTS for r in m.roles)
+                        if not (has_housing or has_business or has_trauma):
+                            continue
+                    items = [item.split(" ($")[0] for item in unpaid]
+                    summary_lines.append(
+                        f"{m.display_name} can't pay: {', '.join(items)}"
+                    )
+                summary_text = "\n".join(summary_lines) if summary_lines else "✅ Everyone paid their dues."
+                try:
+                    await notify_user.send(
+                        f"✅ Rent collection completed.\n{summary_text}"
+                    )
+                except Exception:
+                    pass
 
     @commands.command(aliases=["collectrent"])
     @commands.has_permissions(administrator=True)
