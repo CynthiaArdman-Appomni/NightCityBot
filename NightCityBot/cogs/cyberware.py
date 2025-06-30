@@ -7,7 +7,12 @@ from pathlib import Path
 import os
 
 import config
-from NightCityBot.utils.helpers import load_json_file, save_json_file, get_tz_now
+from NightCityBot.utils.helpers import (
+    load_json_file,
+    save_json_file,
+    append_json_file,
+    get_tz_now,
+)
 from NightCityBot.services.unbelievaboat import UnbelievaBoatAPI
 from NightCityBot.utils.permissions import is_ripperdoc, is_fixer
 
@@ -66,7 +71,17 @@ class CyberwareManager(commands.Cog):
                 pass
 
         logs: List[str] = []
-        await self.process_week(log=logs)
+        results = await self.process_week(log=logs)
+
+        await append_json_file(
+            Path(config.CYBERWARE_WEEKLY_FILE),
+            {
+                "timestamp": datetime.utcnow().isoformat(),
+                "checkup": results.get("checkup", []),
+                "paid": results.get("paid", []),
+                "unpaid": results.get("unpaid", []),
+            },
+        )
 
         summary = "\n".join(logs) if logs else "✅ No actions performed."
         if notify_user:
@@ -81,8 +96,13 @@ class CyberwareManager(commands.Cog):
         dry_run: bool = False,
         log: Optional[List[str]] = None,
         target_member: Optional[discord.Member] = None,
-    ):
-        """Apply weekly check-up logic and deduct medication costs."""
+    ) -> Dict[str, List[int]]:
+        """Apply weekly check-up logic and deduct medication costs.
+
+        Returns a mapping with keys ``checkup`` (players who did a checkup),
+        ``paid`` (kept the role and paid) and ``unpaid`` (kept the role but
+        couldn't pay).
+        """
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('cyberware'):
             return
@@ -96,6 +116,8 @@ class CyberwareManager(commands.Cog):
         extreme_role = guild.get_role(config.CYBER_EXTREME_ROLE_ID)
         loa_role = guild.get_role(config.LOA_ROLE_ID)
         log_channel = guild.get_channel(config.RIPPERDOC_LOG_CHANNEL_ID)
+
+        results = {"checkup": [], "paid": [], "unpaid": []}
 
         members = [target_member] if target_member else guild.members
         for member in members:
@@ -129,6 +151,7 @@ class CyberwareManager(commands.Cog):
                         log.append(
                             f"{'Would give' if dry_run else 'Gave'} checkup role to <@{member.id}>"
                         )
+                results["checkup"].append(member.id)
                 if not dry_run:
                     self.data[user_id] = 0
                 continue
@@ -171,6 +194,7 @@ class CyberwareManager(commands.Cog):
                         log.append(
                             f"🚨 <@{member.id}> cannot pay ${cost} for immunosuppressants"
                         )
+                results["unpaid"].append(member.id)
             else:
                 success = True
                 if not dry_run:
@@ -196,10 +220,12 @@ class CyberwareManager(commands.Cog):
                             log.append(
                                 f"✅ Deducted ${cost} from <@{member.id}> for cyberware meds (week {weeks})."
                             )
+                            results["paid"].append(member.id)
                         else:
                             log.append(
                                 f"❌ Could not deduct ${cost} from <@{member.id}> for cyberware meds."
                             )
+                            results["unpaid"].append(member.id)
 
             if not dry_run:
                 self.data[user_id] = weeks
@@ -213,6 +239,8 @@ class CyberwareManager(commands.Cog):
                 log.append("✅ Data saved.")
         elif log is not None:
             log.append("Simulation complete. No changes saved.")
+
+        return results
 
     @commands.command()
     @commands.check_any(is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True))
@@ -358,3 +386,70 @@ class CyberwareManager(commands.Cog):
                 count += 1
 
         await ctx.send(f"✅ Gave the checkup role to {count} member(s).")
+
+    @commands.command(name="checkup_report", aliases=["cu_report", "cur"])
+    @commands.check_any(is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True))
+    async def checkup_report(self, ctx: commands.Context) -> None:
+        """Show who did a checkup and who paid or failed to pay this week."""
+        data = await load_json_file(Path(config.CYBERWARE_WEEKLY_FILE), default=[])
+        if not data:
+            await ctx.send("❌ No weekly data recorded yet.")
+            return
+
+        last = data[-1]
+        guild = ctx.guild
+
+        def mention_list(ids: List[int]) -> str:
+            names = []
+            for uid in ids:
+                member = guild.get_member(int(uid))
+                names.append(member.display_name if member else f"<@{uid}>")
+            return ", ".join(names) if names else "None"
+
+        lines = [f"**Cyberware Report ({last['timestamp']})**"]
+        lines.append(f"Did checkup: {mention_list(last.get('checkup', []))}")
+        lines.append(f"Paid meds: {mention_list(last.get('paid', []))}")
+        lines.append(f"Unpaid: {mention_list(last.get('unpaid', []))}")
+        await ctx.send("\n".join(lines))
+
+    @commands.command(name="collect_cyberware", aliases=["collectcyberware"])
+    @commands.check_any(is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True))
+    async def collect_cyberware(
+        self, ctx: commands.Context, member: discord.Member, *args: str
+    ) -> None:
+        """Manually collect cyberware medication from ``member``.
+
+        The command is ignored if the user already paid or had a checkup in the
+        latest weekly entry. Use ``-v`` for verbose output of the processing log.
+        """
+
+        verbose = any(a.lower() in {"-v", "--verbose", "verbose"} for a in args)
+
+        weekly_data = await load_json_file(Path(config.CYBERWARE_WEEKLY_FILE), default=[])
+        if weekly_data:
+            last = weekly_data[-1]
+            if member.id in last.get("checkup", []) or member.id in last.get("paid", []):
+                await ctx.send("⏭️ Member already processed this week.")
+                return
+
+        log_lines: List[str] = [f"💊 Manual cyberware collection for <@{member.id}>"]
+        result = await self.process_week(log=log_lines, target_member=member)
+
+        if weekly_data:
+            last = weekly_data[-1]
+            paid_set = set(map(int, last.get("paid", [])))
+            unpaid_set = set(map(int, last.get("unpaid", [])))
+            if member.id in result.get("paid", []):
+                paid_set.add(member.id)
+                unpaid_set.discard(member.id)
+            elif member.id in result.get("unpaid", []):
+                unpaid_set.add(member.id)
+            last["paid"] = list(paid_set)
+            last["unpaid"] = list(unpaid_set)
+            await save_json_file(Path(config.CYBERWARE_WEEKLY_FILE), weekly_data)
+
+        summary = "\n".join(log_lines) if log_lines else "✅ Completed."
+        await ctx.send(summary if verbose else "✅ Completed.")
+        admin_cog = self.bot.get_cog("Admin")
+        if admin_cog:
+            await admin_cog.log_audit(ctx.author, summary)

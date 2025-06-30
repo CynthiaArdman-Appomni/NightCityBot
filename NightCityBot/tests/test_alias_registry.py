@@ -22,6 +22,7 @@ import pytest
     (CyberwareManager, "checkup", ["check-up", "check_up", "cu", "cup"]),
     (CyberwareManager, "weeks_without_checkup", ["weekswithoutcheckup", "wwocup", "wwc"]),
     (CyberwareManager, "give_checkup_role", ["givecheckuprole", "givecheckups", "cuall", "checkupall"]),
+    (CyberwareManager, "collect_cyberware", ["collectcyberware"]),
     (SystemControl, "enable_system", ["enablesystem", "es", "systemenable"]),
     (SystemControl, "disable_system", ["disablesystem", "ds", "systemdisable"]),
     (SystemControl, "system_status", ["systemstatus"]),
