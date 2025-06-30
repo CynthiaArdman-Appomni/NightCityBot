@@ -5,6 +5,7 @@ FILES = [
     'attendance_log.json',
     'business_open_log.json',
     'cyberware_log.json',
+    'cyberware_weekly.json',
     'system_status.json',
     'thread_map.json',
 ]

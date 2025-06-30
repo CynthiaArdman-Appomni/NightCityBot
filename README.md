@@ -99,8 +99,10 @@ Commands:
 * `!checkup @user` – ripperdoc command to remove the weekly check‑up role from a player after their in‑character medical exam, resetting their streak to zero.
 * `!weeks_without_checkup @user` – show how many weeks the specified player has kept the check‑up role without visiting a ripperdoc.
 * `!give_checkup_role [@user]` – give the check-up role to a member or all cyberware users.
+* `!checkup_report` – list who did a checkup last week, who paid their meds and who couldn't pay.
+* `!collect_cyberware @user` – manually charge a member for their meds unless they already paid or did a checkup this week.
 
-All data is stored in `cyberware_log.json`.
+All data is stored in `cyberware_log.json`. Weekly results are appended to `cyberware_weekly.json`.
 
 ### RPManager
 *File: `NightCityBot/cogs/rp_manager.py`*

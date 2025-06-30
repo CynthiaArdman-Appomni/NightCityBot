@@ -43,6 +43,7 @@ BALANCE_BACKUP_DIR = "backups"
 RENT_AUDIT_DIR = "rent_audits"
 ATTEND_LOG_FILE = "attendance_log.json"
 CYBERWARE_LOG_FILE = "cyberware_log.json"
+CYBERWARE_WEEKLY_FILE = "cyberware_weekly.json"
 SYSTEM_STATUS_FILE = "system_status.json"
 CYBER_CHECKUP_ROLE_ID = 1383623743934300272
 CYBER_MEDIUM_ROLE_ID = 1383623573939159240
