@@ -50,7 +50,30 @@ class CyberwareManager(commands.Cog):
             return
         if get_tz_now().weekday() != 0:  # Monday
             return
-        await self.process_week()
+        notify_user = None
+        user_id = getattr(config, "REPORT_USER_ID", 0)
+        if user_id:
+            notify_user = self.bot.get_user(user_id)
+            if notify_user is None:
+                try:
+                    notify_user = await self.bot.fetch_user(user_id)
+                except Exception:
+                    notify_user = None
+        if notify_user:
+            try:
+                await notify_user.send("🚦 Weekly cyberware processing starting...")
+            except Exception:
+                pass
+
+        logs: List[str] = []
+        await self.process_week(log=logs)
+
+        summary = "\n".join(logs) if logs else "✅ No actions performed."
+        if notify_user:
+            try:
+                await notify_user.send(f"✅ Weekly cyberware processing complete:\n{summary}")
+            except Exception:
+                pass
 
     async def process_week(
         self,
@@ -121,8 +144,11 @@ class CyberwareManager(commands.Cog):
                     await log_channel.send(
                         f"⚠️ Could not fetch balance for <@{member.id}> to process cyberware meds."
                     )
-                if log is not None and dry_run:
-                    log.append(f"Would notify missing balance for <@{member.id}>")
+                if log is not None:
+                    if dry_run:
+                        log.append(f"Would notify missing balance for <@{member.id}>")
+                    else:
+                        log.append(f"⚠️ Could not fetch balance for <@{member.id}>")
                 continue
 
             if dry_run:
@@ -136,10 +162,15 @@ class CyberwareManager(commands.Cog):
                     await log_channel.send(
                         f"🚨 <@{member.id}> cannot pay ${cost} for immunosuppressants and is in danger of cyberpsychosis."
                     )
-                if log is not None and dry_run:
-                    log.append(
-                        f"Would warn insufficient funds for <@{member.id}> (${cost})"
-                    )
+                if log is not None:
+                    if dry_run:
+                        log.append(
+                            f"Would warn insufficient funds for <@{member.id}> (${cost})"
+                        )
+                    else:
+                        log.append(
+                            f"🚨 <@{member.id}> cannot pay ${cost} for immunosuppressants"
+                        )
             else:
                 success = True
                 if not dry_run:
@@ -155,17 +186,31 @@ class CyberwareManager(commands.Cog):
                         await log_channel.send(
                             f"❌ Could not deduct ${cost} from <@{member.id}> for cyberware meds."
                         )
-                if log is not None and dry_run:
-                    log.append(
-                        f"✅ Would deduct ${cost} from <@{member.id}> for cyberware meds (week {weeks})."
-                    )
+                if log is not None:
+                    if dry_run:
+                        log.append(
+                            f"✅ Would deduct ${cost} from <@{member.id}> for cyberware meds (week {weeks})."
+                        )
+                    else:
+                        if success:
+                            log.append(
+                                f"✅ Deducted ${cost} from <@{member.id}> for cyberware meds (week {weeks})."
+                            )
+                        else:
+                            log.append(
+                                f"❌ Could not deduct ${cost} from <@{member.id}> for cyberware meds."
+                            )
 
             if not dry_run:
                 self.data[user_id] = weeks
+                if log is not None:
+                    log.append(f"Streak is now {weeks} week(s) for <@{member.id}>")
             elif log is not None:
                 log.append(f"Streak would become {weeks} week(s) for <@{member.id}>")
         if not dry_run:
             await save_json_file(Path(config.CYBERWARE_LOG_FILE), self.data)
+            if log is not None:
+                log.append("✅ Data saved.")
         elif log is not None:
             log.append("Simulation complete. No changes saved.")
 
