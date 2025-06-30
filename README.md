@@ -69,6 +69,7 @@ Main commands:
 * `!attend` – every verified player can run this on Sundays to receive a weekly $250 attendance reward. The command refuses to run more than once per week.
 * `!event_start` – fixers can activate this in the attendance channel to temporarily allow `!attend` and `!open_shop` for four hours outside of Sunday.
 * `!due` – displays a full breakdown of the baseline fee, housing and business rent, Trauma Team subscription and upcoming cyberware medication costs that will be charged on the 1st.
+* `!last_payment` – show the details of your last automated payment.
 * `!collect_rent [@user] [-v] [-force]` – run the monthly rent cycle. Supply a user mention to limit the collection to that member. Use `-force` to ignore the 30 day cooldown.
 * `!simulate_rent [@user] [-v] [-cyberware]` – identical to `!collect_rent` but performs a dry run without updating balances. When a user is specified the output notes that a DM and last_payment entry would be created. With `-cyberware` the upcoming medication cost for the specified user is also shown.
 * `!simulate_all [@user]` – run both simulations at once. When a user is given the rent output indicates that a DM and last_payment entry would be created.
@@ -76,6 +77,7 @@ Main commands:
 * `!collect_housing @user [-force]`, `!collect_business @user [-force]`, `!collect_trauma @user [-force]` – immediately charge a single user's housing rent, business rent or Trauma Team subscription. Pass `-force` to override the 30 day limit.
 * `!backup_balances` – save all member balances to a timestamped JSON file. Each
   backup entry records the balance and the `change` since the previous entry.
+* `!backup_balance @user` – save a single member's balance to a timestamped file.
 * `!restore_balances <file>` – restore balances from a previous backup file.
 * `!restore_balance @user [file]` – restore a single user's balance. If no file
   is provided (or the user's automatic backup file is used) the latest entry is
@@ -96,6 +98,7 @@ Commands:
 * `!simulate_cyberware [@user] [week]` – with no arguments this performs a dry run of the entire weekly cycle for every player. When a user and week number are provided it simply reports the medication cost that would be charged on that week.
 * `!checkup @user` – ripperdoc command to remove the weekly check‑up role from a player after their in‑character medical exam, resetting their streak to zero.
 * `!weeks_without_checkup @user` – show how many weeks the specified player has kept the check‑up role without visiting a ripperdoc.
+* `!give_checkup_role [@user]` – give the check-up role to a member or all cyberware users.
 
 All data is stored in `cyberware_log.json`.
 
@@ -126,6 +129,20 @@ Manages Leave‑of‑Absence status.
 
 * `!start_loa` and `!end_loa` – players may place themselves on LOA to pause monthly fees and Trauma Team billing. Fixers can provide a user mention to toggle LOA for someone else.
 * While a player is on LOA, the economy cog automatically skips baseline costs, housing rent and Trauma Team payments until `!end_loa` is used.
+
+### RoleButtons
+*File: `NightCityBot/cogs/role_buttons.py`*
+
+Provides a button for players to self-assign the NPC role.
+
+* `!npc_button` – post a persistent button that grants the NPC role.
+
+### TraumaTeam
+*File: `NightCityBot/cogs/trauma_team.py`*
+
+Commands:
+
+* `!call_trauma` – notify the Trauma Team channel with your plan role.
 
 ### SystemControl
 *File: `NightCityBot/cogs/system_control.py`*
@@ -195,4 +212,3 @@ pytest
 ```
 
 Alternatively, run `!test_bot` inside Discord to perform many of the same checks without leaving the chat.
-
