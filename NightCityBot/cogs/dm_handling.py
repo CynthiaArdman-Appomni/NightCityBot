@@ -109,98 +109,43 @@ class DMHandler(commands.Cog):
     async def handle_thread_message(self, message: discord.Message):
         """Handle messages sent in DM logging threads."""
         await self.load_event.wait()
+        user_id: str | None = None
         for uid, thread_id in self.dm_threads.items():
-            if message.channel.id != thread_id:
-                continue
+            if message.channel.id == thread_id:
+                user_id = uid
+                break
 
-            roles = getattr(message.author, "roles", [])
-            if not any(getattr(r, "name", "") == config.FIXER_ROLE_NAME for r in roles):
-                return
+        if user_id is None:
+            match = re.search(r"(\d+)$", message.channel.name)
+            if match:
+                user_id = match.group(1)
+                self.dm_threads[user_id] = message.channel.id
+                await save_json_file(config.THREAD_MAP_FILE, self.dm_threads)
 
-            target_user = await self.bot.fetch_user(int(uid))
-            if not target_user:
-                return
+        if user_id is None:
+            return
 
-            if message.content.strip().startswith("!"):
+        roles = getattr(message.author, "roles", [])
+        if not any(getattr(r, "name", "") == config.FIXER_ROLE_NAME for r in roles):
+            return
+
+        target_user = await self.bot.fetch_user(int(user_id))
+        if not target_user:
+            return
+
+        if message.content.strip().startswith("!"):
+            ctx = await self.bot.get_context(message)
+
+        # Handle roll command relay
+        if message.content.strip().lower().startswith("!roll"):
+            roll_cog = self.bot.get_cog('RollSystem')
+            if roll_cog:
+                dice = message.content.strip()[len("!roll"):].strip()
                 ctx = await self.bot.get_context(message)
-
-
-            # Handle roll command relay
-            if message.content.strip().lower().startswith("!roll"):
-                roll_cog = self.bot.get_cog('RollSystem')
-                if roll_cog:
-                    dice = message.content.strip()[len("!roll"):].strip()
-                    ctx = await self.bot.get_context(message)
-                    setattr(ctx, "original_author", message.author)
-                    ctx.author = target_user
-                    ctx.channel = await target_user.create_dm()
-                    await roll_cog.roll(ctx, dice=dice)
-                try:
-                    await message.delete()
-                    admin = self.bot.get_cog('Admin')
-                    if admin:
-                        await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
-                except Exception:
-                    pass
-                return
-
-            # Handle start-rp command relay
-            if message.content.strip().lower().startswith("!start-rp"):
-                rp_cog = self.bot.get_cog('RPManager')
-                if rp_cog:
-                    args_str = message.content.strip()[len("!start-rp"):].strip()
-                    if args_str:
-                        args = args_str.split()
-                    else:
-                        args = [f"<@{target_user.id}>"]
-                    ctx = await self.bot.get_context(message)
-                    await rp_cog.start_rp(ctx, *args)
-                try:
-                    await message.delete()
-                    admin = self.bot.get_cog('Admin')
-                    if admin:
-                        await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
-                except Exception:
-                    pass
-                return
-
-            if message.content.strip().startswith("!"):
-                ctx = await self.bot.get_context(message)
-                admin = self.bot.get_cog('Admin')
-                async def audit_send(content=None, **kwargs):
-                    if admin and content:
-                        await admin.log_audit(message.author, content)
-                ctx.send = audit_send
-                await self.bot.invoke(ctx)
-                try:
-                    await message.delete()
-                    admin = self.bot.get_cog('Admin')
-                    if admin:
-                        await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
-                except Exception:
-                    pass
-                return
-
-            # Handle normal message relay
-            user_files = []
-            log_files = []
-            for a in message.attachments:
-                if a.size > 8 * 1024 * 1024:
-                    await message.channel.send(
-                        f"⚠️ Attachment '{a.filename}' too large to forward."
-                    )
-                else:
-                    user_files.append(await a.to_file())
-                    log_files.append(await a.to_file())
-            try:
-                await target_user.send(content=message.content or None, files=user_files)
-            except discord.HTTPException:
-                await message.channel.send("⚠️ Failed to forward message — attachment too large.")
-            await message.channel.send(
-                f"📤 **Sent to {target_user.display_name} ({target_user.id}) "
-                f"by {message.author.display_name} ({message.author.id}):**\n{message.content}",
-                files=log_files
-            )
+                setattr(ctx, "original_author", message.author)
+                ctx.author = target_user
+                ctx.channel = await target_user.create_dm()
+                await roll_cog.roll(ctx, dice=dice)
             try:
                 await message.delete()
                 admin = self.bot.get_cog('Admin')
@@ -208,6 +153,72 @@ class DMHandler(commands.Cog):
                     await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
             except Exception:
                 pass
+            return
+
+        # Handle start-rp command relay
+        if message.content.strip().lower().startswith("!start-rp"):
+            rp_cog = self.bot.get_cog('RPManager')
+            if rp_cog:
+                args_str = message.content.strip()[len("!start-rp"):].strip()
+                if args_str:
+                    args = args_str.split()
+                else:
+                    args = [f"<@{target_user.id}>"]
+                ctx = await self.bot.get_context(message)
+                await rp_cog.start_rp(ctx, *args)
+            try:
+                await message.delete()
+                admin = self.bot.get_cog('Admin')
+                if admin:
+                    await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
+            except Exception:
+                pass
+            return
+
+        if message.content.strip().startswith("!"):
+            ctx = await self.bot.get_context(message)
+            admin = self.bot.get_cog('Admin')
+            async def audit_send(content=None, **kwargs):
+                if admin and content:
+                    await admin.log_audit(message.author, content)
+            ctx.send = audit_send
+            await self.bot.invoke(ctx)
+            try:
+                await message.delete()
+                admin = self.bot.get_cog('Admin')
+                if admin:
+                    await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
+            except Exception:
+                pass
+            return
+
+        # Handle normal message relay
+        user_files = []
+        log_files = []
+        for a in message.attachments:
+            if a.size > 8 * 1024 * 1024:
+                await message.channel.send(
+                    f"⚠️ Attachment '{a.filename}' too large to forward."
+                )
+            else:
+                user_files.append(await a.to_file())
+                log_files.append(await a.to_file())
+        try:
+            await target_user.send(content=message.content or None, files=user_files)
+        except discord.HTTPException:
+            await message.channel.send("⚠️ Failed to forward message — attachment too large.")
+        await message.channel.send(
+            f"📤 **Sent to {target_user.display_name} ({target_user.id}) "
+            f"by {message.author.display_name} ({message.author.id}):**\n{message.content}",
+            files=log_files
+        )
+        try:
+            await message.delete()
+            admin = self.bot.get_cog('Admin')
+            if admin:
+                await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
+        except Exception:
+            pass
 
     async def handle_dm_message(self, message: discord.Message):
         """Handle incoming DMs from users."""
