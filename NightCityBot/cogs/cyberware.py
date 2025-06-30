@@ -420,7 +420,8 @@ class CyberwareManager(commands.Cog):
         """Manually collect cyberware medication from ``member``.
 
         The command is ignored if the user already paid or had a checkup in the
-        latest weekly entry. Use ``-v`` for verbose output of the processing log.
+        latest weekly entry. Without ``-v`` only the final few log lines are
+        shown. Use ``-v`` for the complete processing log.
         """
 
         verbose = any(a.lower() in {"-v", "--verbose", "verbose"} for a in args)
@@ -449,7 +450,8 @@ class CyberwareManager(commands.Cog):
             await save_json_file(Path(config.CYBERWARE_WEEKLY_FILE), weekly_data)
 
         summary = "\n".join(log_lines) if log_lines else "✅ Completed."
-        await ctx.send(summary if verbose else "✅ Completed.")
+        display = summary if verbose else "\n".join(log_lines[-3:])
+        await ctx.send(display)
         admin_cog = self.bot.get_cog("Admin")
         if admin_cog:
             await admin_cog.log_audit(ctx.author, summary)
