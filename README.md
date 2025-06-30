@@ -109,7 +109,7 @@ All data is stored in `cyberware_log.json`. Weekly results are appended to `cybe
 
 Provides tools for creating private RP text channels and archiving them when complete.
 
-* `!start_rp @users` – create a private text channel for the mentioned users. The channel name is generated automatically using `utils.helpers.build_channel_name` and only the participants and staff can view it.
+* `!start_rp @users` – fixers and admins can create a private text channel for the mentioned users. The channel name is generated automatically using `utils.helpers.build_channel_name` and only the participants and staff can view it.
 * `!end_rp` – once the scene is finished, this command archives the entire channel into the group audit forum and deletes the original channel.
 * Any command typed inside a `text-rp-*` channel is relayed back to the bot, so players can roll dice or trigger other commands without leaving the RP session.
 
