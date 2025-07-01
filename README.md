@@ -165,6 +165,7 @@ Offers helper commands for staff and global error handling.
 
 * `!post <channel> <message>` – send a message or execute a command in another channel or thread. If `<message>` begins with `!`, the command is run as if it were typed in that location.
 * `!helpme` and `!helpfixer` – show the built in help embeds. The former lists player commands while the latter documents every fixer and admin command with available options.
+* `!backfill_logs [limit]` – rebuild `attendance_log.json` and `business_open_log.json` by scanning recent messages. The optional limit controls how many messages are parsed (default 1000).
 * All sensitive actions are logged via `log_audit` to the channel defined by `AUDIT_LOG_CHANNEL_ID`.
 
 ### TestSuite

@@ -9,6 +9,7 @@ import config
 from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.utils import constants
 from NightCityBot.utils import startup_checks
+from NightCityBot.utils.helpers import load_json_file, save_json_file
 
 logger = logging.getLogger(__name__)
 
@@ -231,6 +232,54 @@ class Admin(commands.Cog):
 
         for e in embeds:
             await ctx.send(embed=e)
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def backfill_logs(self, ctx, limit: int = 1000):
+        """Rebuild attendance and open shop logs from recent history."""
+        attend_channel = ctx.guild.get_channel(config.ATTENDANCE_CHANNEL_ID)
+        open_channel = ctx.guild.get_channel(config.BUSINESS_ACTIVITY_CHANNEL_ID)
+
+        attend_data = await load_json_file(config.ATTEND_LOG_FILE, default={})
+        open_data = await load_json_file(config.OPEN_LOG_FILE, default={})
+
+        attend_added = 0
+        open_added = 0
+
+        if isinstance(attend_channel, discord.TextChannel):
+            async for msg in attend_channel.history(limit=limit, oldest_first=True):
+                if msg.author.bot:
+                    continue
+                if msg.content.strip().startswith("!attend"):
+                    uid = str(msg.author.id)
+                    ts = msg.created_at.replace(microsecond=0).isoformat()
+                    entries = attend_data.setdefault(uid, [])
+                    if ts not in entries:
+                        entries.append(ts)
+                        attend_added += 1
+
+        if isinstance(open_channel, discord.TextChannel):
+            async for msg in open_channel.history(limit=limit, oldest_first=True):
+                if msg.author.bot:
+                    continue
+                if msg.content.strip().startswith(("!open_shop", "!openshop", "!os")):
+                    uid = str(msg.author.id)
+                    ts = msg.created_at.replace(microsecond=0).isoformat()
+                    entries = open_data.setdefault(uid, [])
+                    if ts not in entries:
+                        entries.append(ts)
+                        open_added += 1
+
+        await save_json_file(config.ATTEND_LOG_FILE, attend_data)
+        await save_json_file(config.OPEN_LOG_FILE, open_data)
+
+        await ctx.send(
+            f"✅ Backfilled {attend_added} attendance entries and {open_added} business opens."
+        )
+        await self.log_audit(
+            ctx.author,
+            f"Backfilled logs: attend {attend_added}, open {open_added}",
+        )
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
