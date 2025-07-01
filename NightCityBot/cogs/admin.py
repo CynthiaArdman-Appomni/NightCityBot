@@ -118,9 +118,8 @@ class Admin(commands.Cog):
                 "→ Requires a Business role.\n"
                 "`!attend` — Sundays only\n"
                 "→ Verified players earn $250 every week they attend.\n"
-                "`!due` — Estimate what you'll owe on the 1st."
-                "`!paydue [-v]` — pay your monthly obligations early.
-"
+                "`!due` — Estimate what you'll owe on the 1st.\n"
+                "`!paydue [-v]` — pay your monthly obligations early."
             ),
             inline=False,
         )
