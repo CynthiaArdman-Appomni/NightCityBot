@@ -759,8 +759,8 @@ class Economy(commands.Cog):
             )
             return False, cash, bank
 
-        deduct_cash = min(cash, amount)
-        deduct_bank = amount - deduct_cash
+        deduct_cash = min(max(cash, 0), amount)
+        deduct_bank = max(0, amount - deduct_cash)
         payload: Dict[str, int] = {}
         if deduct_cash > 0:
             payload["cash"] = -deduct_cash
@@ -823,8 +823,8 @@ class Economy(commands.Cog):
             )
             return cash, bank
 
-        deduct_cash = min(cash, housing_total)
-        deduct_bank = housing_total - deduct_cash
+        deduct_cash = min(max(cash, 0), housing_total)
+        deduct_bank = max(0, housing_total - deduct_cash)
         payload: Dict[str, int] = {}
         if deduct_cash > 0:
             payload["cash"] = -deduct_cash
@@ -896,8 +896,8 @@ class Economy(commands.Cog):
             )
             return cash, bank
 
-        deduct_cash = min(cash, business_total)
-        deduct_bank = business_total - deduct_cash
+        deduct_cash = min(max(cash, 0), business_total)
+        deduct_bank = max(0, business_total - deduct_cash)
         payload: Dict[str, int] = {}
         if deduct_cash > 0:
             payload["cash"] = -deduct_cash
@@ -1812,8 +1812,8 @@ class Economy(commands.Cog):
                 log.append(f"💊 Cyberware meds week {weeks}: ${cost}")
                 total = (cash or 0) + (bank or 0)
                 if total >= cost:
-                    deduct_cash = min(cash, cost)
-                    deduct_bank = cost - deduct_cash
+                    deduct_cash = min(max(cash, 0), cost)
+                    deduct_bank = max(0, cost - deduct_cash)
                     cash -= deduct_cash
                     bank -= deduct_bank
                     log.append(
