@@ -247,28 +247,56 @@ class Admin(commands.Cog):
         open_added = 0
 
         if isinstance(attend_channel, discord.TextChannel):
-            async for msg in attend_channel.history(limit=limit, oldest_first=True):
+            history = [
+                m
+                async for m in attend_channel.history(limit=limit, oldest_first=True)
+            ]
+            for idx, msg in enumerate(history):
                 if msg.author.bot:
                     continue
                 if msg.content.strip().startswith("!attend"):
-                    uid = str(msg.author.id)
-                    ts = msg.created_at.replace(microsecond=0).isoformat()
-                    entries = attend_data.setdefault(uid, [])
-                    if ts not in entries:
-                        entries.append(ts)
-                        attend_added += 1
+                    success = False
+                    for follow in history[idx + 1 :]:
+                        if follow.author == ctx.me and follow.created_at >= msg.created_at:
+                            if (
+                                follow.content.startswith("✅")
+                                and "Attendance logged" in follow.content
+                            ):
+                                success = True
+                            break
+                    if success:
+                        uid = str(msg.author.id)
+                        ts = msg.created_at.replace(microsecond=0).isoformat()
+                        entries = attend_data.setdefault(uid, [])
+                        if ts not in entries:
+                            entries.append(ts)
+                            attend_added += 1
 
         if isinstance(open_channel, discord.TextChannel):
-            async for msg in open_channel.history(limit=limit, oldest_first=True):
+            history = [
+                m
+                async for m in open_channel.history(limit=limit, oldest_first=True)
+            ]
+            for idx, msg in enumerate(history):
                 if msg.author.bot:
                     continue
                 if msg.content.strip().startswith(("!open_shop", "!openshop", "!os")):
-                    uid = str(msg.author.id)
-                    ts = msg.created_at.replace(microsecond=0).isoformat()
-                    entries = open_data.setdefault(uid, [])
-                    if ts not in entries:
-                        entries.append(ts)
-                        open_added += 1
+                    success = False
+                    for follow in history[idx + 1 :]:
+                        if follow.author == ctx.me and follow.created_at >= msg.created_at:
+                            if (
+                                follow.content.startswith("✅")
+                                and "Business opening logged" in follow.content
+                            ):
+                                success = True
+                            break
+                    if success:
+                        uid = str(msg.author.id)
+                        ts = msg.created_at.replace(microsecond=0).isoformat()
+                        entries = open_data.setdefault(uid, [])
+                        if ts not in entries:
+                            entries.append(ts)
+                            open_added += 1
 
         await save_json_file(config.ATTEND_LOG_FILE, attend_data)
         await save_json_file(config.OPEN_LOG_FILE, open_data)
