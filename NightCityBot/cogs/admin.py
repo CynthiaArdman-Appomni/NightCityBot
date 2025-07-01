@@ -119,6 +119,8 @@ class Admin(commands.Cog):
                 "`!attend` — Sundays only\n"
                 "→ Verified players earn $250 every week they attend.\n"
                 "`!due` — Estimate what you'll owe on the 1st."
+                "`!paydue [-v]` — pay your monthly obligations early.
+"
             ),
             inline=False,
         )
@@ -128,6 +130,14 @@ class Admin(commands.Cog):
             value=(
                 "`!start_loa` (aliases: !startloa, !loa_start, !loastart) – pause your baseline fees, housing rent and Trauma Team while away.\n"
                 "`!end_loa` (aliases: !endloa, !loa_end, !loaend) – resume all costs when you return. Fixers can specify a member for both commands."
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="🚑 Medical",
+            value=(
+                "`!call_trauma` – ping the Trauma Team channel with your plan role.\n"
+                "`!paycyberware [-v]` – pay your cyberware meds manually."
             ),
             inline=False,
         )
@@ -152,6 +162,7 @@ class Admin(commands.Cog):
                 "✉️ Messaging Tools",
                 "`!dm @user <text>` – send an anonymous DM with optional attachments. The conversation is logged in a private thread. Use `!roll` within that thread to relay dice results.\n"
                 "`!post <channel|thread> <message>` – send a message or execute a command in another location.",
+                "`!npc_button` – send the NPC role assignment button in the current channel.\n"
             ),
             (
                 "📑 RP Management",
@@ -160,17 +171,21 @@ class Admin(commands.Cog):
             ),
             (
                 "💵 Economy & Rent",
-                "`!open_shop` (aliases: !openshop, !os) – record a business opening on Sunday and grant passive income immediately.\n"
-                "`!attend` – log weekly attendance for a $250 payout.\n"
-                "`!event_start` (aliases: !eventstart, !open_event, !start_event) – allow !attend and !open_shop for 4 hours outside Sunday when run in #attendance.\n"
-                "`!due` – display a detailed breakdown of what a user owes on the 1st.\n"
-                "`!collect_rent [@user] [-v] [-force]` (alias: !collectrent) – run the monthly rent cycle. Use `-force` to ignore the 30 day limit.\n"
-                "`!collect_housing @user [-v] [-force]` / `!collect_business @user [-v] [-force]` / `!collect_trauma @user [-v] [-force]` – charge specific fees with optional verbose logs. (aliases: !collecthousing / !collectbusiness / !collecttrauma)\n"
-                "`!simulate_rent [@user] [-v]` (alias: !simulaterent) – perform a dry run of rent collection using the same options.\n"
-                "`!simulate_cyberware [@user] [week]` – preview cyberware medication costs globally or for a certain week.\n"
-                "`!simulate_all [@user]` – run both simulations at once.\n"
-                "`!backup_balances` – save all member balances to a timestamped file.\n"
-                "`!restore_balances <file>` – restore balances from a backup file.",
+                "`!open_shop` (aliases: !openshop, !os) – record a business opening on Sunday and grant passive income immediately.\n",
+                "`!attend` – log weekly attendance for a $250 payout.\n",
+                "`!event_start` (aliases: !eventstart, !open_event, !start_event) – allow !attend and !open_shop for 4 hours outside Sunday when run in #attendance.\n",
+                "`!due` – display a detailed breakdown of what a user owes on the 1st.\n",
+                "`!paydue [-v]` – pay your monthly obligations early.\n",
+                "`!collect_rent [@user] [-v] [-force]` (alias: !collectrent) – run the monthly rent cycle. Use `-force` to ignore the 30 day limit.\n",
+                "`!collect_housing @user [-v] [-force]` / `!collect_business @user [-v] [-force]` / `!collect_trauma @user [-v] [-force]` – charge specific fees with optional verbose logs. (aliases: !collecthousing / !collectbusiness / !collecttrauma)\n",
+                "`!simulate_rent [@user] [-v]` (alias: !simulaterent) – perform a dry run of rent collection using the same options.\n",
+                "`!simulate_cyberware [@user] [week]` – preview cyberware medication costs globally or for a certain week.\n",
+                "`!simulate_all [@user]` – run both simulations at once.\n",
+                "`!backup_balances` – save all member balances to a timestamped file.\n",
+                "`!backup_balance @user` – save one member's balance to a file.\n",
+                "`!restore_balances <file>` – restore balances from a backup file.\n",
+                "`!restore_balance @user [file]` – restore one member's balance from a backup.\n",
+                "`!list_deficits` – list members who can't cover upcoming charges.",
             ),
             (
                 "🏖️ LOA & Cyberware",
@@ -178,6 +193,7 @@ class Admin(commands.Cog):
                 "`!checkup @user` (aliases: !check-up, !check_up, !cu, !cup) – remove the checkup role once an in-character exam is completed.\n"
                 "`!weeks_without_checkup @user` (aliases: !wwocup, !wwc) – show how many weeks a member has kept the role without a checkup.\n"
                 "`!collect_cyberware @user [-v]` – manually charge a member for their meds and show the last few log lines unless `-v` is supplied.",
+                "`!paycyberware [-v]` – pay your own cyberware meds manually."
             ),
             (
                 "⚙️ System Control",
