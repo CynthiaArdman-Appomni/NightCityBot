@@ -10,7 +10,8 @@ from dotenv import load_dotenv
 
 # Automatically load variables from a `.env` file located next to this
 # config module so local development doesn't require exporting them.
-load_dotenv(Path(__file__).with_name('.env'))
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / '.env')
 
 # Secrets can be provided via environment variables.  They default to ``None``
 # so running the bot locally can still work if these values are assigned below
@@ -35,16 +36,16 @@ TRAUMA_FORUM_CHANNEL_ID = 1351070651313557545
 TRAUMA_NOTIFICATIONS_CHANNEL_ID = 1386926321774362705
 VERIFIED_ROLE_ID = 1351048862323834952
 NPC_ROLE_ID = 1348661508011462769
-THREAD_MAP_FILE = "thread_map.json"
-OPEN_LOG_FILE = "business_open_log.json"
-LAST_RENT_FILE = "last_rent.json"
-LAST_PAYMENT_FILE = "last_payment.json"
-BALANCE_BACKUP_DIR = "backups"
-RENT_AUDIT_DIR = "rent_audits"
-ATTEND_LOG_FILE = "attendance_log.json"
-CYBERWARE_LOG_FILE = "cyberware_log.json"
-CYBERWARE_WEEKLY_FILE = "cyberware_weekly.json"
-SYSTEM_STATUS_FILE = "system_status.json"
+THREAD_MAP_FILE = BASE_DIR / "thread_map.json"
+OPEN_LOG_FILE = BASE_DIR / "business_open_log.json"
+LAST_RENT_FILE = BASE_DIR / "last_rent.json"
+LAST_PAYMENT_FILE = BASE_DIR / "last_payment.json"
+BALANCE_BACKUP_DIR = BASE_DIR / "backups"
+RENT_AUDIT_DIR = BASE_DIR / "rent_audits"
+ATTEND_LOG_FILE = BASE_DIR / "attendance_log.json"
+CYBERWARE_LOG_FILE = BASE_DIR / "cyberware_log.json"
+CYBERWARE_WEEKLY_FILE = BASE_DIR / "cyberware_weekly.json"
+SYSTEM_STATUS_FILE = BASE_DIR / "system_status.json"
 CYBER_CHECKUP_ROLE_ID = 1383623743934300272
 CYBER_MEDIUM_ROLE_ID = 1383623573939159240
 CYBER_HIGH_ROLE_ID = 1383623624560345139
