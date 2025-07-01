@@ -1285,14 +1285,23 @@ class Economy(commands.Cog):
             await ctx.send("❌ No matching members found.")
             return
 
+        await ctx.send(f"ℹ️ {len(members_to_process)} member(s) to process.")
+
         if not dry_run:
+            await ctx.send("💾 Backing up member balances…")
             await self.backup_balances(members_to_process, label="collect_rent_before")
+            await ctx.send("💾 Balance backup complete.")
 
         eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
         rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
         admin_cog = self.bot.get_cog("Admin")
 
-        for member in members_to_process:
+        async def _flush(start: int) -> None:
+            if verbose:
+                for line in log[start:]:
+                    await ctx.send(line)
+
+        for idx, member in enumerate(members_to_process, start=1):
             try:
                 if not force:
                     recent = await self._label_used_recently(
@@ -1313,26 +1322,27 @@ class Economy(commands.Cog):
                         )
                         continue
 
-                log: List[str] = [f"🔍 **Working on:** <@{member.id}>"]
-                if not verbose:
-                    await ctx.send(f"Working on <@{member.id}>")
+                progress = f"{idx}/{len(members_to_process)}"
+                log: List[str] = [f"🔍 **Working on:** <@{member.id}> ({progress})"]
+                await ctx.send(log[0])
 
                 role_names = [r.name for r in member.roles]
                 app_roles = [r for r in role_names if "Tier" in r]
                 log.append(f"🏷️ Detected roles: {', '.join(app_roles) or 'None'}")
+                await _flush(len(log) - 1)
 
                 loa_role = member.guild.get_role(config.LOA_ROLE_ID)
                 on_loa = loa_role in member.roles if loa_role else False
                 if on_loa:
                     log.append("🏖️ Member is on LOA — skipping personal fees.")
+                    await _flush(len(log) - 1)
 
                 bal = await self.unbelievaboat.get_balance(member.id)
                 if not bal:
                     log.append("⚠️ Could not fetch balance.")
                     summary = "\n".join(log)
-                    if verbose:
-                        await ctx.send(summary)
-                    else:
+                    await _flush(0)
+                    if not verbose:
                         await ctx.send(f"⚠️ Could not fetch balance for <@{member.id}>")
                     if dry_run and admin_cog:
                         await admin_cog.log_audit(ctx.author, summary)
@@ -1341,6 +1351,7 @@ class Economy(commands.Cog):
                 log.append(
                     f"💵 Starting balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}"
                 )
+                await _flush(len(log) - 1)
 
                 if dry_run:
                     check = await self.unbelievaboat.verify_balance_ops(member.id)
@@ -1349,8 +1360,10 @@ class Economy(commands.Cog):
                         if check
                         else "⚠️ Balance update check failed."
                     )
+                    await _flush(len(log) - 1)
 
                 if not on_loa:
+                    start = len(log)
                     base_ok, cash, bank = await self.deduct_flat_fee(
                         member, cash, bank, log, BASELINE_LIVING_COST, dry_run=dry_run
                     )
@@ -1362,7 +1375,9 @@ class Economy(commands.Cog):
                         log.append(
                             "⚠️ Baseline living cost unpaid. Continuing with rent steps."
                         )
+                    await _flush(start)
 
+                start = len(log)
                 cash, bank = (
                     await self.process_housing_rent(
                         member,
@@ -1377,6 +1392,8 @@ class Economy(commands.Cog):
                     if not on_loa
                     else (cash, bank)
                 )
+                await _flush(start)
+                start = len(log)
                 cash, bank = await self.process_business_rent(
                     member,
                     app_roles,
@@ -1387,11 +1404,14 @@ class Economy(commands.Cog):
                     eviction_channel,
                     dry_run=dry_run,
                 )
+                await _flush(start)
 
                 if not on_loa:
+                    start = len(log)
                     await self.trauma_service.process_trauma_team_payment(
                         member, log=log, dry_run=dry_run
                     )
+                    await _flush(start)
 
                 if not dry_run:
                     final = await self.unbelievaboat.get_balance(member.id)
@@ -1402,14 +1422,17 @@ class Economy(commands.Cog):
                 log.append(
                     f"📊 {'Projected' if dry_run else 'Final'} balance — Cash: ${cash:,}, Bank: ${bank:,}, Total: {(cash or 0) + (bank or 0):,}"
                 )
+                await _flush(len(log) - 1)
 
                 if dry_run and preview_dm:
                     log.append("💌 Would DM summary to user.")
+                    await _flush(len(log) - 1)
                     log.append("📝 Would record last_payment entry.")
+                    await _flush(len(log) - 1)
 
                 summary = "\n".join(log)
                 if verbose:
-                    await ctx.send(summary)
+                    pass
                 else:
                     await ctx.send(f"✅ Completed for <@{member.id}>")
                 if dry_run and admin_cog:
@@ -1423,6 +1446,7 @@ class Economy(commands.Cog):
                         dm_failed = True
                     if dm_failed:
                         summary = "\n".join(log)
+                        await _flush(len(log) - 1)
                     await self.record_last_payment(member, summary)
                 audit_lines.append(summary)
 
