@@ -70,6 +70,7 @@ Main commands:
 * `!event_start` – fixers can activate this in the attendance channel to temporarily allow `!attend` and `!open_shop` for four hours outside of Sunday.
 * `!due` – displays a full breakdown of the baseline fee, housing and business rent, Trauma Team subscription and upcoming cyberware medication costs that will be charged on the 1st.
 * `!last_payment` – show the details of your last automated payment.
+* `!paydue [-v]` – pay your monthly obligations early. Works like `!collect_rent` but only for yourself. Use `-v` for a detailed summary.
 * `!collect_rent [@user] [-v] [-force]` – run the monthly rent cycle. Supply a user mention to limit the collection to that member. Use `-force` to ignore the 30 day cooldown.
 * `!simulate_rent [@user] [-v] [-cyberware]` – identical to `!collect_rent` but performs a dry run without updating balances. When a user is specified the output notes that a DM and last_payment entry would be created. With `-cyberware` the upcoming medication cost for the specified user is also shown.
 * `!simulate_all [@user]` – run both simulations at once. When a user is given the rent output indicates that a DM and last_payment entry would be created.
@@ -101,6 +102,7 @@ Commands:
 * `!give_checkup_role [@user]` – give the check-up role to a member or all cyberware users.
 * `!checkup_report` – list who did a checkup last week, who paid their meds and who couldn't pay.
 * `!collect_cyberware @user [-v]` – manually charge a member for their meds unless they already paid or did a checkup this week. Without `-v` only the last few log lines are shown.
+* `!paycyberware [-v]` – pay your own cyberware meds manually. Mirrors `!collect_cyberware` but only affects you.
 
 All data is stored in `cyberware_log.json`. Weekly results are appended to `cyberware_weekly.json`.
 
