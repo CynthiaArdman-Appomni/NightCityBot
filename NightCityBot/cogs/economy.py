@@ -1594,6 +1594,22 @@ class Economy(commands.Cog):
                 else:
                     await ctx.send(f"{target_user.display_name} has no cyberware role.")
 
+    @commands.command(name="paydue", aliases=["pay_due"])
+    async def pay_due(self, ctx, *args: str) -> None:
+        """Pay your monthly obligations early.
+
+        Works like ``!collect_rent`` but only processes the invoking user.
+        Use ``-v`` for a detailed summary.
+        """
+        verbose = any(a.lower() in {"-v", "--verbose", "verbose"} for a in args)
+        await self.run_rent_collection(
+            ctx,
+            target_user=ctx.author,
+            dry_run=False,
+            verbose=verbose,
+            force=False,
+        )
+
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def simulate_all(
