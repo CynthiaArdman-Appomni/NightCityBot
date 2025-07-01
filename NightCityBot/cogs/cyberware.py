@@ -455,3 +455,43 @@ class CyberwareManager(commands.Cog):
         admin_cog = self.bot.get_cog("Admin")
         if admin_cog:
             await admin_cog.log_audit(ctx.author, summary)
+
+    @commands.command(name="paycyberware", aliases=["pay_cyberware"])
+    async def pay_cyberware(self, ctx: commands.Context, *args: str) -> None:
+        """Pay your cyberware medication cost manually.
+
+        Works like ``!collect_cyberware`` but applies only to you. Use ``-v``
+        for a full processing log.
+        """
+
+        verbose = any(a.lower() in {"-v", "--verbose", "verbose"} for a in args)
+
+        weekly_data = await load_json_file(Path(config.CYBERWARE_WEEKLY_FILE), default=[])
+        if weekly_data:
+            last = weekly_data[-1]
+            if ctx.author.id in last.get("checkup", []) or ctx.author.id in last.get("paid", []):
+                await ctx.send("⏭️ You already processed your cyberware this week.")
+                return
+
+        log_lines: List[str] = [f"💊 Manual cyberware collection for <@{ctx.author.id}>"]
+        result = await self.process_week(log=log_lines, target_member=ctx.author)
+
+        if weekly_data:
+            last = weekly_data[-1]
+            paid_set = set(map(int, last.get("paid", [])))
+            unpaid_set = set(map(int, last.get("unpaid", [])))
+            if ctx.author.id in result.get("paid", []):
+                paid_set.add(ctx.author.id)
+                unpaid_set.discard(ctx.author.id)
+            elif ctx.author.id in result.get("unpaid", []):
+                unpaid_set.add(ctx.author.id)
+            last["paid"] = list(paid_set)
+            last["unpaid"] = list(unpaid_set)
+            await save_json_file(Path(config.CYBERWARE_WEEKLY_FILE), weekly_data)
+
+        summary = "\n".join(log_lines) if log_lines else "✅ Completed."
+        display = summary if verbose else "\n".join(log_lines[-3:])
+        await ctx.send(display)
+        admin_cog = self.bot.get_cog("Admin")
+        if admin_cog:
+            await admin_cog.log_audit(ctx.author, summary)
