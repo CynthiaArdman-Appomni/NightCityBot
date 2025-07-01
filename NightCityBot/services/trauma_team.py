@@ -86,9 +86,11 @@ class TraumaTeamService:
                 log.append("❌ Insufficient funds for Trauma payment.")
             return
 
+        cash_deduct = min(max(cash, 0), cost)
+        bank_deduct = max(0, cost - cash_deduct)
         payload = {
-            "cash": -min(cash, cost),
-            "bank": -(cost - min(cash, cost)),
+            "cash": -cash_deduct,
+            "bank": -bank_deduct,
         }
         success = True
         economy = self.bot.get_cog("Economy")
