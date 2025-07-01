@@ -3,7 +3,7 @@ import os
 import json
 from datetime import datetime, timedelta
 import asyncio
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Callable, Awaitable
 
 import discord
 from discord.ext import commands
@@ -454,15 +454,20 @@ class Economy(commands.Cog):
         *,
         label: str,
         balances: Optional[Dict[int, Dict[str, int]]] = None,
+        progress_hook: Optional[Callable[[discord.Member, int, int], Awaitable[None]]] = None,
     ) -> None:
         """Append current balances for members to their backup files.
 
         ``balances`` can be supplied to avoid fetching the balance for each
         member again if it was already retrieved by the caller.
+
+        When ``progress_hook`` is provided it will be awaited for each member
+        with ``(member, index, total)`` to report progress.
         """
         backup_dir = Path(config.BALANCE_BACKUP_DIR)
         backup_dir.mkdir(exist_ok=True)
-        for m in members:
+        total = len(members)
+        for idx, m in enumerate(members, start=1):
             bal = balances.get(m.id) if balances else None
             if bal is None:
                 bal = await self.unbelievaboat.get_balance(m.id)
@@ -500,6 +505,8 @@ class Economy(commands.Cog):
 
             prev_entries.insert(insert_index, entry)
             await save_json_file(file_path, prev_entries)
+            if progress_hook:
+                await progress_hook(m, idx, total)
 
     async def record_last_payment(self, member: discord.Member, summary: str) -> None:
         """Store the last payment summary for a member."""
@@ -1289,7 +1296,17 @@ class Economy(commands.Cog):
 
         if not dry_run:
             await ctx.send("💾 Backing up member balances…")
-            await self.backup_balances(members_to_process, label="collect_rent_before")
+
+            async def progress(member: discord.Member, idx: int, total: int) -> None:
+                if verbose:
+                    await ctx.send(f"💾 Backed up {member.display_name} ({idx}/{total})")
+
+            await self.backup_balances(
+                members_to_process,
+                label="collect_rent_before",
+                progress_hook=progress if verbose else None,
+            )
+
             await ctx.send("💾 Balance backup complete.")
 
         eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
@@ -1459,7 +1476,16 @@ class Economy(commands.Cog):
                 audit_lines.append(f"Error processing <@{member.id}>: {e}")
 
         if not dry_run:
-            await self.backup_balances(members_to_process, label="collect_rent_after")
+
+            async def progress_after(member: discord.Member, idx: int, total: int) -> None:
+                if verbose:
+                    await ctx.send(f"💾 Finalised {member.display_name} ({idx}/{total})")
+
+            await self.backup_balances(
+                members_to_process,
+                label="collect_rent_after",
+                progress_hook=progress_after if verbose else None,
+            )
         end_msg = (
             "✅ Rent simulation completed."
             if dry_run
