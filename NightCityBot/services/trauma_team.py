@@ -8,6 +8,13 @@ class TraumaTeamService:
     def __init__(self, bot):
         self.bot = bot
 
+    @staticmethod
+    def _split_deduction(cash: int, amount: int) -> tuple[int, int]:
+        """Return cash and bank portions ensuring negative cash is ignored."""
+        cash_deduct = min(max(cash, 0), amount)
+        bank_deduct = max(0, amount - cash_deduct)
+        return cash_deduct, bank_deduct
+
     async def process_trauma_team_payment(
             self,
             member: discord.Member,
@@ -86,8 +93,7 @@ class TraumaTeamService:
                 log.append("❌ Insufficient funds for Trauma payment.")
             return
 
-        cash_deduct = min(max(cash, 0), cost)
-        bank_deduct = max(0, cost - cash_deduct)
+        cash_deduct, bank_deduct = self._split_deduction(cash, cost)
         payload = {
             "cash": -cash_deduct,
             "bank": -bank_deduct,
