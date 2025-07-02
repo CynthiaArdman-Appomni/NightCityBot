@@ -60,6 +60,7 @@ TEST_MODULES = {
     "test_send_chunks": "Ensures long plain messages are chunked automatically.",
     "test_rent_baseline_non_tier": "Baseline living cost deducted for members without Tier roles.",
     "test_eviction_on_baseline_failure": "Eviction notices sent when baseline deduction fails.",
+    "test_negative_cash": "Handles baseline deduction when cash is negative.",
 }
 
 for name in TEST_MODULES:
