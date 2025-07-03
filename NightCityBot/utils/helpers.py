@@ -11,26 +11,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 def build_channel_name(usernames, max_length=100):
-    """Build a Discord channel name for a group RP.
-
-    ``usernames`` should be an iterable of ``(name, user_id)`` pairs. In earlier
-    versions the function expected every entry to contain exactly two items which
-    raised ``ValueError`` if the calling code accidentally supplied tuples with
-    additional values.  To be more robust we simply ignore any extra items after
-    the first two.
-    """
-
-    pairs = []
-    for entry in usernames:
-        try:
-            name, uid = entry[:2]
-        except ValueError as e:
-            raise ValueError(
-                "Each entry in usernames must provide at least a name and user id"
-            ) from e
-        pairs.append((name, uid))
-
-    full_name = "text-rp-" + "-".join(f"{name}-{uid}" for name, uid in pairs)
+    """Builds a Discord channel name for a group RP."""
+    full_name = "text-rp-" + "-".join(f"{name}-{uid}" for name, uid in usernames)
     if len(full_name) <= max_length:
         return re.sub(r"[^a-z0-9\-]", "", full_name.lower())
 
@@ -56,36 +38,3 @@ async def load_json_file(file_path: Path | str, default=None):
             async with aiofiles.open(path, 'r') as f:
                 content = await f.read()
                 if not content.strip():
-                    return default if default is not None else {}
-                return json.loads(content)
-    except json.JSONDecodeError as e:
-        # File had invalid JSON; treat as empty and log without traceback
-        logger.error("Invalid JSON in %s: %s", path.name, e)
-    except Exception as e:
-        logger.exception("Error loading %s: %s", path.name, e)
-    return default if default is not None else {}
-
-async def save_json_file(file_path: Path | str, data):
-    """Safely save data to a JSON file."""
-    path = Path(file_path)
-    try:
-        async with aiofiles.open(path, 'w') as f:
-            await f.write(json.dumps(data, indent=2))
-        return True
-    except Exception as e:
-        logger.exception("Error saving %s: %s", path.name, e)
-        return False
-
-async def append_json_file(file_path: Path | str, item) -> bool:
-    """Append an item to a JSON list file."""
-    path = Path(file_path)
-    entries = await load_json_file(path, default=[])
-    if not isinstance(entries, list):
-        entries = []
-    entries.append(item)
-    return await save_json_file(path, entries)
-
-def get_tz_now() -> datetime:
-    """Return current time in the configured timezone."""
-    tz = ZoneInfo(getattr(config, "TIMEZONE", "UTC"))
-    return datetime.now(tz)
