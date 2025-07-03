@@ -8,7 +8,7 @@ from discord.abc import Messageable
 
 import config
 from NightCityBot.utils.permissions import is_fixer
-from NightCityBot.utils.helpers import load_json_file, save_json_file
+from NightCityBot.utils.helpers import load_json_file, save_json_file, parse_dice
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +41,7 @@ class DMHandler(commands.Cog):
         self.load_event.set()
 
     async def get_or_create_dm_thread(
-            self,
-            user: discord.abc.User
+        self, user: discord.abc.User
     ) -> discord.Thread | discord.TextChannel:
         """Return the logging thread for a DM sender, creating it if necessary."""
         await self.load_event.wait()
@@ -72,13 +71,13 @@ class DMHandler(commands.Cog):
                 thread = await log_channel.create_thread(
                     name=thread_name,
                     type=discord.ChannelType.private_thread,
-                    reason=f"Logging DM history for {user}"
+                    reason=f"Logging DM history for {user}",
                 )
             elif isinstance(log_channel, discord.ForumChannel):
                 created = await log_channel.create_thread(
                     name=thread_name,
                     content=f"📥 DM started with {user}.",
-                    reason=f"Logging DM history for {user}"
+                    reason=f"Logging DM history for {user}",
                 )
                 thread = created.thread if hasattr(created, "thread") else created
             else:
@@ -94,8 +93,8 @@ class DMHandler(commands.Cog):
         if message.author == self.bot.user or message.author.bot:
             return
 
-        control = self.bot.get_cog('SystemControl')
-        if control and not control.is_enabled('dm'):
+        control = self.bot.get_cog("SystemControl")
+        if control and not control.is_enabled("dm"):
             return
 
         # Handle relay from Fixer DM-forum threads
@@ -138,9 +137,18 @@ class DMHandler(commands.Cog):
 
         # Handle roll command relay
         if message.content.strip().lower().startswith("!roll"):
-            roll_cog = self.bot.get_cog('RollSystem')
+            roll_cog = self.bot.get_cog("RollSystem")
             if roll_cog:
-                dice = message.content.strip()[len("!roll"):].strip()
+                dice = message.content.strip()[len("!roll") :].strip()
+                if parse_dice(dice) is None:
+                    await message.channel.send(
+                        "🎲 Format: `!roll XdY+Z` (e.g. `!roll 2d6+3`)"
+                    )
+                    try:
+                        await message.delete()
+                    except Exception:
+                        pass
+                    return
                 ctx = await self.bot.get_context(message)
                 setattr(ctx, "original_author", message.author)
                 ctx.author = target_user
@@ -148,18 +156,21 @@ class DMHandler(commands.Cog):
                 await roll_cog.roll(ctx, dice=dice)
             try:
                 await message.delete()
-                admin = self.bot.get_cog('Admin')
+                admin = self.bot.get_cog("Admin")
                 if admin:
-                    await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
+                    await admin.log_audit(
+                        message.author,
+                        f"🗑️ Deleted DM relay: {_relay_description(message)}",
+                    )
             except Exception:
                 pass
             return
 
         # Handle start-rp command relay
         if message.content.strip().lower().startswith("!start-rp"):
-            rp_cog = self.bot.get_cog('RPManager')
+            rp_cog = self.bot.get_cog("RPManager")
             if rp_cog:
-                args_str = message.content.strip()[len("!start-rp"):].strip()
+                args_str = message.content.strip()[len("!start-rp") :].strip()
                 if args_str:
                     args = args_str.split()
                 else:
@@ -168,26 +179,34 @@ class DMHandler(commands.Cog):
                 await rp_cog.start_rp(ctx, *args)
             try:
                 await message.delete()
-                admin = self.bot.get_cog('Admin')
+                admin = self.bot.get_cog("Admin")
                 if admin:
-                    await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
+                    await admin.log_audit(
+                        message.author,
+                        f"🗑️ Deleted DM relay: {_relay_description(message)}",
+                    )
             except Exception:
                 pass
             return
 
         if message.content.strip().startswith("!"):
             ctx = await self.bot.get_context(message)
-            admin = self.bot.get_cog('Admin')
+            admin = self.bot.get_cog("Admin")
+
             async def audit_send(content=None, **kwargs):
                 if admin and content:
                     await admin.log_audit(message.author, content)
+
             ctx.send = audit_send
             await self.bot.invoke(ctx)
             try:
                 await message.delete()
-                admin = self.bot.get_cog('Admin')
+                admin = self.bot.get_cog("Admin")
                 if admin:
-                    await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
+                    await admin.log_audit(
+                        message.author,
+                        f"🗑️ Deleted DM relay: {_relay_description(message)}",
+                    )
             except Exception:
                 pass
             return
@@ -206,31 +225,35 @@ class DMHandler(commands.Cog):
         try:
             await target_user.send(content=message.content or None, files=user_files)
         except discord.HTTPException:
-            await message.channel.send("⚠️ Failed to forward message — attachment too large.")
+            await message.channel.send(
+                "⚠️ Failed to forward message — attachment too large."
+            )
         await message.channel.send(
             f"📤 **Sent to {target_user.display_name} ({target_user.id}) "
             f"by {message.author.display_name} ({message.author.id}):**\n{message.content}",
-            files=log_files
+            files=log_files,
         )
         try:
             await message.delete()
-            admin = self.bot.get_cog('Admin')
+            admin = self.bot.get_cog("Admin")
             if admin:
-                await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
+                await admin.log_audit(
+                    message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}"
+                )
         except Exception:
             pass
 
     async def handle_dm_message(self, message: discord.Message):
         """Handle incoming DMs from users."""
-        control = self.bot.get_cog('SystemControl')
-        if control and not control.is_enabled('dm'):
+        control = self.bot.get_cog("SystemControl")
+        if control and not control.is_enabled("dm"):
             return
         try:
             thread = await self.get_or_create_dm_thread(message.author)
             msg_target: Messageable = thread
 
             full = message.content or "*(No text content)*"
-            for chunk in (full[i:i + 1024] for i in range(0, len(full), 1024)):
+            for chunk in (full[i : i + 1024] for i in range(0, len(full), 1024)):
                 if chunk.strip().startswith("!"):
                     continue
                 await msg_target.send(
@@ -246,14 +269,16 @@ class DMHandler(commands.Cog):
     @is_fixer()
     async def dm(self, ctx, user: discord.User, *, message=None):
         """Send an anonymous DM to a user."""
-        control = self.bot.get_cog('SystemControl')
-        if control and not control.is_enabled('dm'):
+        control = self.bot.get_cog("SystemControl")
+        if control and not control.is_enabled("dm"):
             await ctx.send("⚠️ The dm system is currently disabled.")
             try:
                 await ctx.message.delete()
-                admin = self.bot.get_cog('Admin')
+                admin = self.bot.get_cog("Admin")
                 if admin:
-                    await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
+                    await admin.log_audit(
+                        ctx.author, f"🗑️ Deleted command: {ctx.message.content}"
+                    )
             except Exception:
                 pass
             return
@@ -262,27 +287,33 @@ class DMHandler(commands.Cog):
                 raise ValueError("User fetch returned None.")
         except discord.NotFound:
             await ctx.send("❌ Could not resolve user.")
-            admin = self.bot.get_cog('Admin')
+            admin = self.bot.get_cog("Admin")
             if admin:
-                await admin.log_audit(ctx.author, "❌ Failed DM: Could not resolve user.")
+                await admin.log_audit(
+                    ctx.author, "❌ Failed DM: Could not resolve user."
+                )
             try:
                 await ctx.message.delete()
-                admin = self.bot.get_cog('Admin')
+                admin = self.bot.get_cog("Admin")
                 if admin:
-                    await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
+                    await admin.log_audit(
+                        ctx.author, f"🗑️ Deleted command: {ctx.message.content}"
+                    )
             except Exception:
                 pass
             return
         except Exception as e:
             await ctx.send(f"⚠️ Unexpected error: {str(e)}")
-            admin = self.bot.get_cog('Admin')
+            admin = self.bot.get_cog("Admin")
             if admin:
                 await admin.log_audit(ctx.author, f"⚠️ Exception in DM: {str(e)}")
             try:
                 await ctx.message.delete()
-                admin = self.bot.get_cog('Admin')
+                admin = self.bot.get_cog("Admin")
                 if admin:
-                    await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
+                    await admin.log_audit(
+                        ctx.author, f"🗑️ Deleted command: {ctx.message.content}"
+                    )
             except Exception:
                 pass
             return
@@ -291,20 +322,18 @@ class DMHandler(commands.Cog):
 
         # Handle roll command relay
         if message and message.strip().lower().startswith("!roll"):
-            roll_cog = self.bot.get_cog('RollSystem')
+            roll_cog = self.bot.get_cog("RollSystem")
             if roll_cog:
-                dice = message.strip()[len("!roll"):].strip()
-                pattern = r"(?:(\d*)d)?(\d+)([+-]\d+)?"
-                if not re.fullmatch(pattern, dice.replace(" ", "")):
-                    await ctx.send(
-                        "🎲 Format: `!roll XdY+Z` (e.g. `!roll 2d6+3`)")
+                dice = message.strip()[len("!roll") :].strip()
+                if parse_dice(dice) is None:
+                    await ctx.send("🎲 Format: `!roll XdY+Z` (e.g. `!roll 2d6+3`)")
                     try:
                         await ctx.message.delete()
-                        admin = self.bot.get_cog('Admin')
+                        admin = self.bot.get_cog("Admin")
                         if admin:
                             await admin.log_audit(
-                                ctx.author,
-                                f"🗑️ Deleted command: {ctx.message.content}")
+                                ctx.author, f"🗑️ Deleted command: {ctx.message.content}"
+                            )
                     except Exception:
                         pass
                     return
@@ -315,7 +344,7 @@ class DMHandler(commands.Cog):
                 setattr(fake_ctx, "original_author", ctx.author)
                 thread = await self.get_or_create_dm_thread(user)
                 await roll_cog.roll(fake_ctx, dice=dice)
-                admin = self.bot.get_cog('Admin')
+                admin = self.bot.get_cog("Admin")
                 if admin:
                     await admin.log_audit(
                         ctx.author,
@@ -324,9 +353,11 @@ class DMHandler(commands.Cog):
 
             try:
                 await ctx.message.delete()
-                admin = self.bot.get_cog('Admin')
+                admin = self.bot.get_cog("Admin")
                 if admin:
-                    await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
+                    await admin.log_audit(
+                        ctx.author, f"🗑️ Deleted command: {ctx.message.content}"
+                    )
             except Exception:
                 pass
             return
@@ -349,20 +380,26 @@ class DMHandler(commands.Cog):
             else:
                 logger.error("Cannot log DM — thread type is %s", type(thread))
 
-            admin = self.bot.get_cog('Admin')
+            admin = self.bot.get_cog("Admin")
             if admin:
-                await admin.log_audit(ctx.author, f"✅ DM sent anonymously to {user.display_name}.")
+                await admin.log_audit(
+                    ctx.author, f"✅ DM sent anonymously to {user.display_name}."
+                )
 
         except discord.Forbidden:
-            await ctx.send('❌ Cannot DM user (Privacy Settings).')
-            admin = self.bot.get_cog('Admin')
+            await ctx.send("❌ Cannot DM user (Privacy Settings).")
+            admin = self.bot.get_cog("Admin")
             if admin:
-                await admin.log_audit(ctx.author, f"❌ Failed DM: Recipient: {user} (Privacy settings).")
+                await admin.log_audit(
+                    ctx.author, f"❌ Failed DM: Recipient: {user} (Privacy settings)."
+                )
         finally:
             try:
                 await ctx.message.delete()
-                admin = self.bot.get_cog('Admin')
+                admin = self.bot.get_cog("Admin")
                 if admin:
-                    await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
+                    await admin.log_audit(
+                        ctx.author, f"🗑️ Deleted command: {ctx.message.content}"
+                    )
             except Exception:
                 pass

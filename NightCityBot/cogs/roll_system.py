@@ -2,6 +2,8 @@ import logging
 import random
 import re
 
+from NightCityBot.utils.helpers import parse_dice
+
 import discord
 from discord.ext import commands
 
@@ -30,6 +32,10 @@ class RollSystem(commands.Cog):
                 dice = re.sub(r"(?:<@!?)?[0-9]{17,20}(?:>)?", "", dice).strip()
 
         roller = mentioned_user or ctx.author
+
+        if parse_dice(dice) is None:
+            await ctx.send("🎲 Invalid format. Use: `!roll XdY+Z` (e.g. `!roll 2d6+3`)")
+            return
 
         if original_sender:
             try:
@@ -68,18 +74,14 @@ class RollSystem(commands.Cog):
         log_user=None,
         skip_log=False,
     ):
-        pattern = r"(?:(\d*)d)?(\d+)([+-]\d+)?"
-        m = re.fullmatch(pattern, dice.replace(" ", ""))
-        if not m:
+        parsed = parse_dice(dice)
+        if not parsed:
             await channel.send(
                 "🎲 Invalid format. Use: `!roll XdY+Z` (e.g. `!roll 2d6+3`)"
             )
             return
 
-        n_dice, sides, mod = m.groups()
-        n_dice = int(n_dice) if n_dice else 1
-        sides = int(sides)
-        mod = int(mod) if mod else 0
+        n_dice, sides, mod = parsed
 
         role_names = [getattr(r, "name", "") for r in getattr(author, "roles", [])]
         bonus = (

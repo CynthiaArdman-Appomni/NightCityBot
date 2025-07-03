@@ -11,6 +11,7 @@ TEST_MODULES = {
     "test_post_executes_command": "Sends a `!roll` command into a channel using `!post`.",
     "test_post_roll_execution": "Executes a roll via !post and checks result inside RP channel.",
     "test_rolls": "Runs `!roll` with valid and invalid input and checks result.",
+    "test_parse_dice": "Validates the dice parsing helper.",
     "test_bonus_rolls": "Checks that Netrunner bonuses are applied correctly.",
     "test_full_rent_commands": "Executes rent collection on a live user and verifies balance updates.",
     "test_passive_income_logic": "Applies passive income based on recent shop opens.",
@@ -54,7 +55,6 @@ TEST_MODULES = {
     "test_list_deficits": "Reports members with insufficient funds.",
     "test_simulate_rent_cyberware": "Runs simulate_rent with the -cyberware flag.",
     "test_simulate_all": "Runs the combined simulate_all command.",
-
     "test_log_audit_chunks": "Ensures long audit entries are split across fields.",
     "test_helpfixer_chunks": "Ensures long help entries are split across fields.",
     "test_send_chunks": "Ensures long plain messages are chunked automatically.",
