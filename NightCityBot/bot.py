@@ -2,6 +2,12 @@ import logging
 logger = logging.getLogger(__name__)
 logger.debug("🔥 BOT.PY: Starting imports...")
 
+
+def vprint(*args, **kwargs):
+    if VERBOSE:
+        print(*args, **kwargs)
+
+vprint("🔥 BOT.PY: Starting imports...")
 import discord
 logger.debug("✅ discord imported")
 from discord.ext import commands
@@ -63,6 +69,7 @@ from threading import Thread
 logger.debug("✅ Thread imported")
 
 logger.debug("🎉 ALL IMPORTS COMPLETED SUCCESSFULLY!")
+
 
 
 class NightCityBot(commands.Bot):

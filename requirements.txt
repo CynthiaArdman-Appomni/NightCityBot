@@ -1,8 +1,8 @@
-discord.py
-aiohttp
-Flask
-pytest
-aiofiles
-tzdata
-discord
-python-dotenv
+discord.py~=2.3
+aiohttp~=3.9
+Flask~=3.1
+pytest~=8.4
+aiofiles~=24.1
+tzdata~=2025.2
+discord~=2.3
+python-dotenv~=1.1

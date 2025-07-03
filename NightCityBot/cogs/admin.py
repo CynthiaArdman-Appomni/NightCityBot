@@ -77,13 +77,11 @@ class Admin(commands.Cog):
                 )
         else:
             await ctx.send("❌ Provide a message or attachment.")
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
             await self.log_audit(
                 ctx.author, f"🗑️ Deleted command: {ctx.message.content}"
             )
-        except Exception:
-            pass
 
     @commands.command(name="help")
     async def block_help(self, ctx):
