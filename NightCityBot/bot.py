@@ -1,6 +1,7 @@
-import os
+import logging
+logger = logging.getLogger(__name__)
+logger.debug("🔥 BOT.PY: Starting imports...")
 
-VERBOSE = os.getenv("VERBOSE_STARTUP") == "1"
 
 def vprint(*args, **kwargs):
     if VERBOSE:
@@ -8,67 +9,67 @@ def vprint(*args, **kwargs):
 
 vprint("🔥 BOT.PY: Starting imports...")
 import discord
-vprint("✅ discord imported")
+logger.debug("✅ discord imported")
 from discord.ext import commands
-vprint("✅ discord.ext.commands imported")
+logger.debug("✅ discord.ext.commands imported")
+import os
+logger.debug("✅ os imported")
 import sys
-vprint("✅ sys imported")
-import logging
-vprint("✅ logging imported")
+logger.debug("✅ sys imported")
+logger.debug("✅ logging imported")
 
-vprint("🔍 Setting up Python path...")
+logger.debug("🔍 Setting up Python path...")
 # Ensure the package root is on the path when executed as a script
 package_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-vprint(f"📁 Package root: {package_root}")
+logger.debug(f"📁 Package root: {package_root}")
 if package_root not in sys.path:
     sys.path.insert(0, package_root)
-    vprint("✅ Package root added to sys.path")
+    logger.debug("✅ Package root added to sys.path")
 
-vprint("🔍 Importing config...")
+logger.debug("🔍 Importing config...")
 import config
-vprint("✅ config imported")
+logger.debug("✅ config imported")
 
-vprint("🔍 Importing utils...")
+logger.debug("🔍 Importing utils...")
 from NightCityBot.utils.permissions import is_fixer
-vprint("✅ permissions imported")
+logger.debug("✅ permissions imported")
 
-vprint("🔍 Importing cogs...")
+logger.debug("🔍 Importing cogs...")
 from NightCityBot.cogs.dm_handling import DMHandler
-vprint("✅ DMHandler imported")
+logger.debug("✅ DMHandler imported")
 from NightCityBot.cogs.economy import Economy
-vprint("✅ Economy imported")
+logger.debug("✅ Economy imported")
 from NightCityBot.cogs.rp_manager import RPManager
-vprint("✅ RPManager imported")
+logger.debug("✅ RPManager imported")
 from NightCityBot.cogs.roll_system import RollSystem
-vprint("✅ RollSystem imported")
+logger.debug("✅ RollSystem imported")
 from NightCityBot.cogs.admin import Admin
-vprint("✅ Admin imported")
+logger.debug("✅ Admin imported")
 from NightCityBot.cogs.test_suite import TestSuite
-vprint("✅ TestSuite imported")
+logger.debug("✅ TestSuite imported")
 from NightCityBot.cogs.cyberware import CyberwareManager
-vprint("✅ CyberwareManager imported")
+logger.debug("✅ CyberwareManager imported")
 from NightCityBot.cogs.loa import LOA
-vprint("✅ LOA imported")
+logger.debug("✅ LOA imported")
 from NightCityBot.cogs.system_control import SystemControl
-vprint("✅ SystemControl imported")
+logger.debug("✅ SystemControl imported")
 from NightCityBot.cogs.role_buttons import RoleButtons
-vprint("✅ RoleButtons imported")
+logger.debug("✅ RoleButtons imported")
 from NightCityBot.cogs.trauma_team import TraumaTeam
-vprint("✅ TraumaTeam imported")
+logger.debug("✅ TraumaTeam imported")
 
-vprint("🔍 Importing startup checks...")
+logger.debug("🔍 Importing startup checks...")
 from NightCityBot.utils.startup_checks import perform_startup_checks
-vprint("✅ startup_checks imported")
+logger.debug("✅ startup_checks imported")
 
-vprint("🔍 Importing Flask...")
+logger.debug("🔍 Importing Flask...")
 from flask import Flask
-vprint("✅ Flask imported")
+logger.debug("✅ Flask imported")
 from threading import Thread
-vprint("✅ Thread imported")
+logger.debug("✅ Thread imported")
 
-vprint("🎉 ALL IMPORTS COMPLETED SUCCESSFULLY!")
+logger.debug("🎉 ALL IMPORTS COMPLETED SUCCESSFULLY!")
 
-logger = logging.getLogger(__name__)
 
 
 class NightCityBot(commands.Bot):
@@ -143,49 +144,53 @@ def keep_alive():
 
 
 def main():
-    # Add startup logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    vprint("🚀 Starting NightCityBot initialization...")
+    # Add startup logging if it hasn't been configured already
+    if not logging.getLogger().hasHandlers():
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s'
+        )
+    logger.debug("🚀 Starting NightCityBot initialization...")
     logger.info("Starting NightCityBot...")
     
     # Check token
-    vprint("🔑 Checking for Discord token...")
+    logger.debug(f"🔑 Checking for Discord token...")
     if not config.TOKEN:
-        vprint("❌ No Discord token found! Please set TOKEN in Secrets.")
+        logger.debug("❌ No Discord token found! Please set TOKEN in Secrets.")
         logger.error("❌ No Discord token found! Please set TOKEN in Secrets.")
         return
     
-    vprint("✅ Token found!")
+    logger.debug("✅ Token found!")
     logger.info("✅ Token found, connecting to Discord...")
     
     # Initialize bot
-    vprint("🤖 Creating bot instance...")
+    logger.debug("🤖 Creating bot instance...")
     try:
         bot = NightCityBot()
-        vprint("✅ Bot instance created successfully")
+        logger.debug("✅ Bot instance created successfully")
     except Exception as e:
-        vprint(f"❌ Failed to create bot instance: {e}")
+        logger.debug(f"❌ Failed to create bot instance: {e}")
         logger.error(f"❌ Failed to create bot instance: {e}")
         return
     
     # Start keep-alive server
-    vprint("🌐 Starting keep-alive server...")
+    logger.debug("🌐 Starting keep-alive server...")
     try:
         keep_alive()
-        vprint("✅ Keep-alive server started")
+        logger.debug("✅ Keep-alive server started")
     except Exception as e:
-        vprint(f"❌ Failed to start keep-alive server: {e}")
+        logger.debug(f"❌ Failed to start keep-alive server: {e}")
         logger.error(f"❌ Failed to start keep-alive server: {e}")
     
     # Connect to Discord
-    vprint("🔗 Connecting to Discord...")
+    logger.debug("🔗 Connecting to Discord...")
     try:
         bot.run(config.TOKEN)
     except discord.LoginFailure:
-        vprint("❌ Invalid Discord token!")
+        logger.debug("❌ Invalid Discord token!")
         logger.error("❌ Invalid Discord token!")
     except Exception as e:
-        vprint(f"❌ Bot startup failed: {e}")
+        logger.debug(f"❌ Bot startup failed: {e}")
         logger.error(f"❌ Bot startup failed: {e}")
         import traceback
         traceback.print_exc()
