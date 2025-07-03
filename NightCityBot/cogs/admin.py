@@ -1,6 +1,8 @@
 import logging
 import io
 import contextlib
+import aiohttp
+from bs4 import BeautifulSoup
 
 import discord
 from discord.ext import commands
@@ -130,8 +132,11 @@ class Admin(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name="helpfixer")
-    async def helpfixer(self, ctx):
-        """Display help for fixers."""
+    async def helpfixer(self, ctx, *, topic: str | None = None):
+        """Display help for fixers or a random wiki entry when ``topic`` is ``wiki``."""
+        if topic and topic.lower() == "wiki":
+            await self._send_random_wiki_help(ctx)
+            return
         def embed_len(e: discord.Embed) -> int:
             total = len(e.title or "") + len(e.description or "")
             if e.footer and e.footer.text:
@@ -144,41 +149,41 @@ class Admin(commands.Cog):
             (
                 "✉️ Messaging Tools",
                 "`!dm @user <text>` – send an anonymous DM with optional attachments. The conversation is logged in a private thread. Use `!roll` within that thread to relay dice results.\n"
-                "`!post <channel|thread> <message>` – send a message or execute a command in another location.",
+                "`!post <channel|thread> <message>` – send a message or execute a command in another location."
             ),
             (
                 "📑 RP Management",
                 "`!start_rp @users...` (aliases: !startrp, !rp_start, !rpstart) – create a locked RP channel for the listed users and ping Fixers.\n"
-                "`!end_rp` (aliases: !endrp, !rp_end, !rpend) – archive the current RP channel to the log forum and then delete it.",
+                "`!end_rp` (aliases: !endrp, !rp_end, !rpend) – archive the current RP channel to the log forum and then delete it."
             ),
             (
                 "💵 Economy & Rent",
                 "`!open_shop` (aliases: !openshop, !os) – record a business opening on Sunday and grant passive income immediately.\n"
                 "`!attend` – log weekly attendance for a $250 payout.\n"
                 "`!due` – display a detailed breakdown of what a user owes on the 1st.\n"
-                "`!collect_rent [@user] [-v] [-force]` (alias: !collectrent) – run the monthly rent cycle. Use `-force` to ignore the 30 day limit.\n"
+                "`!collect_rent [@user] [-v] [-force]` (alias: !collectrent) – run the monthly rent cycle. Use `-force` to ignore the 30 day limit.\n"
                 "`!collect_housing @user [-v] [-force]` / `!collect_business @user [-v] [-force]` / `!collect_trauma @user [-v] [-force]` – charge specific fees with optional verbose logs. (aliases: !collecthousing / !collectbusiness / !collecttrauma)\n"
                 "`!simulate_rent [@user] [-v]` (alias: !simulaterent) – perform a dry run of rent collection using the same options.\n"
                 "`!simulate_cyberware [@user] [week]` – preview cyberware medication costs globally or for a certain week.\n"
                 "`!backup_balances` – save all member balances to a timestamped file.\n"
-                "`!restore_balances <file>` – restore balances from a backup file.",
+                "`!restore_balances <file>` – restore balances from a backup file."
             ),
             (
                 "🏖️ LOA & Cyberware",
                 "`!start_loa [@user]` (aliases: !startloa, !loa_start, !loastart) / `!end_loa [@user]` (aliases: !endloa, !loa_end, !loaend) – toggle LOA for yourself or the specified member.\n"
                 "`!checkup @user` (aliases: !check-up, !check_up, !cu, !cup) – remove the checkup role once an in-character exam is completed.\n"
-                "`!weeks_without_checkup @user` (aliases: !wwocup, !wwc) – show how many weeks a member has kept the role without a checkup.",
+                "`!weeks_without_checkup @user` (aliases: !wwocup, !wwc) – show how many weeks a member has kept the role without a checkup."
             ),
             (
                 "⚙️ System Control",
                 "`!enable_system <name>` / `!disable_system <name>` (aliases: !es/!ds) – toggle major subsystems.\n"
-                "`!system_status` – display the current enable/disable flags.",
+                "`!system_status` – display the current enable/disable flags."
             ),
             (
                 "🛠️ Admin Tools",
                 "`!test_bot [tests] [-silent] [-verbose]` – execute the built-in test suite. Results can be DMed when `-silent` is used and step details are shown with `-verbose`. Prefixes run groups of tests.\n"
                 "`!list_tests` – show all available self-test names.\n"
-                "`!test__bot [pattern]` – run the PyTest suite optionally filtering by pattern.",
+                "`!test__bot [pattern]` – run the PyTest suite optionally filtering by pattern."
             ),
         ]
 
@@ -203,6 +208,24 @@ class Admin(commands.Cog):
 
         for e in embeds:
             await ctx.send(embed=e)
+
+    async def _send_random_wiki_help(self, ctx) -> None:
+        """Fetch a random Cyberpunk wiki help entry and send it."""
+        url = "https://cyberpunk.fandom.com/wiki/Special:Random?namespace=Help"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                html = await resp.text()
+                final_url = str(resp.url)
+        soup = BeautifulSoup(html, "html.parser")
+        title = soup.find("h1").get_text(strip=True)
+        content = soup.find("div", {"id": "mw-content-text"})
+        paragraph = content.find("p").get_text(strip=True) if content else ""
+        image = content.find("img") if content else None
+
+        embed = discord.Embed(title=title, url=final_url, description=paragraph[:500], color=discord.Color.green())
+        if image and image.get("src"):
+            embed.set_image(url=image["src"])
+        await ctx.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):

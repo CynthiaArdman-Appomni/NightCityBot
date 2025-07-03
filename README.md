@@ -140,8 +140,12 @@ Commands:
 Offers helper commands for staff and global error handling.
 
 * `!post <channel> <message>` – send a message or execute a command in another channel or thread. If `<message>` begins with `!`, the command is run as if it were typed in that location.
-* `!helpme` and `!helpfixer` – show the built in help embeds. The former lists player commands while the latter documents every fixer and admin command with available options.
+* `!helpme` and `!helpfixer` – show the built in help embeds. The former lists player commands while the latter documents every fixer and admin command with available options. `!helpfixer wiki` fetches a random help page from the Cyberpunk wiki.
 * All sensitive actions are logged via `log_audit` to the channel defined by `AUDIT_LOG_CHANNEL_ID`.
+
+### Help Commands
+
+`!help` is disabled. Use `!helpme` for player commands. Fixers can run `!helpfixer` for advanced tools or `!helpfixer wiki` to pull a random wiki entry.
 
 ### TestSuite
 *File: `NightCityBot/cogs/test_suite.py`*

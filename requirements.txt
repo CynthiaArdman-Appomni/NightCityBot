@@ -6,3 +6,4 @@ aiofiles
 tzdata
 discord
 python-dotenv
+beautifulsoup4
