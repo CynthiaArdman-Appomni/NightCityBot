@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 from typing import Dict, Optional, List
 from pathlib import Path
 import os
+import contextlib
 
 import config
 from NightCityBot.utils.helpers import (
@@ -60,15 +61,11 @@ class CyberwareManager(commands.Cog):
         if user_id:
             notify_user = self.bot.get_user(user_id)
             if notify_user is None:
-                try:
+                with contextlib.suppress(Exception):
                     notify_user = await self.bot.fetch_user(user_id)
-                except Exception:
-                    notify_user = None
         if notify_user:
-            try:
+            with contextlib.suppress(Exception):
                 await notify_user.send("🚦 Weekly cyberware processing starting...")
-            except Exception:
-                pass
 
         logs: List[str] = []
         results = await self.process_week(log=logs)
@@ -85,10 +82,8 @@ class CyberwareManager(commands.Cog):
 
         summary = "\n".join(logs) if logs else "✅ No actions performed."
         if notify_user:
-            try:
+            with contextlib.suppress(Exception):
                 await notify_user.send(f"✅ Weekly cyberware processing complete:\n{summary}")
-            except Exception:
-                pass
 
     async def process_week(
         self,

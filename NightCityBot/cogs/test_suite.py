@@ -3,6 +3,7 @@ from discord.ext import commands
 import time
 import asyncio
 import sys
+import contextlib
 from pathlib import Path
 import logging
 
@@ -272,8 +273,8 @@ class TestSuite(commands.Cog):
                 if thread:
                     try:
                         await thread.delete(reason="Test cleanup")
-                    except Exception:
-                        logger.exception("Failed to delete log thread %s", thread)
+                    except Exception as e:
+                        logger.debug("Failed to delete log thread %s", thread, exc_info=e)
             for ch in ctx.guild.text_channels:
                 if (
                     ch.name.startswith("text-rp-")
@@ -286,12 +287,12 @@ class TestSuite(commands.Cog):
                         if thread:
                             try:
                                 await thread.delete(reason="Test cleanup")
-                            except Exception:
-                                logger.exception(
-                                    "Failed to delete log thread %s", thread
+                            except Exception as e:
+                                logger.debug(
+                                    "Failed to delete log thread %s", thread, exc_info=e
                                 )
-                    except Exception:
-                        logger.exception("Failed to clean RP channel %s", ch)
+                    except Exception as e:
+                        logger.debug("Failed to clean RP channel %s", ch, exc_info=e)
 
     @commands.command(hidden=True, name="test__bot")
     @commands.is_owner()

@@ -1,6 +1,7 @@
 import re
 import logging
 import asyncio
+import contextlib
 import discord
 from discord.ext import commands
 from typing import Optional, List, cast
@@ -30,12 +31,10 @@ class RPManager(commands.Cog):
                         await admin.log_audit(message.author, content)
                 ctx.send = audit_send
                 await self.bot.invoke(ctx)
-                try:
+                with contextlib.suppress(Exception):
                     await message.delete()
                     if admin:
                         await admin.log_audit(message.author, f"🗑️ Deleted message in RP: {message.content}")
-                except Exception:
-                    pass
                 return
 
     @commands.command(
@@ -61,12 +60,10 @@ class RPManager(commands.Cog):
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(ctx.author, "❌ start_rp failed: no users resolved")
-            try:
+            with contextlib.suppress(Exception):
                 await ctx.message.delete()
                 if admin:
                     await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
-            except Exception:
-                pass
             return
 
         target_category = ctx.guild.get_channel(getattr(config, "RP_IC_CATEGORY_ID", ctx.channel.category.id))
@@ -78,12 +75,10 @@ class RPManager(commands.Cog):
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(ctx.author, "❌ Failed to create RP channel.")
-            try:
+            with contextlib.suppress(Exception):
                 await ctx.message.delete()
                 if admin:
                     await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
-            except Exception:
-                pass
             return None
 
         mentions = " ".join(user.mention for user in users)
@@ -94,13 +89,11 @@ class RPManager(commands.Cog):
         admin = self.bot.get_cog('Admin')
         if admin:
             await admin.log_audit(ctx.author, f"✅ RP channel created: {channel.mention}")
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
-        except Exception:
-            pass
         return channel
 
     @commands.command(
