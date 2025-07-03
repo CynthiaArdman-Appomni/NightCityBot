@@ -18,4 +18,9 @@ rent_audits/
 !*.example.json
 .env
 *.json
+
+# Ignore IDE settings
+.idea/
+.vscode/
 rent_audits/
+
