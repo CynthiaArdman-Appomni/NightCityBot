@@ -41,7 +41,7 @@ class RPManager(commands.Cog):
     @commands.command(
         aliases=["startrp", "rp_start", "rpstart"]
     )
-    @commands.has_permissions(administrator=True)
+    @commands.check_any(is_fixer(), commands.has_permissions(administrator=True))
     async def start_rp(self, ctx, *user_identifiers: str):
         """Starts a private RP channel for the mentioned users."""
         guild = ctx.guild

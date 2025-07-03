@@ -9,6 +9,7 @@ import config
 from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.utils import constants
 from NightCityBot.utils import startup_checks
+from NightCityBot.utils.helpers import load_json_file, save_json_file
 
 logger = logging.getLogger(__name__)
 
@@ -65,15 +66,22 @@ class Admin(commands.Cog):
                 setattr(fake_ctx, "skip_dm_log", True)
 
                 await self.bot.invoke(fake_ctx)
-                await self.log_audit(ctx.author, f"✅ Executed `{command_text}` in {dest_channel.mention}.")
+                await self.log_audit(
+                    ctx.author,
+                    f"✅ Executed `{command_text}` in {dest_channel.mention}.",
+                )
             else:
                 await dest_channel.send(content=message, files=files)
-                await self.log_audit(ctx.author, f"✅ Posted anonymously to {dest_channel.mention}.")
+                await self.log_audit(
+                    ctx.author, f"✅ Posted anonymously to {dest_channel.mention}."
+                )
         else:
             await ctx.send("❌ Provide a message or attachment.")
         try:
             await ctx.message.delete()
-            await self.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
+            await self.log_audit(
+                ctx.author, f"🗑️ Deleted command: {ctx.message.content}"
+            )
         except Exception:
             pass
 
@@ -87,7 +95,7 @@ class Admin(commands.Cog):
         embed = discord.Embed(
             title="📘 NCRP Bot — Player Help",
             description="Basic commands for RP, rent, and rolling dice. Use `!helpfixer` if you're a Fixer.",
-            color=discord.Color.teal()
+            color=discord.Color.teal(),
         )
 
         embed.add_field(
@@ -111,17 +119,25 @@ class Admin(commands.Cog):
                 "→ Requires a Business role.\n"
                 "`!attend` — Sundays only\n"
                 "→ Verified players earn $250 every week they attend.\n"
-                "`!due` — Estimate what you'll owe on the 1st."
+                "`!due` — Estimate what you'll owe on the 1st.\n"
+                "`!paydue [-v]` — pay your monthly obligations early."
             ),
             inline=False,
         )
-    
-    
+
         embed.add_field(
             name="🏖️ Leave of Absence",
             value=(
                 "`!start_loa` (aliases: !startloa, !loa_start, !loastart) – pause your baseline fees, housing rent and Trauma Team while away.\n"
                 "`!end_loa` (aliases: !endloa, !loa_end, !loaend) – resume all costs when you return. Fixers can specify a member for both commands."
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="🚑 Medical",
+            value=(
+                "`!call_trauma` – ping the Trauma Team channel with your plan role.\n"
+                "`!paycyberware [-v]` – pay your cyberware meds manually."
             ),
             inline=False,
         )
@@ -132,6 +148,7 @@ class Admin(commands.Cog):
     @commands.command(name="helpfixer")
     async def helpfixer(self, ctx):
         """Display help for fixers."""
+
         def embed_len(e: discord.Embed) -> int:
             total = len(e.title or "") + len(e.description or "")
             if e.footer and e.footer.text:
@@ -145,6 +162,7 @@ class Admin(commands.Cog):
                 "✉️ Messaging Tools",
                 "`!dm @user <text>` – send an anonymous DM with optional attachments. The conversation is logged in a private thread. Use `!roll` within that thread to relay dice results.\n"
                 "`!post <channel|thread> <message>` – send a message or execute a command in another location.",
+                "`!npc_button` – send the NPC role assignment button in the current channel.\n"
             ),
             (
                 "📑 RP Management",
@@ -153,21 +171,29 @@ class Admin(commands.Cog):
             ),
             (
                 "💵 Economy & Rent",
-                "`!open_shop` (aliases: !openshop, !os) – record a business opening on Sunday and grant passive income immediately.\n"
-                "`!attend` – log weekly attendance for a $250 payout.\n"
-                "`!due` – display a detailed breakdown of what a user owes on the 1st.\n"
-                "`!collect_rent [@user] [-v] [-force]` (alias: !collectrent) – run the monthly rent cycle. Use `-force` to ignore the 30 day limit.\n"
-                "`!collect_housing @user [-v] [-force]` / `!collect_business @user [-v] [-force]` / `!collect_trauma @user [-v] [-force]` – charge specific fees with optional verbose logs. (aliases: !collecthousing / !collectbusiness / !collecttrauma)\n"
-                "`!simulate_rent [@user] [-v]` (alias: !simulaterent) – perform a dry run of rent collection using the same options.\n"
-                "`!simulate_cyberware [@user] [week]` – preview cyberware medication costs globally or for a certain week.\n"
-                "`!backup_balances` – save all member balances to a timestamped file.\n"
-                "`!restore_balances <file>` – restore balances from a backup file.",
+                "`!open_shop` (aliases: !openshop, !os) – record a business opening on Sunday and grant passive income immediately.\n",
+                "`!attend` – log weekly attendance for a $250 payout.\n",
+                "`!event_start` (aliases: !eventstart, !open_event, !start_event) – allow !attend and !open_shop for 4 hours outside Sunday when run in #attendance.\n",
+                "`!due` – display a detailed breakdown of what a user owes on the 1st.\n",
+                "`!paydue [-v]` – pay your monthly obligations early.\n",
+                "`!collect_rent [@user] [-v] [-force]` (alias: !collectrent) – run the monthly rent cycle. Use `-force` to ignore the 30 day limit.\n",
+                "`!collect_housing @user [-v] [-force]` / `!collect_business @user [-v] [-force]` / `!collect_trauma @user [-v] [-force]` – charge specific fees with optional verbose logs. (aliases: !collecthousing / !collectbusiness / !collecttrauma)\n",
+                "`!simulate_rent [@user] [-v]` (alias: !simulaterent) – perform a dry run of rent collection using the same options.\n",
+                "`!simulate_cyberware [@user] [week]` – preview cyberware medication costs globally or for a certain week.\n",
+                "`!simulate_all [@user]` – run both simulations at once.\n",
+                "`!backup_balances` – save all member balances to a timestamped file.\n",
+                "`!backup_balance @user` – save one member's balance to a file.\n",
+                "`!restore_balances <file>` – restore balances from a backup file.\n",
+                "`!restore_balance @user [file]` – restore one member's balance from a backup.\n",
+                "`!list_deficits` – list members who can't cover upcoming charges.",
             ),
             (
                 "🏖️ LOA & Cyberware",
                 "`!start_loa [@user]` (aliases: !startloa, !loa_start, !loastart) / `!end_loa [@user]` (aliases: !endloa, !loa_end, !loaend) – toggle LOA for yourself or the specified member.\n"
                 "`!checkup @user` (aliases: !check-up, !check_up, !cu, !cup) – remove the checkup role once an in-character exam is completed.\n"
-                "`!weeks_without_checkup @user` (aliases: !wwocup, !wwc) – show how many weeks a member has kept the role without a checkup.",
+                "`!weeks_without_checkup @user` (aliases: !wwocup, !wwc) – show how many weeks a member has kept the role without a checkup.\n"
+                "`!collect_cyberware @user [-v]` – manually charge a member for their meds and show the last few log lines unless `-v` is supplied.",
+                "`!paycyberware [-v]` – pay your own cyberware meds manually."
             ),
             (
                 "⚙️ System Control",
@@ -189,20 +215,99 @@ class Admin(commands.Cog):
             color=discord.Color.purple(),
         )
         for name, value in fields:
-            if embed_len(current) + len(name) + len(value) > 5800:
-                current.set_footer(text="Fixer tools by MedusaCascade | v1.2")
-                embeds.append(current)
-                current = discord.Embed(
-                    title="🛠️ NCRP Bot — Fixer & Admin Help (cont.)",
-                    color=discord.Color.purple(),
-                )
-            current.add_field(name=name, value=value, inline=False)
+            chunks = [value[i : i + 1024] for i in range(0, len(value), 1024)] or [""]
+            for i, chunk in enumerate(chunks):
+                field_name = name if i == 0 else "\u200b"
+                if embed_len(current) + len(field_name) + len(chunk) > 5800:
+                    current.set_footer(text="Fixer tools by MedusaCascade | v1.2")
+                    embeds.append(current)
+                    current = discord.Embed(
+                        title="🛠️ NCRP Bot — Fixer & Admin Help (cont.)",
+                        color=discord.Color.purple(),
+                    )
+                current.add_field(name=field_name, value=chunk, inline=False)
 
         current.set_footer(text="Fixer tools by MedusaCascade | v1.2")
         embeds.append(current)
 
         for e in embeds:
             await ctx.send(embed=e)
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def backfill_logs(self, ctx, limit: int = 1000):
+        """Rebuild attendance and open shop logs from recent history."""
+        attend_channel = ctx.guild.get_channel(config.ATTENDANCE_CHANNEL_ID)
+        open_channel = ctx.guild.get_channel(config.BUSINESS_ACTIVITY_CHANNEL_ID)
+
+        attend_data = await load_json_file(config.ATTEND_LOG_FILE, default={})
+        open_data = await load_json_file(config.OPEN_LOG_FILE, default={})
+
+        attend_added = 0
+        open_added = 0
+
+        if isinstance(attend_channel, discord.TextChannel):
+            history = [
+                m
+                async for m in attend_channel.history(limit=limit, oldest_first=True)
+            ]
+            for idx, msg in enumerate(history):
+                if msg.author.bot:
+                    continue
+                if msg.content.strip().startswith("!attend"):
+                    success = False
+                    for follow in history[idx + 1 :]:
+                        if follow.author == ctx.me and follow.created_at >= msg.created_at:
+                            if (
+                                follow.content.startswith("✅")
+                                and "Attendance logged" in follow.content
+                            ):
+                                success = True
+                            break
+                    if success:
+                        uid = str(msg.author.id)
+                        ts = msg.created_at.replace(microsecond=0).isoformat()
+                        entries = attend_data.setdefault(uid, [])
+                        if ts not in entries:
+                            entries.append(ts)
+                            attend_added += 1
+
+        if isinstance(open_channel, discord.TextChannel):
+            history = [
+                m
+                async for m in open_channel.history(limit=limit, oldest_first=True)
+            ]
+            for idx, msg in enumerate(history):
+                if msg.author.bot:
+                    continue
+                if msg.content.strip().startswith(("!open_shop", "!openshop", "!os")):
+                    success = False
+                    for follow in history[idx + 1 :]:
+                        if follow.author == ctx.me and follow.created_at >= msg.created_at:
+                            if (
+                                follow.content.startswith("✅")
+                                and "Business opening logged" in follow.content
+                            ):
+                                success = True
+                            break
+                    if success:
+                        uid = str(msg.author.id)
+                        ts = msg.created_at.replace(microsecond=0).isoformat()
+                        entries = open_data.setdefault(uid, [])
+                        if ts not in entries:
+                            entries.append(ts)
+                            open_added += 1
+
+        await save_json_file(config.ATTEND_LOG_FILE, attend_data)
+        await save_json_file(config.OPEN_LOG_FILE, open_data)
+
+        await ctx.send(
+            f"✅ Backfilled {attend_added} attendance entries and {open_added} business opens."
+        )
+        await self.log_audit(
+            ctx.author,
+            f"Backfilled logs: attend {attend_added}, open {open_added}",
+        )
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
@@ -219,7 +324,7 @@ class Admin(commands.Cog):
             logger.debug(
                 "Unknown command from %s in %s (%s) → %r",
                 ctx.author,
-                getattr(ctx.channel, 'name', ctx.channel.id),
+                getattr(ctx.channel, "name", ctx.channel.id),
                 ctx.channel.id,
                 ctx.message.content,
             )
@@ -231,7 +336,9 @@ class Admin(commands.Cog):
             await self.log_audit(ctx.author, f"❌ {reason}: {ctx.message.content}")
         else:
             await ctx.send(f"⚠️ Error: {str(error)}")
-            await self.log_audit(ctx.author, f"⚠️ Error: {ctx.message.content} → {str(error)}")
+            await self.log_audit(
+                ctx.author, f"⚠️ Error: {ctx.message.content} → {str(error)}"
+            )
 
     async def log_audit(self, user, action_desc):
         """Log an audit entry to the audit channel."""
@@ -240,7 +347,10 @@ class Admin(commands.Cog):
         if isinstance(audit_channel, discord.TextChannel):
             embed = discord.Embed(title="📝 Audit Log", color=discord.Color.blue())
             embed.add_field(name="User", value=f"{user} ({user.id})", inline=False)
-            embed.add_field(name="Action", value=action_desc, inline=False)
+            chunks = [action_desc[i : i + 1024] for i in range(0, len(action_desc), 1024)] or [""]
+            embed.add_field(name="Action", value=chunks[0], inline=False)
+            for chunk in chunks[1:]:
+                embed.add_field(name="​", value=chunk, inline=False)
             await audit_channel.send(embed=embed)
         else:
             logger.warning(
@@ -248,4 +358,3 @@ class Admin(commands.Cog):
                 config.AUDIT_LOG_CHANNEL_ID,
             )
         logger.info("AUDIT %s: %s", user, action_desc)
-

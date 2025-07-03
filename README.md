@@ -30,7 +30,7 @@ import os
 TOKEN = os.environ.get("TOKEN")
 UNBELIEVABOAT_API_TOKEN = os.environ.get("UNBELIEVABOAT_API_TOKEN")
 GUILD_ID = 1234567890
-TIMEZONE = "America/New_York"  # or your preferred zone
+TIMEZONE = "America/Los_Angeles"  # or your preferred zone
 ```
 
 Configuration is verified automatically when the bot starts.
@@ -67,12 +67,18 @@ Main commands:
 
 * `!open_shop` – used by business owners on Sundays. Logs a shop opening and immediately awards passive income based on the business tier. Each player can record up to four openings per month.
 * `!attend` – every verified player can run this on Sundays to receive a weekly $250 attendance reward. The command refuses to run more than once per week.
+* `!event_start` – fixers can activate this in the attendance channel to temporarily allow `!attend` and `!open_shop` for four hours outside of Sunday.
 * `!due` – displays a full breakdown of the baseline fee, housing and business rent, Trauma Team subscription and upcoming cyberware medication costs that will be charged on the 1st.
-* `!collect_rent [@user] [-v] [-force]` – run the monthly rent cycle. Supply a user mention to limit the collection to that member. Use `-force` to ignore the 30 day cooldown.
-* `!simulate_rent [@user] [-v]` – identical to `!collect_rent` but performs a dry run without updating balances.
+* `!last_payment` – show the details of your last automated payment.
+* `!collect_rent [@user] [-v] [-force]` – run the monthly rent cycle. Supply a user mention to limit the collection to that member. Use `-force` to ignore the 30 day cooldown. With `-v`, each step is announced as it happens and balance backup progress for each member is shown so you can track the cycle live.
+* `!paydue [-v]` – pay your monthly obligations early. Works like `!collect_rent` but only for yourself. Use `-v` for a detailed summary.
+* `!simulate_rent [@user] [-v] [-cyberware]` – identical to `!collect_rent` but performs a dry run without updating balances. When a user is specified the output notes that a DM and last_payment entry would be created. With `-cyberware` the upcoming medication cost for the specified user is also shown.
+* `!simulate_all [@user]` – run both simulations at once. When a user is given the rent output indicates that a DM and last_payment entry would be created.
+* `!list_deficits` – run the same checks as `!simulate_all` but only list members who would fail any charge. Each entry shows the shortfall and unpaid items, marking rent with "(eviction)".
 * `!collect_housing @user [-force]`, `!collect_business @user [-force]`, `!collect_trauma @user [-force]` – immediately charge a single user's housing rent, business rent or Trauma Team subscription. Pass `-force` to override the 30 day limit.
 * `!backup_balances` – save all member balances to a timestamped JSON file. Each
   backup entry records the balance and the `change` since the previous entry.
+* `!backup_balance @user` – save a single member's balance to a timestamped file.
 * `!restore_balances <file>` – restore balances from a previous backup file.
 * `!restore_balance @user [file]` – restore a single user's balance. If no file
   is provided (or the user's automatic backup file is used) the latest entry is
@@ -93,15 +99,19 @@ Commands:
 * `!simulate_cyberware [@user] [week]` – with no arguments this performs a dry run of the entire weekly cycle for every player. When a user and week number are provided it simply reports the medication cost that would be charged on that week.
 * `!checkup @user` – ripperdoc command to remove the weekly check‑up role from a player after their in‑character medical exam, resetting their streak to zero.
 * `!weeks_without_checkup @user` – show how many weeks the specified player has kept the check‑up role without visiting a ripperdoc.
+* `!give_checkup_role [@user]` – give the check-up role to a member or all cyberware users.
+* `!checkup_report` – list who did a checkup last week, who paid their meds and who couldn't pay.
+* `!collect_cyberware @user [-v]` – manually charge a member for their meds unless they already paid or did a checkup this week. Without `-v` only the last few log lines are shown.
+* `!paycyberware [-v]` – pay your own cyberware meds manually. Mirrors `!collect_cyberware` but only affects you.
 
-All data is stored in `cyberware_log.json`.
+All data is stored in `cyberware_log.json`. Weekly results are appended to `cyberware_weekly.json`.
 
 ### RPManager
 *File: `NightCityBot/cogs/rp_manager.py`*
 
 Provides tools for creating private RP text channels and archiving them when complete.
 
-* `!start_rp @users` – create a private text channel for the mentioned users. The channel name is generated automatically using `utils.helpers.build_channel_name` and only the participants and staff can view it.
+* `!start_rp @users` – fixers and admins can create a private text channel for the mentioned users. The channel name is generated automatically using `utils.helpers.build_channel_name` and only the participants and staff can view it.
 * `!end_rp` – once the scene is finished, this command archives the entire channel into the group audit forum and deletes the original channel.
 * Any command typed inside a `text-rp-*` channel is relayed back to the bot, so players can roll dice or trigger other commands without leaving the RP session.
 
@@ -124,6 +134,20 @@ Manages Leave‑of‑Absence status.
 * `!start_loa` and `!end_loa` – players may place themselves on LOA to pause monthly fees and Trauma Team billing. Fixers can provide a user mention to toggle LOA for someone else.
 * While a player is on LOA, the economy cog automatically skips baseline costs, housing rent and Trauma Team payments until `!end_loa` is used.
 
+### RoleButtons
+*File: `NightCityBot/cogs/role_buttons.py`*
+
+Provides a button for players to self-assign the NPC role.
+
+* `!npc_button` – post a persistent button that grants the NPC role.
+
+### TraumaTeam
+*File: `NightCityBot/cogs/trauma_team.py`*
+
+Commands:
+
+* `!call_trauma` – notify the Trauma Team channel with your plan role.
+
 ### SystemControl
 *File: `NightCityBot/cogs/system_control.py`*
 
@@ -141,6 +165,7 @@ Offers helper commands for staff and global error handling.
 
 * `!post <channel> <message>` – send a message or execute a command in another channel or thread. If `<message>` begins with `!`, the command is run as if it were typed in that location.
 * `!helpme` and `!helpfixer` – show the built in help embeds. The former lists player commands while the latter documents every fixer and admin command with available options.
+* `!backfill_logs [limit]` – rebuild `attendance_log.json` and `business_open_log.json` by scanning recent messages. Only successful command usages are recorded. The optional limit controls how many messages are parsed (default 1000).
 * All sensitive actions are logged via `log_audit` to the channel defined by `AUDIT_LOG_CHANNEL_ID`.
 
 ### TestSuite
@@ -192,4 +217,3 @@ pytest
 ```
 
 Alternatively, run `!test_bot` inside Discord to perform many of the same checks without leaving the chat.
-

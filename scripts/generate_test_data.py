@@ -1,19 +1,21 @@
 import json
 from pathlib import Path
+import config
 
 FILES = [
-    'attendance_log.json',
-    'business_open_log.json',
-    'cyberware_log.json',
-    'system_status.json',
-    'thread_map.json',
+    config.ATTEND_LOG_FILE,
+    config.OPEN_LOG_FILE,
+    config.CYBERWARE_LOG_FILE,
+    config.CYBERWARE_WEEKLY_FILE,
+    config.SYSTEM_STATUS_FILE,
+    config.THREAD_MAP_FILE,
 ]
 
 def main() -> None:
-    for name in FILES:
-        path = Path(name)
+    for path in FILES:
+        path = Path(path)
         if not path.exists():
-            if name == 'system_status.json':
+            if path.name == 'system_status.json':
                 data = {
                     'cyberware': True,
                     'attend': True,
@@ -27,9 +29,9 @@ def main() -> None:
             else:
                 data = {}
             path.write_text(json.dumps(data, indent=2))
-            print(f'Created {name}')
+            print(f'Created {path.name}')
         else:
-            print(f'{name} already exists')
+            print(f'{path.name} already exists')
 
 if __name__ == '__main__':
     main()

@@ -36,7 +36,13 @@ async def load_json_file(file_path: Path | str, default=None):
     try:
         if path.exists():
             async with aiofiles.open(path, 'r') as f:
-                return json.loads(await f.read())
+                content = await f.read()
+                if not content.strip():
+                    return default if default is not None else {}
+                return json.loads(content)
+    except json.JSONDecodeError as e:
+        # File had invalid JSON; treat as empty and log without traceback
+        logger.error("Invalid JSON in %s: %s", path.name, e)
     except Exception as e:
         logger.exception("Error loading %s: %s", path.name, e)
     return default if default is not None else {}
@@ -65,3 +71,14 @@ def get_tz_now() -> datetime:
     """Return current time in the configured timezone."""
     tz = ZoneInfo(getattr(config, "TIMEZONE", "UTC"))
     return datetime.now(tz)
+
+
+def split_deduction(cash: int, amount: int) -> tuple[int, int]:
+    """Return cash and bank portions for a deduction.
+
+    Negative cash balances are treated as zero so that the bank portion
+    covers any remaining amount without double counting the deficit.
+    """
+    cash_deduct = min(max(cash, 0), amount)
+    bank_deduct = max(0, amount - cash_deduct)
+    return cash_deduct, bank_deduct

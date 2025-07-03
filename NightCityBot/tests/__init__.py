@@ -33,6 +33,7 @@ TEST_MODULES = {
     "test_dm_plain": "Sends a normal anonymous DM using !dm.",
     "test_dm_roll_command": "Relays a roll through !dm.",
     "test_dm_userid": "Ensures !dm works with a raw user ID.",
+    "test_dm_thread_autolink": "Links DM threads from their name when missing.",
     "test_start_rp_multi": "Starts RP with two users and ends it.",
     "test_cyberware_weekly": "Simulates the weekly cyberware task.",
     "test_loa_fixer_other": "Fixer starts and ends LOA for another user.",
@@ -48,6 +49,18 @@ TEST_MODULES = {
     "test_restore_balances_label": "Restores all users' balances using a label.",
     "test_test_bot_dm": "Runs test_bot in silent mode and checks DM output.",
     "test_open_shop_concurrency": "Runs open_shop concurrently to ensure locking.",
+    "test_npc_button": "Assign NPC role via button.",
+    "test_call_trauma": "Pings Trauma Team with the user's plan.",
+    "test_list_deficits": "Reports members with insufficient funds.",
+    "test_simulate_rent_cyberware": "Runs simulate_rent with the -cyberware flag.",
+    "test_simulate_all": "Runs the combined simulate_all command.",
+
+    "test_log_audit_chunks": "Ensures long audit entries are split across fields.",
+    "test_helpfixer_chunks": "Ensures long help entries are split across fields.",
+    "test_send_chunks": "Ensures long plain messages are chunked automatically.",
+    "test_rent_baseline_non_tier": "Baseline living cost deducted for members without Tier roles.",
+    "test_eviction_on_baseline_failure": "Eviction notices sent when baseline deduction fails.",
+    "test_negative_cash": "Handles baseline deduction when cash is negative.",
 }
 
 for name in TEST_MODULES:

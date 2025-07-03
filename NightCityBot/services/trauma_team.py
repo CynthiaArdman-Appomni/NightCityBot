@@ -1,12 +1,14 @@
 from typing import Optional, List
 import discord
 from NightCityBot.utils.constants import TRAUMA_ROLE_COSTS
+from NightCityBot.utils.helpers import split_deduction
 import config
 
 
 class TraumaTeamService:
     def __init__(self, bot):
         self.bot = bot
+
 
     async def process_trauma_team_payment(
             self,
@@ -86,9 +88,10 @@ class TraumaTeamService:
                 log.append("❌ Insufficient funds for Trauma payment.")
             return
 
+        cash_deduct, bank_deduct = split_deduction(cash, cost)
         payload = {
-            "cash": -min(cash, cost),
-            "bank": -(cost - min(cash, cost)),
+            "cash": -cash_deduct,
+            "bank": -bank_deduct,
         }
         success = True
         economy = self.bot.get_cog("Economy")
