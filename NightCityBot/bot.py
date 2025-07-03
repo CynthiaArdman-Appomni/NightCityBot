@@ -1,74 +1,81 @@
-import logging
-logger = logging.getLogger(__name__)
-logger.debug("🔥 BOT.PY: Starting imports...")
+import os
+vprint("✅ os imported")
+
+# Allow debug logging of the startup sequence when the VERBOSE environment
+# variable is truthy.  Missing definitions previously caused a NameError when
+# ``vprint`` was called before ``VERBOSE`` existed.
+VERBOSE = os.getenv("VERBOSE", "").lower() in {"1", "true", "yes"}
 
 
 def vprint(*args, **kwargs):
+    """Conditionally print when ``VERBOSE`` is enabled."""
     if VERBOSE:
         print(*args, **kwargs)
 
 vprint("🔥 BOT.PY: Starting imports...")
-import discord
-logger.debug("✅ discord imported")
-from discord.ext import commands
-logger.debug("✅ discord.ext.commands imported")
-import os
-logger.debug("✅ os imported")
-import sys
-logger.debug("✅ sys imported")
-logger.debug("✅ logging imported")
 
-logger.debug("🔍 Setting up Python path...")
+
+vprint("🔥 BOT.PY: Starting imports...")
+import discord
+vprint("✅ discord imported")
+from discord.ext import commands
+vprint("✅ discord.ext.commands imported")
+import sys
+vprint("✅ sys imported")
+import logging
+vprint("✅ logging imported")
+
+vprint("🔍 Setting up Python path...")
 # Ensure the package root is on the path when executed as a script
 package_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-logger.debug(f"📁 Package root: {package_root}")
+vprint(f"📁 Package root: {package_root}")
 if package_root not in sys.path:
     sys.path.insert(0, package_root)
-    logger.debug("✅ Package root added to sys.path")
+    vprint("✅ Package root added to sys.path")
 
-logger.debug("🔍 Importing config...")
+vprint("🔍 Importing config...")
 import config
-logger.debug("✅ config imported")
+vprint("✅ config imported")
 
-logger.debug("🔍 Importing utils...")
+vprint("🔍 Importing utils...")
 from NightCityBot.utils.permissions import is_fixer
-logger.debug("✅ permissions imported")
+vprint("✅ permissions imported")
 
-logger.debug("🔍 Importing cogs...")
+vprint("🔍 Importing cogs...")
 from NightCityBot.cogs.dm_handling import DMHandler
-logger.debug("✅ DMHandler imported")
+vprint("✅ DMHandler imported")
 from NightCityBot.cogs.economy import Economy
-logger.debug("✅ Economy imported")
+vprint("✅ Economy imported")
 from NightCityBot.cogs.rp_manager import RPManager
-logger.debug("✅ RPManager imported")
+vprint("✅ RPManager imported")
 from NightCityBot.cogs.roll_system import RollSystem
-logger.debug("✅ RollSystem imported")
+vprint("✅ RollSystem imported")
 from NightCityBot.cogs.admin import Admin
-logger.debug("✅ Admin imported")
+vprint("✅ Admin imported")
 from NightCityBot.cogs.test_suite import TestSuite
-logger.debug("✅ TestSuite imported")
+vprint("✅ TestSuite imported")
 from NightCityBot.cogs.cyberware import CyberwareManager
-logger.debug("✅ CyberwareManager imported")
+vprint("✅ CyberwareManager imported")
 from NightCityBot.cogs.loa import LOA
-logger.debug("✅ LOA imported")
+vprint("✅ LOA imported")
 from NightCityBot.cogs.system_control import SystemControl
-logger.debug("✅ SystemControl imported")
+vprint("✅ SystemControl imported")
 from NightCityBot.cogs.role_buttons import RoleButtons
-logger.debug("✅ RoleButtons imported")
+vprint("✅ RoleButtons imported")
 from NightCityBot.cogs.trauma_team import TraumaTeam
-logger.debug("✅ TraumaTeam imported")
+vprint("✅ TraumaTeam imported")
 
-logger.debug("🔍 Importing startup checks...")
+vprint("🔍 Importing startup checks...")
 from NightCityBot.utils.startup_checks import perform_startup_checks
-logger.debug("✅ startup_checks imported")
+vprint("✅ startup_checks imported")
 
-logger.debug("🔍 Importing Flask...")
+vprint("🔍 Importing Flask...")
 from flask import Flask
-logger.debug("✅ Flask imported")
+vprint("✅ Flask imported")
 from threading import Thread
-logger.debug("✅ Thread imported")
+vprint("✅ Thread imported")
 
-logger.debug("🎉 ALL IMPORTS COMPLETED SUCCESSFULLY!")
+vprint("🎉 ALL IMPORTS COMPLETED SUCCESSFULLY!")
 
 
 
