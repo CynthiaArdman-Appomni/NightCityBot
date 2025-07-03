@@ -1,69 +1,68 @@
-print("🔥 BOT.PY: Starting imports...")
+import logging
+logger = logging.getLogger(__name__)
+logger.debug("🔥 BOT.PY: Starting imports...")
 
 import discord
-print("✅ discord imported")
+logger.debug("✅ discord imported")
 from discord.ext import commands
-print("✅ discord.ext.commands imported")
+logger.debug("✅ discord.ext.commands imported")
 import os
-print("✅ os imported")
+logger.debug("✅ os imported")
 import sys
-print("✅ sys imported")
-import logging
-print("✅ logging imported")
+logger.debug("✅ sys imported")
+logger.debug("✅ logging imported")
 
-print("🔍 Setting up Python path...")
+logger.debug("🔍 Setting up Python path...")
 # Ensure the package root is on the path when executed as a script
 package_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-print(f"📁 Package root: {package_root}")
+logger.debug(f"📁 Package root: {package_root}")
 if package_root not in sys.path:
     sys.path.insert(0, package_root)
-    print("✅ Package root added to sys.path")
+    logger.debug("✅ Package root added to sys.path")
 
-print("🔍 Importing config...")
+logger.debug("🔍 Importing config...")
 import config
-print("✅ config imported")
+logger.debug("✅ config imported")
 
-print("🔍 Importing utils...")
+logger.debug("🔍 Importing utils...")
 from NightCityBot.utils.permissions import is_fixer
-print("✅ permissions imported")
+logger.debug("✅ permissions imported")
 
-print("🔍 Importing cogs...")
+logger.debug("🔍 Importing cogs...")
 from NightCityBot.cogs.dm_handling import DMHandler
-print("✅ DMHandler imported")
+logger.debug("✅ DMHandler imported")
 from NightCityBot.cogs.economy import Economy
-print("✅ Economy imported")
+logger.debug("✅ Economy imported")
 from NightCityBot.cogs.rp_manager import RPManager
-print("✅ RPManager imported")
+logger.debug("✅ RPManager imported")
 from NightCityBot.cogs.roll_system import RollSystem
-print("✅ RollSystem imported")
+logger.debug("✅ RollSystem imported")
 from NightCityBot.cogs.admin import Admin
-print("✅ Admin imported")
+logger.debug("✅ Admin imported")
 from NightCityBot.cogs.test_suite import TestSuite
-print("✅ TestSuite imported")
+logger.debug("✅ TestSuite imported")
 from NightCityBot.cogs.cyberware import CyberwareManager
-print("✅ CyberwareManager imported")
+logger.debug("✅ CyberwareManager imported")
 from NightCityBot.cogs.loa import LOA
-print("✅ LOA imported")
+logger.debug("✅ LOA imported")
 from NightCityBot.cogs.system_control import SystemControl
-print("✅ SystemControl imported")
+logger.debug("✅ SystemControl imported")
 from NightCityBot.cogs.role_buttons import RoleButtons
-print("✅ RoleButtons imported")
+logger.debug("✅ RoleButtons imported")
 from NightCityBot.cogs.trauma_team import TraumaTeam
-print("✅ TraumaTeam imported")
+logger.debug("✅ TraumaTeam imported")
 
-print("🔍 Importing startup checks...")
+logger.debug("🔍 Importing startup checks...")
 from NightCityBot.utils.startup_checks import perform_startup_checks
-print("✅ startup_checks imported")
+logger.debug("✅ startup_checks imported")
 
-print("🔍 Importing Flask...")
+logger.debug("🔍 Importing Flask...")
 from flask import Flask
-print("✅ Flask imported")
+logger.debug("✅ Flask imported")
 from threading import Thread
-print("✅ Thread imported")
+logger.debug("✅ Thread imported")
 
-print("🎉 ALL IMPORTS COMPLETED SUCCESSFULLY!")
-
-logger = logging.getLogger(__name__)
+logger.debug("🎉 ALL IMPORTS COMPLETED SUCCESSFULLY!")
 
 
 class NightCityBot(commands.Bot):
@@ -138,49 +137,53 @@ def keep_alive():
 
 
 def main():
-    # Add startup logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    print("🚀 Starting NightCityBot initialization...")
+    # Add startup logging if it hasn't been configured already
+    if not logging.getLogger().hasHandlers():
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s'
+        )
+    logger.debug("🚀 Starting NightCityBot initialization...")
     logger.info("Starting NightCityBot...")
     
     # Check token
-    print(f"🔑 Checking for Discord token...")
+    logger.debug(f"🔑 Checking for Discord token...")
     if not config.TOKEN:
-        print("❌ No Discord token found! Please set TOKEN in Secrets.")
+        logger.debug("❌ No Discord token found! Please set TOKEN in Secrets.")
         logger.error("❌ No Discord token found! Please set TOKEN in Secrets.")
         return
     
-    print("✅ Token found!")
+    logger.debug("✅ Token found!")
     logger.info("✅ Token found, connecting to Discord...")
     
     # Initialize bot
-    print("🤖 Creating bot instance...")
+    logger.debug("🤖 Creating bot instance...")
     try:
         bot = NightCityBot()
-        print("✅ Bot instance created successfully")
+        logger.debug("✅ Bot instance created successfully")
     except Exception as e:
-        print(f"❌ Failed to create bot instance: {e}")
+        logger.debug(f"❌ Failed to create bot instance: {e}")
         logger.error(f"❌ Failed to create bot instance: {e}")
         return
     
     # Start keep-alive server
-    print("🌐 Starting keep-alive server...")
+    logger.debug("🌐 Starting keep-alive server...")
     try:
         keep_alive()
-        print("✅ Keep-alive server started")
+        logger.debug("✅ Keep-alive server started")
     except Exception as e:
-        print(f"❌ Failed to start keep-alive server: {e}")
+        logger.debug(f"❌ Failed to start keep-alive server: {e}")
         logger.error(f"❌ Failed to start keep-alive server: {e}")
     
     # Connect to Discord
-    print("🔗 Connecting to Discord...")
+    logger.debug("🔗 Connecting to Discord...")
     try:
         bot.run(config.TOKEN)
     except discord.LoginFailure:
-        print("❌ Invalid Discord token!")
+        logger.debug("❌ Invalid Discord token!")
         logger.error("❌ Invalid Discord token!")
     except Exception as e:
-        print(f"❌ Bot startup failed: {e}")
+        logger.debug(f"❌ Bot startup failed: {e}")
         logger.error(f"❌ Bot startup failed: {e}")
         import traceback
         traceback.print_exc()
