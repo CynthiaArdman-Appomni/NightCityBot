@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 from typing import Optional, List, cast
 from NightCityBot.utils.permissions import is_fixer
-from NightCityBot.utils.helpers import build_channel_name
+from NightCityBot.utils.helpers import build_channel_name, safely_delete
 import config
 
 logger = logging.getLogger(__name__)
@@ -30,12 +30,9 @@ class RPManager(commands.Cog):
                         await admin.log_audit(message.author, content)
                 ctx.send = audit_send
                 await self.bot.invoke(ctx)
-                try:
-                    await message.delete()
-                    if admin:
-                        await admin.log_audit(message.author, f"🗑️ Deleted message in RP: {message.content}")
-                except Exception:
-                    pass
+                await safely_delete(message)
+                if admin:
+                    await admin.log_audit(message.author, f"🗑️ Deleted message in RP: {message.content}")
                 return
 
     @commands.command(
@@ -61,12 +58,9 @@ class RPManager(commands.Cog):
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(ctx.author, "❌ start_rp failed: no users resolved")
-            try:
-                await ctx.message.delete()
-                if admin:
-                    await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
-            except Exception:
-                pass
+            await safely_delete(ctx.message)
+            if admin:
+                await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
             return
 
         target_category = ctx.guild.get_channel(getattr(config, "RP_IC_CATEGORY_ID", ctx.channel.category.id))
@@ -78,12 +72,9 @@ class RPManager(commands.Cog):
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(ctx.author, "❌ Failed to create RP channel.")
-            try:
-                await ctx.message.delete()
-                if admin:
-                    await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
-            except Exception:
-                pass
+            await safely_delete(ctx.message)
+            if admin:
+                await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
             return None
 
         mentions = " ".join(user.mention for user in users)
@@ -94,13 +85,10 @@ class RPManager(commands.Cog):
         admin = self.bot.get_cog('Admin')
         if admin:
             await admin.log_audit(ctx.author, f"✅ RP channel created: {channel.mention}")
-        try:
-            await ctx.message.delete()
-            admin = self.bot.get_cog('Admin')
-            if admin:
-                await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
-        except Exception:
-            pass
+        await safely_delete(ctx.message)
+        admin = self.bot.get_cog('Admin')
+        if admin:
+            await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
         return channel
 
     @commands.command(

@@ -2,6 +2,8 @@ import logging
 import random
 import re
 
+from NightCityBot.utils.helpers import safely_delete
+
 import discord
 from discord.ext import commands
 
@@ -32,15 +34,12 @@ class RollSystem(commands.Cog):
         roller = mentioned_user or ctx.author
 
         if original_sender:
-            try:
-                await ctx.message.delete()
-                admin = self.bot.get_cog("Admin")
-                if admin:
-                    await admin.log_audit(
-                        ctx.author, f"🗑️ Deleted message: {ctx.message.content}"
-                    )
-            except Exception as e:
-                logger.warning("Couldn't delete relayed !roll command: %s", e)
+            await safely_delete(ctx.message)
+            admin = self.bot.get_cog("Admin")
+            if admin:
+                await admin.log_audit(
+                    ctx.author, f"🗑️ Deleted message: {ctx.message.content}"
+                )
             await self.loggable_roll(
                 roller,
                 ctx.channel,
