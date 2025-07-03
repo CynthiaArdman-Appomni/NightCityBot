@@ -129,7 +129,13 @@ class DMHandler(commands.Cog):
         if not any(getattr(r, "name", "") == config.FIXER_ROLE_NAME for r in roles):
             return
 
-        target_user = await self.bot.fetch_user(int(user_id))
+        try:
+            target_user = await self.bot.fetch_user(int(user_id))
+        except discord.NotFound:
+            logger.warning("DM relay failed: unknown user %s", user_id)
+            self.dm_threads.pop(user_id, None)
+            await save_json_file(config.THREAD_MAP_FILE, self.dm_threads)
+            return
         if not target_user:
             return
 
