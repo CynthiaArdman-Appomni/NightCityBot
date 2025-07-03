@@ -1,6 +1,7 @@
 from typing import Optional, List
 import discord
 from NightCityBot.utils.constants import TRAUMA_ROLE_COSTS
+from NightCityBot.utils.helpers import split_deduction
 import config
 
 
@@ -8,12 +9,6 @@ class TraumaTeamService:
     def __init__(self, bot):
         self.bot = bot
 
-    @staticmethod
-    def _split_deduction(cash: int, amount: int) -> tuple[int, int]:
-        """Return cash and bank portions ensuring negative cash is ignored."""
-        cash_deduct = min(max(cash, 0), amount)
-        bank_deduct = max(0, amount - cash_deduct)
-        return cash_deduct, bank_deduct
 
     async def process_trauma_team_payment(
             self,
@@ -93,7 +88,7 @@ class TraumaTeamService:
                 log.append("❌ Insufficient funds for Trauma payment.")
             return
 
-        cash_deduct, bank_deduct = self._split_deduction(cash, cost)
+        cash_deduct, bank_deduct = split_deduction(cash, cost)
         payload = {
             "cash": -cash_deduct,
             "bank": -bank_deduct,
@@ -101,14 +96,14 @@ class TraumaTeamService:
         success = True
         economy = self.bot.get_cog("Economy")
         if not dry_run and economy:
-            await economy.backup_balances([member], label="cyberware_before")
+            await economy.backup_balances([member], label="trauma_before")
             success = await economy.unbelievaboat.update_balance(
                 member.id,
                 payload,
                 reason="Trauma Team Subscription",
             )
             if success:
-                await economy.backup_balances([member], label="cyberware_after")
+                await economy.backup_balances([member], label="trauma_after")
 
         if success:
             if not dry_run and target_thread:
