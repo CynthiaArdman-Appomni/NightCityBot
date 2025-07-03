@@ -12,7 +12,6 @@ def vprint(*args, **kwargs):
         print(*args, **kwargs)
 
 vprint("✅ os imported")
-
 vprint("🔥 BOT.PY: Starting imports...")
 import discord
 vprint("✅ discord imported")
