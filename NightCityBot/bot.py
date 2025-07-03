@@ -1,27 +1,11 @@
-"""Main entry point for the NightCityBot Discord bot."""
-
-# ----------------------------------------------------------------------------
-# Verbose logging helper
-# ----------------------------------------------------------------------------
-
-# Standard library imports
-import os
-
-# Enable verbose output when the VERBOSE environment variable is truthy.
-VERBOSE = os.getenv("VERBOSE", "false").lower() in {"1", "true", "yes", "y"}
-
-
-def vprint(*args, **kwargs) -> None:
-    """Print only when VERBOSE is enabled."""
-    if VERBOSE:
-        print(*args, **kwargs)
-
-vprint("🔥 BOT.PY: Starting imports...")
+print("🔥 BOT.PY: Starting imports...")
 
 import discord
 print("✅ discord imported")
 from discord.ext import commands
 print("✅ discord.ext.commands imported")
+import os
+print("✅ os imported")
 import sys
 print("✅ sys imported")
 import logging
