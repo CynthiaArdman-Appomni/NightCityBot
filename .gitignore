@@ -2,3 +2,7 @@ __pycache__/
 *.py[cod]
 config.py
 *.json
+
+# Ignore IDE settings
+.idea/
+.vscode/
