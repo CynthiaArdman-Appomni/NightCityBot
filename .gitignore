@@ -16,3 +16,6 @@ rent_audits/
 
 # Allow tracked sample JSON files
 !*.example.json
+.env
+*.json
+rent_audits/

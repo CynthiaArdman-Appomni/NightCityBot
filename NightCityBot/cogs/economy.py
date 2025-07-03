@@ -3,6 +3,7 @@ import os
 import json
 from datetime import datetime, timedelta
 import asyncio
+import contextlib
 from typing import Optional, List, Dict, Callable, Awaitable
 
 import discord
@@ -19,6 +20,7 @@ from NightCityBot.utils.constants import (
     TRAUMA_ROLE_COSTS,
 )
 from NightCityBot.utils import helpers
+from NightCityBot.utils.helpers import split_deduction
 
 safe_filename = helpers.safe_filename
 
@@ -45,12 +47,6 @@ class Economy(commands.Cog):
         self.attend_lock = asyncio.Lock()
         self.event_expires_at: Optional[datetime] = None
 
-    @staticmethod
-    def _split_deduction(cash: int, amount: int) -> tuple[int, int]:
-        """Return cash/bank portions ensuring negative cash isn't double counted."""
-        cash_deduct = min(max(cash, 0), amount)
-        bank_deduct = max(0, amount - cash_deduct)
-        return cash_deduct, bank_deduct
 
     def event_active(self) -> bool:
         """Return ``True`` if a fixer event is currently active."""
@@ -72,10 +68,8 @@ class Economy(commands.Cog):
             if not message.content.strip().startswith(
                 ("!open_shop", "!openshop", "!os")
             ):
-                try:
+                with contextlib.suppress(Exception):
                     await message.delete()
-                except Exception:
-                    pass
                 admin = self.bot.get_cog("Admin")
                 if admin:
                     await admin.log_audit(
@@ -88,10 +82,8 @@ class Economy(commands.Cog):
         ):
 
             if not message.content.strip().startswith("!attend"):
-                try:
+                with contextlib.suppress(Exception):
                     await message.delete()
-                except Exception:
-                    pass
                 admin = self.bot.get_cog("Admin")
                 if admin:
                     await admin.log_audit(
@@ -537,7 +529,8 @@ class Economy(commands.Cog):
                     return False
                 try:
                     dt = datetime.fromisoformat(ts)
-                except Exception:
+                except Exception as e:
+                    logger.debug("Invalid timestamp in %s: %s", file_path, e, exc_info=e)
                     return False
                 return datetime.utcnow() - dt < timedelta(days=days)
         return False
@@ -766,7 +759,7 @@ class Economy(commands.Cog):
             )
             return False, cash, bank
 
-        deduct_cash, deduct_bank = self._split_deduction(cash, amount)
+        deduct_cash, deduct_bank = split_deduction(cash, amount)
         payload: Dict[str, int] = {}
         if deduct_cash > 0:
             payload["cash"] = -deduct_cash
@@ -829,7 +822,7 @@ class Economy(commands.Cog):
             )
             return cash, bank
 
-        deduct_cash, deduct_bank = self._split_deduction(cash, housing_total)
+        deduct_cash, deduct_bank = split_deduction(cash, housing_total)
         payload: Dict[str, int] = {}
         if deduct_cash > 0:
             payload["cash"] = -deduct_cash
@@ -901,7 +894,7 @@ class Economy(commands.Cog):
             )
             return cash, bank
 
-        deduct_cash, deduct_bank = self._split_deduction(cash, business_total)
+        deduct_cash, deduct_bank = split_deduction(cash, business_total)
         payload: Dict[str, int] = {}
         if deduct_cash > 0:
             payload["cash"] = -deduct_cash
@@ -1230,15 +1223,11 @@ class Economy(commands.Cog):
             if user_id and hasattr(self.bot, "get_user"):
                 notify_user = self.bot.get_user(user_id)
                 if notify_user is None and hasattr(self.bot, "fetch_user"):
-                    try:
+                    with contextlib.suppress(Exception):
                         notify_user = await self.bot.fetch_user(user_id)
-                    except Exception:
-                        notify_user = None
             if notify_user:
-                try:
+                with contextlib.suppress(Exception):
                     await notify_user.send("🚦 Rent collection starting...")
-                except Exception:
-                    pass
 
         audit_lines: List[str] = []
         if not target_user:
@@ -1268,11 +1257,10 @@ class Economy(commands.Cog):
                 business_open_log = {}
 
         if not force and not target_user and Path(config.LAST_RENT_FILE).exists():
-            try:
+            last_run = None
+            with contextlib.suppress(Exception):
                 data = await load_json_file(config.LAST_RENT_FILE, default=None)
                 last_run = datetime.fromisoformat(data["last_run"])
-            except Exception:
-                last_run = None
             if last_run and datetime.utcnow() - last_run < timedelta(days=30):
                 await ctx.send(
                     "⚠️ Rent already collected in the last 30 days. Use -force to override."
@@ -1462,7 +1450,8 @@ class Economy(commands.Cog):
                     dm_failed = False
                     try:
                         await member.send(summary)
-                    except Exception:
+                    except Exception as e:
+                        logger.debug("Failed to DM %s: %s", member, e, exc_info=e)
                         log.append("⚠️ Could not send DM.")
                         dm_failed = True
                     if dm_failed:
@@ -1529,12 +1518,10 @@ class Economy(commands.Cog):
                         f"{m.display_name} can't pay: {', '.join(items)}"
                     )
                 summary_text = "\n".join(summary_lines) if summary_lines else "✅ Everyone paid their dues."
-                try:
+                with contextlib.suppress(Exception):
                     await notify_user.send(
                         f"✅ Rent collection completed.\n{summary_text}"
                     )
-                except Exception:
-                    pass
 
     @commands.command(aliases=["collectrent"])
     @commands.has_permissions(administrator=True)

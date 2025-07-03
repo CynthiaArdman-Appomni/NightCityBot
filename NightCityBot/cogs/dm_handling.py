@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import re
+import contextlib
 
 import discord
 from discord.ext import commands
@@ -34,6 +35,12 @@ class DMHandler(commands.Cog):
         self.load_event = asyncio.Event()
         self.thread_lock = asyncio.Lock()
         self.bot.loop.create_task(self.load_thread_cache())
+
+    async def _report_thread_error(self, user: discord.abc.User, error: Exception) -> None:
+        """Notify administrators about DM thread failures."""
+        admin = self.bot.get_cog('Admin')
+        if admin:
+            await admin.log_audit(user, f"❌ DM thread error: {error}")
 
     async def load_thread_cache(self) -> None:
         """Load the thread mapping cache on startup."""
@@ -146,13 +153,11 @@ class DMHandler(commands.Cog):
                 ctx.author = target_user
                 ctx.channel = await target_user.create_dm()
                 await roll_cog.roll(ctx, dice=dice)
-            try:
+            with contextlib.suppress(Exception):
                 await message.delete()
                 admin = self.bot.get_cog('Admin')
                 if admin:
                     await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
-            except Exception:
-                pass
             return
 
         # Handle start-rp command relay
@@ -166,13 +171,11 @@ class DMHandler(commands.Cog):
                     args = [f"<@{target_user.id}>"]
                 ctx = await self.bot.get_context(message)
                 await rp_cog.start_rp(ctx, *args)
-            try:
+            with contextlib.suppress(Exception):
                 await message.delete()
                 admin = self.bot.get_cog('Admin')
                 if admin:
                     await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
-            except Exception:
-                pass
             return
 
         if message.content.strip().startswith("!"):
@@ -183,13 +186,11 @@ class DMHandler(commands.Cog):
                     await admin.log_audit(message.author, content)
             ctx.send = audit_send
             await self.bot.invoke(ctx)
-            try:
+            with contextlib.suppress(Exception):
                 await message.delete()
                 admin = self.bot.get_cog('Admin')
                 if admin:
                     await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
-            except Exception:
-                pass
             return
 
         # Handle normal message relay
@@ -212,13 +213,11 @@ class DMHandler(commands.Cog):
             f"by {message.author.display_name} ({message.author.id}):**\n{message.content}",
             files=log_files
         )
-        try:
+        with contextlib.suppress(Exception):
             await message.delete()
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(message.author, f"🗑️ Deleted DM relay: {_relay_description(message)}")
-        except Exception:
-            pass
 
     async def handle_dm_message(self, message: discord.Message):
         """Handle incoming DMs from users."""
@@ -226,7 +225,14 @@ class DMHandler(commands.Cog):
         if control and not control.is_enabled('dm'):
             return
         try:
-            thread = await self.get_or_create_dm_thread(message.author)
+            try:
+                thread = await self.get_or_create_dm_thread(message.author)
+            except RuntimeError as e:
+                await message.channel.send(
+                    "⚠️ DM logging misconfigured. Admins have been notified."
+                )
+                await self._report_thread_error(message.author, e)
+                return
             msg_target: Messageable = thread
 
             full = message.content or "*(No text content)*"
@@ -249,13 +255,11 @@ class DMHandler(commands.Cog):
         control = self.bot.get_cog('SystemControl')
         if control and not control.is_enabled('dm'):
             await ctx.send("⚠️ The dm system is currently disabled.")
-            try:
+            with contextlib.suppress(Exception):
                 await ctx.message.delete()
                 admin = self.bot.get_cog('Admin')
                 if admin:
                     await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
-            except Exception:
-                pass
             return
         try:
             if not user:
@@ -265,26 +269,22 @@ class DMHandler(commands.Cog):
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(ctx.author, "❌ Failed DM: Could not resolve user.")
-            try:
+            with contextlib.suppress(Exception):
                 await ctx.message.delete()
                 admin = self.bot.get_cog('Admin')
                 if admin:
                     await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
-            except Exception:
-                pass
             return
         except Exception as e:
             await ctx.send(f"⚠️ Unexpected error: {str(e)}")
             admin = self.bot.get_cog('Admin')
             if admin:
                 await admin.log_audit(ctx.author, f"⚠️ Exception in DM: {str(e)}")
-            try:
+            with contextlib.suppress(Exception):
                 await ctx.message.delete()
                 admin = self.bot.get_cog('Admin')
                 if admin:
                     await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
-            except Exception:
-                pass
             return
 
         file_links = [attachment.url for attachment in ctx.message.attachments]
@@ -298,22 +298,26 @@ class DMHandler(commands.Cog):
                 if not re.fullmatch(pattern, dice.replace(" ", "")):
                     await ctx.send(
                         "🎲 Format: `!roll XdY+Z` (e.g. `!roll 2d6+3`)")
-                    try:
+                    with contextlib.suppress(Exception):
                         await ctx.message.delete()
                         admin = self.bot.get_cog('Admin')
                         if admin:
                             await admin.log_audit(
                                 ctx.author,
                                 f"🗑️ Deleted command: {ctx.message.content}")
-                    except Exception:
-                        pass
                     return
                 member = ctx.guild.get_member(user.id) or user
                 fake_ctx = await self.bot.get_context(ctx.message)
                 fake_ctx.author = member
                 fake_ctx.channel = await user.create_dm()
                 setattr(fake_ctx, "original_author", ctx.author)
-                thread = await self.get_or_create_dm_thread(user)
+                try:
+                    await self.get_or_create_dm_thread(user)
+                except RuntimeError as e:
+                    await ctx.send(
+                        "⚠️ DM logging misconfigured. Admins have been notified."
+                    )
+                    await self._report_thread_error(ctx.author, e)
                 await roll_cog.roll(fake_ctx, dice=dice)
                 admin = self.bot.get_cog('Admin')
                 if admin:
@@ -322,13 +326,11 @@ class DMHandler(commands.Cog):
                         f"✅ Rolled `{dice}` anonymously for {user.display_name}.",
                     )
 
-            try:
+            with contextlib.suppress(Exception):
                 await ctx.message.delete()
                 admin = self.bot.get_cog('Admin')
                 if admin:
                     await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
-            except Exception:
-                pass
             return
 
         # Handle normal DM
@@ -341,12 +343,19 @@ class DMHandler(commands.Cog):
         try:
             await user.send(content=dm_content)
 
-            thread = await self.get_or_create_dm_thread(user)
+            try:
+                thread = await self.get_or_create_dm_thread(user)
+            except RuntimeError as e:
+                await ctx.send(
+                    "⚠️ DM logging misconfigured. Admins have been notified."
+                )
+                await self._report_thread_error(ctx.author, e)
+                thread = None
             if isinstance(thread, (discord.Thread, discord.TextChannel)):
                 await thread.send(
                     f"📤 **Sent to {user.display_name} ({user.id}) by {ctx.author.display_name} ({ctx.author.id}):**\n{dm_content}"
                 )
-            else:
+            elif thread is not None:
                 logger.error("Cannot log DM — thread type is %s", type(thread))
 
             admin = self.bot.get_cog('Admin')
@@ -359,10 +368,8 @@ class DMHandler(commands.Cog):
             if admin:
                 await admin.log_audit(ctx.author, f"❌ Failed DM: Recipient: {user} (Privacy settings).")
         finally:
-            try:
+            with contextlib.suppress(Exception):
                 await ctx.message.delete()
                 admin = self.bot.get_cog('Admin')
                 if admin:
                     await admin.log_audit(ctx.author, f"🗑️ Deleted command: {ctx.message.content}")
-            except Exception:
-                pass
