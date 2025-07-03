@@ -15,6 +15,12 @@ class RollSystem(commands.Cog):
         """Initialize the roll system."""
         self.bot = bot
 
+    async def _report_roll_error(self, user: discord.abc.User, error: Exception) -> None:
+        """Notify administrators about DM thread failures during rolls."""
+        admin = self.bot.get_cog("Admin")
+        if admin:
+            await admin.log_audit(user, f"❌ DM thread error: {error}")
+
     @commands.command()
     async def roll(self, ctx, *, dice: str):
         original_sender = getattr(ctx, "original_author", None)
@@ -107,17 +113,32 @@ class RollSystem(commands.Cog):
         if skip_log:
             return
         if isinstance(channel, discord.DMChannel) and not original_sender:
-            thread = await self.bot.get_cog("DMHandler").get_or_create_dm_thread(
-                log_target
-            )
+            try:
+                thread = await self.bot.get_cog("DMHandler").get_or_create_dm_thread(
+                    log_target
+                )
+            except RuntimeError as e:
+                await self._report_roll_error(log_target, e)
+                await channel.send(
+                    "⚠️ DM logging misconfigured. Roll result not recorded."
+                )
+                thread = None
             if isinstance(thread, discord.abc.Messageable):
                 await thread.send(
                     f"📥 **{log_target.display_name} used:** `!roll {dice}`\n\n{result}"
                 )
         elif original_sender:
-            thread = await self.bot.get_cog("DMHandler").get_or_create_dm_thread(
-                log_target
-            )
+            try:
+                thread = await self.bot.get_cog("DMHandler").get_or_create_dm_thread(
+                    log_target
+                )
+            except RuntimeError as e:
+                await self._report_roll_error(original_sender, e)
+                if isinstance(channel, discord.abc.Messageable):
+                    await channel.send(
+                        "⚠️ DM logging misconfigured. Roll result not recorded."
+                    )
+                thread = None
             if isinstance(thread, discord.abc.Messageable):
                 await thread.send(
                     f"📤 **{original_sender.display_name} rolled as {author.display_name}** → `!roll {dice}`\n\n{result}"

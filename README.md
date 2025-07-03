@@ -217,3 +217,7 @@ pytest
 ```
 
 Alternatively, run `!test_bot` inside Discord to perform many of the same checks without leaving the chat.
+
+## License
+
+NightCityBot is licensed under the [MIT License](LICENSE).

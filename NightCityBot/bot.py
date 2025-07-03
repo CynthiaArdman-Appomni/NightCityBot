@@ -14,6 +14,8 @@ def vprint(*args, **kwargs):
 
 vprint("🔥 BOT.PY: Starting imports...")
 
+
+vprint("🔥 BOT.PY: Starting imports...")
 import discord
 vprint("✅ discord imported")
 from discord.ext import commands
@@ -75,7 +77,6 @@ vprint("✅ Thread imported")
 
 vprint("🎉 ALL IMPORTS COMPLETED SUCCESSFULLY!")
 
-logger = logging.getLogger(__name__)
 
 
 class NightCityBot(commands.Bot):
@@ -150,49 +151,53 @@ def keep_alive():
 
 
 def main():
-    # Add startup logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    print("🚀 Starting NightCityBot initialization...")
+    # Add startup logging if it hasn't been configured already
+    if not logging.getLogger().hasHandlers():
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s'
+        )
+    logger.debug("🚀 Starting NightCityBot initialization...")
     logger.info("Starting NightCityBot...")
     
     # Check token
-    print(f"🔑 Checking for Discord token...")
+    logger.debug(f"🔑 Checking for Discord token...")
     if not config.TOKEN:
-        print("❌ No Discord token found! Please set TOKEN in Secrets.")
+        logger.debug("❌ No Discord token found! Please set TOKEN in Secrets.")
         logger.error("❌ No Discord token found! Please set TOKEN in Secrets.")
         return
     
-    print("✅ Token found!")
+    logger.debug("✅ Token found!")
     logger.info("✅ Token found, connecting to Discord...")
     
     # Initialize bot
-    print("🤖 Creating bot instance...")
+    logger.debug("🤖 Creating bot instance...")
     try:
         bot = NightCityBot()
-        print("✅ Bot instance created successfully")
+        logger.debug("✅ Bot instance created successfully")
     except Exception as e:
-        print(f"❌ Failed to create bot instance: {e}")
+        logger.debug(f"❌ Failed to create bot instance: {e}")
         logger.error(f"❌ Failed to create bot instance: {e}")
         return
     
     # Start keep-alive server
-    print("🌐 Starting keep-alive server...")
+    logger.debug("🌐 Starting keep-alive server...")
     try:
         keep_alive()
-        print("✅ Keep-alive server started")
+        logger.debug("✅ Keep-alive server started")
     except Exception as e:
-        print(f"❌ Failed to start keep-alive server: {e}")
+        logger.debug(f"❌ Failed to start keep-alive server: {e}")
         logger.error(f"❌ Failed to start keep-alive server: {e}")
     
     # Connect to Discord
-    print("🔗 Connecting to Discord...")
+    logger.debug("🔗 Connecting to Discord...")
     try:
         bot.run(config.TOKEN)
     except discord.LoginFailure:
-        print("❌ Invalid Discord token!")
+        logger.debug("❌ Invalid Discord token!")
         logger.error("❌ Invalid Discord token!")
     except Exception as e:
-        print(f"❌ Bot startup failed: {e}")
+        logger.debug(f"❌ Bot startup failed: {e}")
         logger.error(f"❌ Bot startup failed: {e}")
         import traceback
         traceback.print_exc()
