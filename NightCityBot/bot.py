@@ -1,5 +1,4 @@
 import os
-vprint("✅ os imported")
 
 # Allow debug logging of the startup sequence when the VERBOSE environment
 # variable is truthy.  Missing definitions previously caused a NameError when
@@ -11,6 +10,8 @@ def vprint(*args, **kwargs):
     """Conditionally print when ``VERBOSE`` is enabled."""
     if VERBOSE:
         print(*args, **kwargs)
+
+vprint("✅ os imported")
 
 vprint("🔥 BOT.PY: Starting imports...")
 
