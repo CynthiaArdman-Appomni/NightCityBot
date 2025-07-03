@@ -35,6 +35,12 @@ class DMHandler(commands.Cog):
         self.thread_lock = asyncio.Lock()
         self.bot.loop.create_task(self.load_thread_cache())
 
+    async def _report_thread_error(self, user: discord.abc.User, error: Exception) -> None:
+        """Notify administrators about DM thread failures."""
+        admin = self.bot.get_cog('Admin')
+        if admin:
+            await admin.log_audit(user, f"❌ DM thread error: {error}")
+
     async def load_thread_cache(self) -> None:
         """Load the thread mapping cache on startup."""
         self.dm_threads = await load_json_file(config.THREAD_MAP_FILE, default={})
@@ -226,7 +232,14 @@ class DMHandler(commands.Cog):
         if control and not control.is_enabled('dm'):
             return
         try:
-            thread = await self.get_or_create_dm_thread(message.author)
+            try:
+                thread = await self.get_or_create_dm_thread(message.author)
+            except RuntimeError as e:
+                await message.channel.send(
+                    "⚠️ DM logging misconfigured. Admins have been notified."
+                )
+                await self._report_thread_error(message.author, e)
+                return
             msg_target: Messageable = thread
 
             full = message.content or "*(No text content)*"
@@ -313,7 +326,13 @@ class DMHandler(commands.Cog):
                 fake_ctx.author = member
                 fake_ctx.channel = await user.create_dm()
                 setattr(fake_ctx, "original_author", ctx.author)
-                thread = await self.get_or_create_dm_thread(user)
+                try:
+                    await self.get_or_create_dm_thread(user)
+                except RuntimeError as e:
+                    await ctx.send(
+                        "⚠️ DM logging misconfigured. Admins have been notified."
+                    )
+                    await self._report_thread_error(ctx.author, e)
                 await roll_cog.roll(fake_ctx, dice=dice)
                 admin = self.bot.get_cog('Admin')
                 if admin:
@@ -341,12 +360,19 @@ class DMHandler(commands.Cog):
         try:
             await user.send(content=dm_content)
 
-            thread = await self.get_or_create_dm_thread(user)
+            try:
+                thread = await self.get_or_create_dm_thread(user)
+            except RuntimeError as e:
+                await ctx.send(
+                    "⚠️ DM logging misconfigured. Admins have been notified."
+                )
+                await self._report_thread_error(ctx.author, e)
+                thread = None
             if isinstance(thread, (discord.Thread, discord.TextChannel)):
                 await thread.send(
                     f"📤 **Sent to {user.display_name} ({user.id}) by {ctx.author.display_name} ({ctx.author.id}):**\n{dm_content}"
                 )
-            else:
+            elif thread is not None:
                 logger.error("Cannot log DM — thread type is %s", type(thread))
 
             admin = self.bot.get_cog('Admin')
