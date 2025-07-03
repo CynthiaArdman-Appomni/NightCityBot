@@ -12,10 +12,6 @@ def vprint(*args, **kwargs):
         print(*args, **kwargs)
 
 vprint("✅ os imported")
-
-vprint("🔥 BOT.PY: Starting imports...")
-
-
 vprint("🔥 BOT.PY: Starting imports...")
 import discord
 vprint("✅ discord imported")
@@ -25,6 +21,9 @@ import sys
 vprint("✅ sys imported")
 import logging
 vprint("✅ logging imported")
+
+# Use a module-level logger for startup logging
+logger = logging.getLogger(__name__)
 
 vprint("🔍 Setting up Python path...")
 # Ensure the package root is on the path when executed as a script
