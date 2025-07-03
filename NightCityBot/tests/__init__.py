@@ -34,6 +34,7 @@ TEST_MODULES = {
     "test_dm_roll_command": "Relays a roll through !dm.",
     "test_dm_userid": "Ensures !dm works with a raw user ID.",
     "test_dm_thread_autolink": "Links DM threads from their name when missing.",
+    "test_dm_unknown_user": "Handles missing user ID when relaying from DM thread.",
     "test_start_rp_multi": "Starts RP with two users and ends it.",
     "test_cyberware_weekly": "Simulates the weekly cyberware task.",
     "test_loa_fixer_other": "Fixer starts and ends LOA for another user.",
