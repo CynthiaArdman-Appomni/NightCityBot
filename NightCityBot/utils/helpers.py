@@ -1,4 +1,4 @@
-from typing import Optional, List
+import discord
 import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -73,11 +73,13 @@ def get_tz_now() -> datetime:
     return datetime.now(tz)
 
 
-async def safely_delete(message) -> None:
+async def safely_delete(message: discord.Message | None) -> None:
     """Delete a Discord message while suppressing any errors."""
     if message is None:
         return
     try:
         await message.delete()
+    except discord.NotFound:
+        logger.debug("Message already deleted: %s", getattr(message, "id", "?"))
     except Exception as e:
         logger.debug("Failed to delete message: %s", e)
