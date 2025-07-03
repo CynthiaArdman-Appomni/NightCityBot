@@ -160,51 +160,63 @@ class Admin(commands.Cog):
         fields = [
             (
                 "✉️ Messaging Tools",
-                "`!dm @user <text>` – send an anonymous DM with optional attachments. The conversation is logged in a private thread. Use `!roll` within that thread to relay dice results.\n"
-                "`!post <channel|thread> <message>` – send a message or execute a command in another location.",
-                "`!npc_button` – send the NPC role assignment button in the current channel.\n"
+                "\n".join([
+                    "`!dm @user <text>` – send an anonymous DM with optional attachments. The conversation is logged in a private thread. Use `!roll` within that thread to relay dice results.",
+                    "`!post <channel|thread> <message>` – send a message or execute a command in another location.",
+                    "`!npc_button` – send the NPC role assignment button in the current channel.",
+                ]),
             ),
             (
                 "📑 RP Management",
-                "`!start_rp @users...` (aliases: !startrp, !rp_start, !rpstart) – create a locked RP channel for the listed users and ping Fixers.\n"
-                "`!end_rp` (aliases: !endrp, !rp_end, !rpend) – archive the current RP channel to the log forum and then delete it.",
+                "\n".join([
+                    "`!start_rp @users...` (aliases: !startrp, !rp_start, !rpstart) – create a locked RP channel for the listed users and ping Fixers.",
+                    "`!end_rp` (aliases: !endrp, !rp_end, !rpend) – archive the current RP channel to the log forum and then delete it.",
+                ]),
             ),
             (
                 "💵 Economy & Rent",
-                "`!open_shop` (aliases: !openshop, !os) – record a business opening on Sunday and grant passive income immediately.\n",
-                "`!attend` – log weekly attendance for a $250 payout.\n",
-                "`!event_start` (aliases: !eventstart, !open_event, !start_event) – allow !attend and !open_shop for 4 hours outside Sunday when run in #attendance.\n",
-                "`!due` – display a detailed breakdown of what a user owes on the 1st.\n",
-                "`!paydue [-v]` – pay your monthly obligations early.\n",
-                "`!collect_rent [@user] [-v] [-force]` (alias: !collectrent) – run the monthly rent cycle. Use `-force` to ignore the 30 day limit.\n",
-                "`!collect_housing @user [-v] [-force]` / `!collect_business @user [-v] [-force]` / `!collect_trauma @user [-v] [-force]` – charge specific fees with optional verbose logs. (aliases: !collecthousing / !collectbusiness / !collecttrauma)\n",
-                "`!simulate_rent [@user] [-v]` (alias: !simulaterent) – perform a dry run of rent collection using the same options.\n",
-                "`!simulate_cyberware [@user] [week]` – preview cyberware medication costs globally or for a certain week.\n",
-                "`!simulate_all [@user]` – run both simulations at once.\n",
-                "`!backup_balances` – save all member balances to a timestamped file.\n",
-                "`!backup_balance @user` – save one member's balance to a file.\n",
-                "`!restore_balances <file>` – restore balances from a backup file.\n",
-                "`!restore_balance @user [file]` – restore one member's balance from a backup.\n",
-                "`!list_deficits` – list members who can't cover upcoming charges.",
+                "\n".join([
+                    "`!open_shop` (aliases: !openshop, !os) – record a business opening on Sunday and grant passive income immediately.",
+                    "`!attend` – log weekly attendance for a $250 payout.",
+                    "`!event_start` (aliases: !eventstart, !open_event, !start_event) – allow !attend and !open_shop for 4 hours outside Sunday when run in #attendance.",
+                    "`!due` – display a detailed breakdown of what a user owes on the 1st.",
+                    "`!paydue [-v]` – pay your monthly obligations early.",
+                    "`!collect_rent [@user] [-v] [-force]` (alias: !collectrent) – run the monthly rent cycle. Use `-force` to ignore the 30\u202fday limit.",
+                    "`!collect_housing @user [-v] [-force]` / `!collect_business @user [-v] [-force]` / `!collect_trauma @user [-v] [-force]` – charge specific fees with optional verbose logs. (aliases: !collecthousing / !collectbusiness / !collecttrauma)",
+                    "`!simulate_rent [@user] [-v]` (alias: !simulaterent) – perform a dry run of rent collection using the same options.",
+                    "`!simulate_cyberware [@user] [week]` – preview cyberware medication costs globally or for a certain week.",
+                    "`!simulate_all [@user]` – run both simulations at once.",
+                    "`!backup_balances` – save all member balances to a timestamped file.",
+                    "`!backup_balance @user` – save one member's balance to a file.",
+                    "`!restore_balances <file>` – restore balances from a backup file.",
+                    "`!restore_balance @user [file]` – restore one member's balance from a backup.",
+                    "`!list_deficits` – list members who can't cover upcoming charges.",
+                ]),
             ),
             (
                 "🏖️ LOA & Cyberware",
-                "`!start_loa [@user]` (aliases: !startloa, !loa_start, !loastart) / `!end_loa [@user]` (aliases: !endloa, !loa_end, !loaend) – toggle LOA for yourself or the specified member.\n"
-                "`!checkup @user` (aliases: !check-up, !check_up, !cu, !cup) – remove the checkup role once an in-character exam is completed.\n"
-                "`!weeks_without_checkup @user` (aliases: !wwocup, !wwc) – show how many weeks a member has kept the role without a checkup.\n"
-                "`!collect_cyberware @user [-v]` – manually charge a member for their meds and show the last few log lines unless `-v` is supplied.",
-                "`!paycyberware [-v]` – pay your own cyberware meds manually."
+                "\n".join([
+                    "`!start_loa [@user]` (aliases: !startloa, !loa_start, !loastart) / `!end_loa [@user]` (aliases: !endloa, !loa_end, !loaend) – toggle LOA for yourself or the specified member.",
+                    "`!checkup @user` (aliases: !check-up, !check_up, !cu, !cup) – remove the checkup role once an in-character exam is completed.",
+                    "`!weeks_without_checkup @user` (aliases: !wwocup, !wwc) – show how many weeks a member has kept the role without a checkup.",
+                    "`!collect_cyberware @user [-v]` – manually charge a member for their meds and show the last few log lines unless `-v` is supplied.",
+                    "`!paycyberware [-v]` – pay your own cyberware meds manually.",
+                ]),
             ),
             (
                 "⚙️ System Control",
-                "`!enable_system <name>` / `!disable_system <name>` (aliases: !es/!ds) – toggle major subsystems.\n"
-                "`!system_status` – display the current enable/disable flags.",
+                "\n".join([
+                    "`!enable_system <name>` / `!disable_system <name>` (aliases: !es/!ds) – toggle major subsystems.",
+                    "`!system_status` – display the current enable/disable flags.",
+                ]),
             ),
             (
                 "🛠️ Admin Tools",
-                "`!test_bot [tests] [-silent] [-verbose]` – execute the built-in test suite. Results can be DMed when `-silent` is used and step details are shown with `-verbose`. Prefixes run groups of tests.\n"
-                "`!list_tests` – show all available self-test names.\n"
-                "`!test__bot [pattern]` – run the PyTest suite optionally filtering by pattern.",
+                "\n".join([
+                    "`!test_bot [tests] [-silent] [-verbose]` – execute the built-in test suite. Results can be DMed when `-silent` is used and step details are shown with `-verbose`. Prefixes run groups of tests.",
+                    "`!list_tests` – show all available self-test names.",
+                    "`!test__bot [pattern]` – run the PyTest suite optionally filtering by pattern.",
+                ]),
             ),
         ]
 

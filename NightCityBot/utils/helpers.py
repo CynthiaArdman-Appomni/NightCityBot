@@ -11,8 +11,26 @@ import logging
 logger = logging.getLogger(__name__)
 
 def build_channel_name(usernames, max_length=100):
-    """Builds a Discord channel name for a group RP."""
-    full_name = "text-rp-" + "-".join(f"{name}-{uid}" for name, uid in usernames)
+    """Build a Discord channel name for a group RP.
+
+    ``usernames`` should be an iterable of ``(name, user_id)`` pairs. In earlier
+    versions the function expected every entry to contain exactly two items which
+    raised ``ValueError`` if the calling code accidentally supplied tuples with
+    additional values.  To be more robust we simply ignore any extra items after
+    the first two.
+    """
+
+    pairs = []
+    for entry in usernames:
+        try:
+            name, uid = entry[:2]
+        except ValueError as e:
+            raise ValueError(
+                "Each entry in usernames must provide at least a name and user id"
+            ) from e
+        pairs.append((name, uid))
+
+    full_name = "text-rp-" + "-".join(f"{name}-{uid}" for name, uid in pairs)
     if len(full_name) <= max_length:
         return re.sub(r"[^a-z0-9\-]", "", full_name.lower())
 
