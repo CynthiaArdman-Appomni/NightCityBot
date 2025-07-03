@@ -71,3 +71,13 @@ def get_tz_now() -> datetime:
     """Return current time in the configured timezone."""
     tz = ZoneInfo(getattr(config, "TIMEZONE", "UTC"))
     return datetime.now(tz)
+
+
+async def safely_delete(message) -> None:
+    """Delete a Discord message while suppressing any errors."""
+    if message is None:
+        return
+    try:
+        await message.delete()
+    except Exception as e:
+        logger.debug("Failed to delete message: %s", e)

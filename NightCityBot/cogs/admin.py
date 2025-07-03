@@ -9,7 +9,11 @@ import config
 from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.utils import constants
 from NightCityBot.utils import startup_checks
-from NightCityBot.utils.helpers import load_json_file, save_json_file
+from NightCityBot.utils.helpers import (
+    load_json_file,
+    save_json_file,
+    safely_delete,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -77,13 +81,10 @@ class Admin(commands.Cog):
                 )
         else:
             await ctx.send("❌ Provide a message or attachment.")
-        try:
-            await ctx.message.delete()
-            await self.log_audit(
-                ctx.author, f"🗑️ Deleted command: {ctx.message.content}"
-            )
-        except Exception:
-            pass
+        await safely_delete(ctx.message)
+        await self.log_audit(
+            ctx.author, f"🗑️ Deleted command: {ctx.message.content}"
+        )
 
     @commands.command(name="help")
     async def block_help(self, ctx):

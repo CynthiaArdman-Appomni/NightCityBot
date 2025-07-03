@@ -19,6 +19,7 @@ from NightCityBot.utils.constants import (
     TRAUMA_ROLE_COSTS,
 )
 from NightCityBot.utils import helpers
+from NightCityBot.utils.helpers import safely_delete
 
 safe_filename = helpers.safe_filename
 
@@ -72,10 +73,7 @@ class Economy(commands.Cog):
             if not message.content.strip().startswith(
                 ("!open_shop", "!openshop", "!os")
             ):
-                try:
-                    await message.delete()
-                except Exception:
-                    pass
+                await safely_delete(message)
                 admin = self.bot.get_cog("Admin")
                 if admin:
                     await admin.log_audit(
@@ -88,10 +86,7 @@ class Economy(commands.Cog):
         ):
 
             if not message.content.strip().startswith("!attend"):
-                try:
-                    await message.delete()
-                except Exception:
-                    pass
+                await safely_delete(message)
                 admin = self.bot.get_cog("Admin")
                 if admin:
                     await admin.log_audit(
