@@ -71,3 +71,10 @@ def get_tz_now() -> datetime:
     """Return current time in the configured timezone."""
     tz = ZoneInfo(getattr(config, "TIMEZONE", "UTC"))
     return datetime.now(tz)
+
+
+def split_deduction(cash: int, amount: int) -> tuple[int, int]:
+    """Return cash/bank portions ensuring negative cash isn't double counted."""
+    cash_deduct = min(max(cash, 0), amount)
+    bank_deduct = max(0, amount - cash_deduct)
+    return cash_deduct, bank_deduct

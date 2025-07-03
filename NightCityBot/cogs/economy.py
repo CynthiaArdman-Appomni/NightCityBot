@@ -19,6 +19,7 @@ from NightCityBot.utils.constants import (
     TRAUMA_ROLE_COSTS,
 )
 from NightCityBot.utils import helpers
+from NightCityBot.utils.helpers import split_deduction
 
 safe_filename = helpers.safe_filename
 
@@ -45,12 +46,6 @@ class Economy(commands.Cog):
         self.attend_lock = asyncio.Lock()
         self.event_expires_at: Optional[datetime] = None
 
-    @staticmethod
-    def _split_deduction(cash: int, amount: int) -> tuple[int, int]:
-        """Return cash/bank portions ensuring negative cash isn't double counted."""
-        cash_deduct = min(max(cash, 0), amount)
-        bank_deduct = max(0, amount - cash_deduct)
-        return cash_deduct, bank_deduct
 
     def event_active(self) -> bool:
         """Return ``True`` if a fixer event is currently active."""
@@ -766,7 +761,7 @@ class Economy(commands.Cog):
             )
             return False, cash, bank
 
-        deduct_cash, deduct_bank = self._split_deduction(cash, amount)
+        deduct_cash, deduct_bank = split_deduction(cash, amount)
         payload: Dict[str, int] = {}
         if deduct_cash > 0:
             payload["cash"] = -deduct_cash
@@ -829,7 +824,7 @@ class Economy(commands.Cog):
             )
             return cash, bank
 
-        deduct_cash, deduct_bank = self._split_deduction(cash, housing_total)
+        deduct_cash, deduct_bank = split_deduction(cash, housing_total)
         payload: Dict[str, int] = {}
         if deduct_cash > 0:
             payload["cash"] = -deduct_cash
@@ -901,7 +896,7 @@ class Economy(commands.Cog):
             )
             return cash, bank
 
-        deduct_cash, deduct_bank = self._split_deduction(cash, business_total)
+        deduct_cash, deduct_bank = split_deduction(cash, business_total)
         payload: Dict[str, int] = {}
         if deduct_cash > 0:
             payload["cash"] = -deduct_cash
