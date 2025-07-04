@@ -10,6 +10,8 @@ async def run(suite, ctx) -> List[str]:
     logs = []
     try:
         user = await suite.get_test_user(ctx)
+        approved = discord.Object(id=config.APPROVED_ROLE_ID)
+        user.roles = [approved]
         rent_log_channel = ctx.guild.get_channel(config.RENT_LOG_CHANNEL_ID)
         eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)
 

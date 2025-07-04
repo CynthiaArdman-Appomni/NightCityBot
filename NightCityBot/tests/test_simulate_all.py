@@ -11,6 +11,8 @@ async def run(suite, ctx) -> List[str]:
     cyber = suite.bot.get_cog("CyberwareManager")
     admin = suite.bot.get_cog("Admin")
     user = await suite.get_test_user(ctx)
+    approved = discord.Object(id=config.APPROVED_ROLE_ID)
+    user.roles = [approved]
     ctx.send = AsyncMock()
     with (
         patch.object(

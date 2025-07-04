@@ -121,6 +121,8 @@ class CyberwareManager(commands.Cog):
 
         members = [target_member] if target_member else guild.members
         for member in members:
+            if not any(r.id == config.APPROVED_ROLE_ID for r in member.roles):
+                continue
             if loa_role and loa_role in member.roles:
                 continue
             role_level = None
@@ -277,6 +279,9 @@ class CyberwareManager(commands.Cog):
             except commands.BadArgument:
                 await ctx.send("❌ Could not resolve user.")
                 return
+        if resolved_member and not any(r.id == config.APPROVED_ROLE_ID for r in resolved_member.roles):
+            await ctx.send(f"⏭️ {resolved_member.display_name} has no approved character.")
+            return
 
         # Specific user/week cost preview
         if resolved_member and weeks is not None:
@@ -425,6 +430,14 @@ class CyberwareManager(commands.Cog):
         """
 
         verbose = any(a.lower() in {"-v", "--verbose", "verbose"} for a in args)
+
+        if not any(r.id == config.APPROVED_ROLE_ID for r in ctx.author.roles):
+            await ctx.send("⏭️ You have no approved character.")
+            return
+
+        if not any(r.id == config.APPROVED_ROLE_ID for r in member.roles):
+            await ctx.send(f"⏭️ {member.display_name} has no approved character.")
+            return
 
         weekly_data = await load_json_file(Path(config.CYBERWARE_WEEKLY_FILE), default=[])
         if weekly_data:

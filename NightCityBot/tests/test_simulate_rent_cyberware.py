@@ -12,7 +12,8 @@ async def run(suite, ctx) -> List[str]:
     # Give user a cyberware role and checkup role
     medium = discord.Object(id=config.CYBER_MEDIUM_ROLE_ID)
     checkup = discord.Object(id=config.CYBER_CHECKUP_ROLE_ID)
-    user.roles = [medium, checkup]
+    approved = discord.Object(id=config.APPROVED_ROLE_ID)
+    user.roles = [medium, checkup, approved]
     cyber.data[str(user.id)] = 0
     ctx.send = AsyncMock()
     with (

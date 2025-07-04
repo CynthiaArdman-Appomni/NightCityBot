@@ -1,11 +1,14 @@
 from typing import List
 from unittest.mock import AsyncMock, patch
 import discord
+import config
 
 async def run(suite, ctx) -> List[str]:
     """Run rent and cyberware simulations and ensure audit logging."""
     logs: List[str] = []
     economy = suite.bot.get_cog('Economy')
+    approved = discord.Object(id=config.APPROVED_ROLE_ID)
+    ctx.author.roles = [approved]
     cyber = suite.bot.get_cog('CyberwareManager')
     admin = suite.bot.get_cog('Admin')
     ctx.send = AsyncMock()

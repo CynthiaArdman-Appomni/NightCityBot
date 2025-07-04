@@ -1,11 +1,16 @@
 from typing import List
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
+import discord
 import config
 
 async def run(suite, ctx) -> List[str]:
     """Ensure collect_rent backs up member balances."""
     logs = []
     user = await suite.get_test_user(ctx)
+    approved = MagicMock(spec=discord.Role)
+    approved.name = 'Approved Character'
+    approved.id = config.APPROVED_ROLE_ID
+    user.roles = [approved]
     economy = suite.bot.get_cog('Economy')
     ctx.send = AsyncMock()
     with (
