@@ -959,6 +959,14 @@ class Economy(commands.Cog):
             await ctx.send("❌ Could not resolve user.")
             return
 
+        if not any(r.id == config.APPROVED_ROLE_ID for r in user.roles):
+            await ctx.send(f"⏭️ <@{user.id}> has no approved character.")
+            return
+
+        if not any(r.id == config.APPROVED_ROLE_ID for r in user.roles):
+            await ctx.send(f"⏭️ <@{user.id}> has no approved character.")
+            return
+
         if not force and await self._label_used_recently(user, "collect_housing_after"):
             await ctx.send(
                 "⏭️ Housing rent already collected in the last 30 days. Use -force to override."
@@ -1285,15 +1293,22 @@ class Economy(commands.Cog):
         members_to_process: List[discord.Member] = []
         for m in ctx.guild.members:
             if target_user and m.id == target_user.id:
-                members_to_process = [m]
+                if any(r.id == config.APPROVED_ROLE_ID for r in m.roles):
+                    members_to_process = [m]
                 break
             if not target_user:
                 has_verified = any(r.id == config.VERIFIED_ROLE_ID for r in m.roles)
                 has_tier = any("Tier" in r.name for r in m.roles)
-                if has_verified or has_tier:
+                has_approved = any(r.id == config.APPROVED_ROLE_ID for r in m.roles)
+                if (has_verified or has_tier) and has_approved:
                     members_to_process.append(m)
         if not members_to_process:
-            await ctx.send("❌ No matching members found.")
+            if target_user:
+                await ctx.send(
+                    f"⏭️ <@{target_user.id}> has no approved character."
+                )
+            else:
+                await ctx.send("❌ No matching members found.")
             return
 
         await ctx.send(f"ℹ️ {len(members_to_process)} member(s) to process.")
@@ -1342,6 +1357,12 @@ class Economy(commands.Cog):
                             f"⏭️ Skipping <@{member.id}> — rent recently collected."
                         )
                         continue
+
+                if not any(r.id == config.APPROVED_ROLE_ID for r in member.roles):
+                    await ctx.send(
+                        f"⏭️ Skipping <@{member.id}> — no approved character."
+                    )
+                    continue
 
                 progress = f"{idx}/{len(members_to_process)}"
                 log: List[str] = [f"🔍 **Working on:** <@{member.id}> ({progress})"]
@@ -1706,15 +1727,22 @@ class Economy(commands.Cog):
         members: List[discord.Member] = []
         for m in ctx.guild.members:
             if target_user and m.id == target_user.id:
-                members = [m]
+                if any(r.id == config.APPROVED_ROLE_ID for r in m.roles):
+                    members = [m]
                 break
             if not target_user:
                 has_verified = any(r.id == config.VERIFIED_ROLE_ID for r in m.roles)
                 has_tier = any("Tier" in r.name for r in m.roles)
-                if has_verified or has_tier:
+                has_approved = any(r.id == config.APPROVED_ROLE_ID for r in m.roles)
+                if (has_verified or has_tier) and has_approved:
                     members.append(m)
         if not members:
-            await ctx.send("❌ No matching members found.")
+            if target_user:
+                await ctx.send(
+                    f"⏭️ <@{getattr(target_user, 'id', 0)}> has no approved character."
+                )
+            else:
+                await ctx.send("❌ No matching members found.")
             return
 
         cyber = self.bot.get_cog("CyberwareManager")
@@ -1725,6 +1753,9 @@ class Economy(commands.Cog):
         admin_cog = self.bot.get_cog("Admin")
 
         for member in members:
+            if not any(r.id == config.APPROVED_ROLE_ID for r in member.roles):
+                await ctx.send(f"⏭️ Skipping <@{member.id}> — no approved character.")
+                continue
             log: List[str] = [f"🔍 **Working on:** <@{member.id}>"]
             role_names = [r.name for r in member.roles]
             app_roles = [r for r in role_names if "Tier" in r]

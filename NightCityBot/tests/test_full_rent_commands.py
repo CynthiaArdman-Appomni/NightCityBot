@@ -10,6 +10,8 @@ async def run(suite, ctx) -> List[str]:
     logs = []
     try:
         user = await suite.get_test_user(ctx)
+        approved = discord.Object(id=config.APPROVED_ROLE_ID)
+        user.roles = [approved]
         logs.append("→ Expected: All rent-related commands should complete without error.")
 
         if os.path.exists(config.LAST_RENT_FILE):

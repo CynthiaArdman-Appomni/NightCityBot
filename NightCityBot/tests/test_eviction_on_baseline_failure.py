@@ -14,7 +14,10 @@ async def run(suite, ctx) -> List[str]:
     role_h.name = 'Housing Tier 2'
     role_b = MagicMock(spec=discord.Role)
     role_b.name = 'Business Tier 2'
-    user.roles = [role_h, role_b]
+    approved = MagicMock(spec=discord.Role)
+    approved.name = 'Approved Character'
+    approved.id = config.APPROVED_ROLE_ID
+    user.roles = [role_h, role_b, approved]
     ctx.guild.members = [user]
 
     eviction_channel = ctx.guild.get_channel(config.EVICTION_CHANNEL_ID)

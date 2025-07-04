@@ -13,7 +13,10 @@ async def run(suite, ctx) -> List[str]:
     verified = MagicMock(spec=discord.Role)
     verified.name = 'Verified'
     verified.id = config.VERIFIED_ROLE_ID
-    user.roles = [verified]
+    approved = MagicMock(spec=discord.Role)
+    approved.name = 'Approved Character'
+    approved.id = config.APPROVED_ROLE_ID
+    user.roles = [verified, approved]
     ctx.guild.members = [user]
     ctx.send = AsyncMock()
 

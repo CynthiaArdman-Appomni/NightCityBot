@@ -9,6 +9,8 @@ async def run(suite, ctx) -> List[str]:
     logs = []
     try:
         user = await suite.get_test_user(ctx)
+        approved = discord.Object(id=config.APPROVED_ROLE_ID)
+        user.roles = [approved]
         logs.append("→ Expected: collect_trauma should find thread and log subscription payment.")
 
         economy = suite.bot.get_cog('Economy')
