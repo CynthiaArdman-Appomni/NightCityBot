@@ -81,21 +81,12 @@ class RollSystem(commands.Cog):
         sides = int(sides)
         mod = int(mod) if mod else 0
 
-        role_names = [getattr(r, "name", "") for r in getattr(author, "roles", [])]
-        bonus = (
-            2
-            if "Netrunner Level 3" in role_names
-            else 1 if "Netrunner Level 2" in role_names else 0
-        )
-
         rolls = [random.randint(1, sides) for _ in range(n_dice)]
-        total = sum(rolls) + mod + bonus
+        total = sum(rolls) + mod
 
         name = author.display_name
         header = f'🎲 {name} rolled: {n_dice}d{sides}{f"+{mod}" if mod else ""}\n'
         body = f'**Results:** {", ".join(map(str, rolls))}\n**Total:** {total}'
-        if bonus:
-            body += f" (includes +{bonus} Netrunner bonus)"
         result = header + body
 
         await channel.send(result)
