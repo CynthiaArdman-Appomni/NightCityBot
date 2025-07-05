@@ -153,6 +153,14 @@ class CyberwareManager(commands.Cog):
                         log.append(
                             f"{'Would give' if dry_run else 'Gave'} checkup role to <@{member.id}>"
                         )
+                if log_channel and not dry_run:
+                    await log_channel.send(
+                        f"Ripperdoc checkup on <@{member.id}>. No money deducted."
+                    )
+                if log is not None:
+                    log.append(
+                        f"Ripperdoc checkup on <@{member.id}>. No money deducted."
+                    )
                 results["checkup"].append(member.id)
                 if not dry_run:
                     self.data[user_id] = 0
