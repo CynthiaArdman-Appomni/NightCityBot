@@ -122,7 +122,6 @@ Simple dice rolling logic supporting `XdY+Z` syntax. Rolls can be used in any ch
 
 Highlights:
 
-* Applies a netrunner bonus based on the user's roles.
 * Logs DM rolls back to the user's logging thread for record keeping.
 * Supports rolling on behalf of another user when invoked via `!post` or `!dm`.
 

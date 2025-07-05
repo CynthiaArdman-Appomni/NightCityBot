@@ -103,7 +103,6 @@ class Admin(commands.Cog):
             value=(
                 "`!roll [XdY+Z]` – roll dice using standard notation, e.g. `!roll 2d6+1`. "
                 "Mention another user to roll for them.\n"
-                "Netrunner Level 2 grants +1 and Level 3 grants +2 to the total. "
                 "Rolls made in DMs are recorded in your private log thread."
             ),
             inline=False,

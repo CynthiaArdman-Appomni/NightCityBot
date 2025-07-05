@@ -11,7 +11,7 @@ TEST_MODULES = {
     "test_post_executes_command": "Sends a `!roll` command into a channel using `!post`.",
     "test_post_roll_execution": "Executes a roll via !post and checks result inside RP channel.",
     "test_rolls": "Runs `!roll` with valid and invalid input and checks result.",
-    "test_bonus_rolls": "Checks that Netrunner bonuses are applied correctly.",
+    "test_bonus_rolls": "Ensures Netrunner roles do not grant bonus rolls.",
     "test_full_rent_commands": "Executes rent collection on a live user and verifies balance updates.",
     "test_passive_income_logic": "Applies passive income based on recent shop opens.",
     "test_trauma_payment": "Attempts to log a trauma plan subscription in the correct DM thread.",
