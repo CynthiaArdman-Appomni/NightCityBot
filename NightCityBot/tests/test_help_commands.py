@@ -11,8 +11,9 @@ async def run(suite, ctx) -> List[str]:
     ctx.send = AsyncMock()
     await admin.helpme(ctx)
     await admin.helpfixer(ctx)
-    if ctx.send.await_count >= 2:
-        logs.append("✅ helpme and helpfixer executed")
+    await admin.helpadmin(ctx)
+    if ctx.send.await_count >= 3:
+        logs.append("✅ help commands executed")
     else:
         logs.append("❌ Help commands failed")
     return logs

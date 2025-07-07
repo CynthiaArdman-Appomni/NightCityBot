@@ -182,13 +182,6 @@ class Admin(commands.Cog):
                     "`!paydue [-v]` – pay your monthly obligations early.",
                     "`!collect_rent [@user] [-v] [-force]` (alias: !collectrent) – run the monthly rent cycle. Use `-force` to ignore the 30\u202fday limit.",
                     "`!collect_housing @user [-v] [-force]` / `!collect_business @user [-v] [-force]` / `!collect_trauma @user [-v] [-force]` – charge specific fees with optional verbose logs. (aliases: !collecthousing / !collectbusiness / !collecttrauma)",
-                    "`!simulate_rent [@user] [-v]` (alias: !simulaterent) – perform a dry run of rent collection using the same options.",
-                    "`!simulate_cyberware [@user] [week]` – preview cyberware medication costs globally or for a certain week.",
-                    "`!simulate_all [@user]` – run both simulations at once.",
-                    "`!backup_balances` – save all member balances to a timestamped file.",
-                    "`!backup_balance @user` – save one member's balance to a file.",
-                    "`!restore_balances <file>` – restore balances from a backup file.",
-                    "`!restore_balance @user [file]` – restore one member's balance from a backup.",
                     "`!list_deficits` – list members who can't cover upcoming charges.",
                 ]),
             ),
@@ -202,6 +195,46 @@ class Admin(commands.Cog):
                     "`!paycyberware [-v]` – pay your own cyberware meds manually.",
                 ]),
             ),
+        ]
+
+        embeds = []
+        current = discord.Embed(
+            title="🛠️ NCRP Bot — Fixer Help",
+            description="Advanced commands for messaging, RP management, and rent.",
+            color=discord.Color.purple(),
+        )
+        for name, value in fields:
+            chunks = [value[i : i + 1024] for i in range(0, len(value), 1024)] or [""]
+            for i, chunk in enumerate(chunks):
+                field_name = name if i == 0 else "\u200b"
+                if embed_len(current) + len(field_name) + len(chunk) > 5800:
+                    current.set_footer(text="Fixer tools by MedusaCascade | v1.2")
+                    embeds.append(current)
+                    current = discord.Embed(
+                        title="🛠️ NCRP Bot — Fixer Help (cont.)",
+                        color=discord.Color.purple(),
+                    )
+                current.add_field(name=field_name, value=chunk, inline=False)
+
+        current.set_footer(text="Fixer tools by MedusaCascade | v1.2")
+        embeds.append(current)
+
+        for e in embeds:
+            await ctx.send(embed=e)
+
+    @commands.command(name="helpadmin")
+    async def helpadmin(self, ctx):
+        """Display help for administrators."""
+
+        def embed_len(e: discord.Embed) -> int:
+            total = len(e.title or "") + len(e.description or "")
+            if e.footer and e.footer.text:
+                total += len(e.footer.text)
+            for f in e.fields:
+                total += len(f.name) + len(str(f.value))
+            return total
+
+        fields = [
             (
                 "⚙️ System Control",
                 "\n".join([
@@ -217,13 +250,25 @@ class Admin(commands.Cog):
                     "`!test__bot [pattern]` – run the PyTest suite optionally filtering by pattern.",
                 ]),
             ),
+            (
+                "💵 Simulations & Backups",
+                "\n".join([
+                    "`!simulate_rent [@user] [-v]` (alias: !simulaterent) – perform a dry run of rent collection using the same options.",
+                    "`!simulate_cyberware [@user] [week]` – preview cyberware medication costs globally or for a certain week.",
+                    "`!simulate_all [@user]` – run both simulations at once.",
+                    "`!backup_balances` – save all member balances to a timestamped file.",
+                    "`!backup_balance @user` – save one member's balance to a file.",
+                    "`!restore_balances <file>` – restore balances from a backup file.",
+                    "`!restore_balance @user [file]` – restore one member's balance from a backup.",
+                ]),
+            ),
         ]
 
         embeds = []
         current = discord.Embed(
-            title="🛠️ NCRP Bot — Fixer & Admin Help",
-            description="Advanced commands for messaging, RP management, rent, and testing.",
-            color=discord.Color.purple(),
+            title="🛠️ NCRP Bot — Admin Help",
+            description="Commands for admins only.",
+            color=discord.Color.dark_gold(),
         )
         for name, value in fields:
             chunks = [value[i : i + 1024] for i in range(0, len(value), 1024)] or [""]
@@ -233,8 +278,8 @@ class Admin(commands.Cog):
                     current.set_footer(text="Fixer tools by MedusaCascade | v1.2")
                     embeds.append(current)
                     current = discord.Embed(
-                        title="🛠️ NCRP Bot — Fixer & Admin Help (cont.)",
-                        color=discord.Color.purple(),
+                        title="🛠️ NCRP Bot — Admin Help (cont.)",
+                        color=discord.Color.dark_gold(),
                     )
                 current.add_field(name=field_name, value=chunk, inline=False)
 
