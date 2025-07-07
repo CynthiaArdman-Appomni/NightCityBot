@@ -27,7 +27,7 @@ TEST_MODULES = {
     "test_cyberware_costs": "Ensures cyberware medication costs scale and cap correctly.",
     "test_loa_commands": "Runs start_loa and end_loa commands.",
     "test_checkup_command": "Runs the ripperdoc !checkup command.",
-    "test_help_commands": "Executes !helpme and !helpfixer.",
+    "test_help_commands": "Executes !helpme, !helpfixer and !helpadmin.",
     "test_post_dm_channel": "Runs !post from a DM thread.",
     "test_post_roll_as_user": "Executes a roll as another user via !post.",
     "test_dm_plain": "Sends a normal anonymous DM using !dm.",
@@ -58,6 +58,7 @@ TEST_MODULES = {
 
     "test_log_audit_chunks": "Ensures long audit entries are split across fields.",
     "test_helpfixer_chunks": "Ensures long help entries are split across fields.",
+    "test_helpadmin_chunks": "Ensures admin help entries are split across fields.",
     "test_send_chunks": "Ensures long plain messages are chunked automatically.",
     "test_rent_baseline_non_tier": "Baseline living cost deducted for members without Tier roles.",
     "test_eviction_on_baseline_failure": "Eviction notices sent when baseline deduction fails.",
