@@ -133,6 +133,15 @@ Manages Leave‑of‑Absence status.
 * `!start_loa` and `!end_loa` – players may place themselves on LOA to pause monthly fees and Trauma Team billing. Fixers can provide a user mention to toggle LOA for someone else.
 * While a player is on LOA, the economy cog automatically skips baseline costs, housing rent and Trauma Team payments until `!end_loa` is used.
 
+### CharacterManager
+*File: `NightCityBot/cogs/character_manager.py`*
+
+Utilities for the character sheet forums.
+
+* `!retire` – move all threads tagged "Retired" from the main sheet forum to the retired forum. *(Fixers only)*
+* `!unretire <thread id>` – move a specific thread back to the main forum. *(Fixers only)*
+* `!search_characters <keyword>` – fuzzy, case-insensitive search across all character sheets. *(Fixers only)*
+
 ### RoleButtons
 *File: `NightCityBot/cogs/role_buttons.py`*
 

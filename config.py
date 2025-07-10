@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 # Automatically load variables from a `.env` file located next to this
 # config module so local development doesn't require exporting them.
 BASE_DIR = Path(__file__).resolve().parent
-load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / ".env")
 
 # Secrets can be provided via environment variables.  They default to ``None``
 # so running the bot locally can still work if these values are assigned below
@@ -56,3 +56,5 @@ RIPPERDOC_ROLE_ID = 1356028868103897156
 RIPPERDOC_LOG_CHANNEL_ID = 1389028820463521802
 TIMEZONE = "America/Los_Angeles"
 RP_IC_CATEGORY_ID = 1348605939527192576
+CHARACTER_SHEETS_CHANNEL_ID = 1366901669316657224
+RETIRED_SHEETS_CHANNEL_ID = 1392690680358244523

@@ -141,6 +141,16 @@ class Admin(commands.Cog):
             inline=False,
         )
 
+        embed.add_field(
+            name="📑 Character Sheets",
+            value=(
+                "`!search_characters <keyword>` – search all character sheets with fuzzy matching (Fixers only).\n"
+                "`!retire` – move threads tagged 'Retired' to the archive (Fixers only).\n"
+                "`!unretire <thread_id>` – move a retired thread back (Fixers only)."
+            ),
+            inline=False,
+        )
+
         embed.set_footer(text="Use !roll, pay your rent, stay alive.")
         await ctx.send(embed=embed)
 
