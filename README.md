@@ -139,6 +139,7 @@ Manages Leave‑of‑Absence status.
 Utilities for the character sheet forums.
 
 * `!retire` – move all threads tagged "Retired" from the main sheet forum to the retired forum. *(Fixers only)*
+  Reports the number of threads moved and logs any failures.
 * `!unretire <thread id>` – move a specific thread back to the main forum. *(Fixers only)*
 * `!search_characters <keyword>` – fuzzy, case-insensitive search across all character sheets. *(Fixers only)*
 

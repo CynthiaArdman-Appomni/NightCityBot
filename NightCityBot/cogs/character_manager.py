@@ -1,8 +1,13 @@
 import difflib
+import logging
+
 import discord
 from discord.ext import commands
 from NightCityBot.utils.permissions import is_fixer
 import config
+
+
+logger = logging.getLogger(__name__)
 
 
 class CharacterManager(commands.Cog):
@@ -17,9 +22,30 @@ class CharacterManager(commands.Cog):
 
     async def _move_thread(
         self, thread: discord.Thread, destination: discord.ForumChannel
-    ) -> None:
-        """Move ``thread`` to ``destination`` forum channel."""
-        await thread._state.http.edit_channel(thread.id, parent_id=str(destination.id))
+    ) -> bool:
+        """Move ``thread`` to ``destination`` forum channel.
+
+        Returns ``True`` if the thread was moved successfully.
+        """
+        try:
+            await thread.edit(parent_id=destination.id)
+        except Exception as e:  # discord.Forbidden, discord.NotFound, HTTPException
+            logger.warning(
+                "Failed to move thread %s (%s) to %s: %s",
+                thread.name,
+                thread.id,
+                destination.name,
+                e,
+            )
+            return False
+
+        logger.info(
+            "Moved thread %s (%s) to %s",
+            thread.name,
+            thread.id,
+            destination.name,
+        )
+        return True
 
     async def _iter_all_threads(self, forum: discord.ForumChannel):
         """Yield all threads from ``forum`` including archived ones."""
@@ -55,11 +81,17 @@ class CharacterManager(commands.Cog):
             await ctx.send("⚠️ 'Retired' tag not found.")
             return
         moved = 0
+        failed = 0
         async for thread in self._iter_all_threads(src):
             if any(tag.id == retired_tag.id for tag in thread.applied_tags):
-                await self._move_thread(thread, dest)
-                moved += 1
-        await ctx.send(f"✅ Moved {moved} thread(s) to {dest.name}.")
+                if await self._move_thread(thread, dest):
+                    moved += 1
+                else:
+                    failed += 1
+        message = f"✅ Moved {moved} thread(s) to {dest.name}."
+        if failed:
+            message += f" ❌ Failed to move {failed} thread(s). Check logs."
+        await ctx.send(message)
 
     @commands.command()
     @is_fixer()
