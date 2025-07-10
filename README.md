@@ -140,7 +140,7 @@ Utilities for the character sheet forums.
 
 * `!retire` – move all threads tagged "Retired" from the main sheet forum to the retired forum. *(Fixers only)*
 * `!unretire <thread id>` – move a specific thread back to the main forum. *(Fixers only)*
-* `!search_characters <keyword>` – fuzzy, case-insensitive search across all character sheets. *(Fixers only)*
+* `!search_characters <keyword> [-depth N]` – fuzzy search thread titles, tags and posts. Depth controls how many messages per thread are scanned (default 20). *(Fixers only)*
 
 ### RoleButtons
 *File: `NightCityBot/cogs/role_buttons.py`*
