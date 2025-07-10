@@ -1,5 +1,13 @@
 import difflib
 import logging
+import re
+import time
+
+try:
+    from rapidfuzz.fuzz import partial_ratio as fuzz_ratio
+except Exception:  # pragma: no cover - rapidfuzz may not be installed
+    def fuzz_ratio(a: str, b: str) -> float:
+        return difflib.SequenceMatcher(None, a, b).ratio() * 100
 
 import discord
 from discord.ext import commands
@@ -15,6 +23,8 @@ class CharacterManager(commands.Cog):
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+        self.sheet_index: dict[int, dict] = {}
+        self.index_time: float = 0.0
 
     # ------------------------------------------------------------------
     # Helpers
@@ -54,12 +64,38 @@ class CharacterManager(commands.Cog):
         async for t in forum.archived_threads(limit=None):
             yield t
 
+    async def _ensure_index(self, forums: list[discord.ForumChannel]) -> None:
+        """Build or refresh the sheet index."""
+        now = time.monotonic()
+        if self.sheet_index and now - self.index_time < 3600:
+            return
+
+        self.sheet_index.clear()
+        for forum in forums:
+            async for thread in self._iter_all_threads(forum):
+                first = ""
+                async for msg in thread.history(limit=1, oldest_first=True):
+                    first = msg.content or ""
+                    break
+                self.sheet_index[thread.id] = {
+                    "thread": thread,
+                    "title": thread.name,
+                    "tags": [t.name for t in thread.applied_tags],
+                    "first": first,
+                }
+
+        self.index_time = now
+
     def _match(self, query: str, text: str) -> bool:
         q = query.lower()
         t = text.lower()
         if q in t:
             return True
-        return difflib.SequenceMatcher(None, q, t).ratio() > 0.6
+        return fuzz_ratio(q, t) > 60
+
+    def _highlight(self, text: str, keyword: str) -> str:
+        pattern = re.compile(re.escape(keyword), re.I)
+        return pattern.sub(lambda m: f"**{m.group(0)}**", text)
 
     # ------------------------------------------------------------------
     # Commands
@@ -118,8 +154,10 @@ class CharacterManager(commands.Cog):
     @commands.command(aliases=["sheet_search", "search_sheets"])
     @is_fixer()
     async def search_characters(self, ctx: commands.Context, *, keyword: str) -> None:
-        """Search character sheets for ``keyword``."""
-        forums = []
+        """Search character sheets for ``keyword``.
+
+        Use ``-depth N`` to scan up to ``N`` messages per thread (default 20)."""
+        forums: list[discord.ForumChannel] = []
         for cid in (
             config.CHARACTER_SHEETS_CHANNEL_ID,
             config.RETIRED_SHEETS_CHANNEL_ID,
@@ -130,36 +168,61 @@ class CharacterManager(commands.Cog):
         if not forums:
             await ctx.send("⚠️ Character forums not configured.")
             return
-        matches: list[tuple[discord.Thread, str]] = []
-        for forum in forums:
-            async for thread in self._iter_all_threads(forum):
-                async for msg in thread.history(limit=20, oldest_first=True):
+
+        parts = keyword.split()
+        depth = 20
+        kw_parts = []
+        i = 0
+        while i < len(parts):
+            part = parts[i]
+            if part.lower() in {"-depth", "--depth"} and i + 1 < len(parts):
+                try:
+                    depth = int(parts[i + 1])
+                except ValueError:
+                    pass
+                i += 2
+                continue
+            kw_parts.append(part)
+            i += 1
+        keyword = " ".join(kw_parts)
+
+        await self._ensure_index(forums)
+
+        matches: list[tuple[discord.Thread, str, str]] = []
+        for data in self.sheet_index.values():
+            thread: discord.Thread = data["thread"]
+            if (
+                self._match(keyword, data["title"])
+                or any(self._match(keyword, t) for t in data["tags"])
+                or self._match(keyword, data["first"])
+            ):
+                text = data["first"] or data["title"]
+                loc = text.lower().find(keyword.lower())
+                snippet = text[max(0, loc - 30) : loc + len(keyword) + 30] if loc != -1 else text[:60]
+                matches.append((thread, snippet, thread.jump_url))
+                if len(matches) >= 10:
+                    break
+
+        if len(matches) < 10 and depth:
+            for data in self.sheet_index.values():
+                if any(mth.id == data["thread"].id for mth, _, _ in matches):
+                    continue
+                thread: discord.Thread = data["thread"]
+                async for msg in thread.history(limit=depth, oldest_first=True):
                     if msg.content and self._match(keyword, msg.content):
                         text = msg.content
                         loc = text.lower().find(keyword.lower())
-                        if loc != -1:
-                            start = max(0, loc - 30)
-                            end = loc + len(keyword) + 30
-                            snippet = text[start:end]
-                        else:
-                            snippet = text[:60]
-                        matches.append((thread, snippet))
+                        snippet = text[max(0, loc - 30) : loc + len(keyword) + 30] if loc != -1 else text[:60]
+                        matches.append((thread, snippet, msg.jump_url))
                         break
                 if len(matches) >= 10:
                     break
-            if len(matches) >= 10:
-                break
+
         if not matches:
             await ctx.send("No results found.")
             return
-        embed = discord.Embed(
-            title=f"Results for '{keyword}'", color=discord.Color.blurple()
-        )
-        for th, snippet in matches:
-            url = (
-                th.jump_url
-                if hasattr(th, "jump_url")
-                else f"https://discord.com/channels/{th.guild.id}/{th.id}"
-            )
-            embed.add_field(name=th.name, value=f"{snippet}\n{url}", inline=False)
+
+        embed = discord.Embed(title=f"Results for '{keyword}'", color=discord.Color.blurple())
+        for th, snippet, url in matches:
+            embed.add_field(name=th.name, value=f"{self._highlight(snippet, keyword)}\n{url}", inline=False)
         await ctx.send(embed=embed)

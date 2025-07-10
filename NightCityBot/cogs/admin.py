@@ -144,7 +144,7 @@ class Admin(commands.Cog):
         embed.add_field(
             name="📑 Character Sheets",
             value=(
-                "`!search_characters <keyword>` – search all character sheets with fuzzy matching (Fixers only).\n"
+                "`!search_characters <keyword> [-depth N]` – search thread titles, tags and posts with fuzzy matching (Fixers only).\n"
                 "`!retire` – move threads tagged 'Retired' to the archive (Fixers only).\n"
                 "`!unretire <thread_id>` – move a retired thread back (Fixers only)."
             ),

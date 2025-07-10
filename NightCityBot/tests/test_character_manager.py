@@ -58,19 +58,28 @@ async def run(suite, ctx) -> List[str]:
 
     message = MagicMock()
     message.content = "Johnny Silverhand is legendary."
+    message.jump_url = "https://discord.com/123"
 
     async def history(*args, **kwargs):
         yield message
 
     thread.history = history
 
-    with patch.object(cog, "_iter_all_threads", iter_threads), patch.object(
+    with patch.object(cog, "_ensure_index", new=AsyncMock()), patch.object(
         ctx.guild,
         "get_channel",
         side_effect=lambda cid: (
             src_forum if cid == config.CHARACTER_SHEETS_CHANNEL_ID else dest_forum
         ),
     ):
+        cog.sheet_index = {
+            thread.id: {
+                "thread": thread,
+                "title": thread.name,
+                "tags": [],
+                "first": message.content,
+            }
+        }
         ctx.send = AsyncMock()
         await cog.search_characters(ctx, keyword="silver")
         suite.assert_send(logs, ctx.send, "send")
