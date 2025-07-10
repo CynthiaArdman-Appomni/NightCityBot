@@ -55,7 +55,6 @@ TEST_MODULES = {
     "test_list_deficits": "Reports members with insufficient funds.",
     "test_simulate_rent_cyberware": "Runs simulate_rent with the -cyberware flag.",
     "test_simulate_all": "Runs the combined simulate_all command.",
-
     "test_log_audit_chunks": "Ensures long audit entries are split across fields.",
     "test_helpfixer_chunks": "Ensures long help entries are split across fields.",
     "test_helpadmin_chunks": "Ensures admin help entries are split across fields.",
@@ -63,6 +62,7 @@ TEST_MODULES = {
     "test_rent_baseline_non_tier": "Baseline living cost deducted for members without Tier roles.",
     "test_eviction_on_baseline_failure": "Eviction notices sent when baseline deduction fails.",
     "test_negative_cash": "Handles baseline deduction when cash is negative.",
+    "test_character_manager": "Moves retired threads and searches sheets.",
 }
 
 for name in TEST_MODULES:
