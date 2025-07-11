@@ -75,13 +75,21 @@ class CharacterManager(commands.Cog):
             content = None
             if messages:
                 first = messages.pop(0)
-                content = first.content or None
+                full_content = first.content or ""
                 files = [await a.to_file() for a in first.attachments]
+                content = full_content[:2000] if full_content else None
+                remainder = full_content[2000:] if len(full_content) > 2000 else None
+            else:
+                remainder = None
 
             created = await destination.create_thread(
                 name=thread.name, content=content, files=files or None
             )
             new_thread = created.thread if hasattr(created, "thread") else created
+
+            if remainder:
+                for i in range(0, len(remainder), 2000):
+                    await new_thread.send(content=remainder[i : i + 2000])
 
             for msg in messages:
                 msg_files = [await a.to_file() for a in msg.attachments]
