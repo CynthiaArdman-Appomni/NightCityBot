@@ -24,6 +24,9 @@ async def run(suite, ctx) -> List[str]:
     msg.author.display_name = 'Tester'
     msg.content = 'Hello'
     msg.created_at = datetime.utcnow()
+    attachment = MagicMock()
+    attachment.url = 'https://cdn.discordapp.com/image.png'
+    msg.attachments = [attachment]
 
     async def history(*args, **kwargs):
         yield msg
@@ -48,6 +51,13 @@ async def run(suite, ctx) -> List[str]:
 
     if saved.get('data', {}).get('id') == thread.id:
         logs.append('✅ sheet saved')
+        if (
+            saved["data"]["messages"]
+            and saved["data"]["messages"][0].get("attachments") == [attachment.url]
+        ):
+            logs.append('✅ attachment saved')
+        else:
+            logs.append('❌ attachment not saved')
     else:
         logs.append('❌ sheet not saved')
 

@@ -312,6 +312,7 @@ class CharacterManager(commands.Cog):
                             "author": getattr(msg.author, "display_name", ""),
                             "content": msg.content or "",
                             "created_at": msg.created_at.isoformat(),
+                            "attachments": [a.url for a in msg.attachments],
                         }
                     )
 
