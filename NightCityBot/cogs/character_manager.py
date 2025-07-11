@@ -12,6 +12,8 @@ except Exception:  # pragma: no cover - rapidfuzz may not be installed
 import discord
 from discord.ext import commands
 from NightCityBot.utils.permissions import is_fixer
+from NightCityBot.utils.helpers import save_json_file, safe_filename
+from pathlib import Path
 import config
 
 
@@ -226,3 +228,47 @@ class CharacterManager(commands.Cog):
         for th, snippet, url in matches:
             embed.add_field(name=th.name, value=f"{self._highlight(snippet, keyword)}\n{url}", inline=False)
         await ctx.send(embed=embed)
+
+    @commands.command(name="backup_sheets")
+    @is_fixer()
+    async def backup_sheets(self, ctx: commands.Context) -> None:
+        """Back up all character sheet threads to files."""
+        forums: list[discord.ForumChannel] = []
+        for cid in (
+            config.CHARACTER_SHEETS_CHANNEL_ID,
+            config.RETIRED_SHEETS_CHANNEL_ID,
+        ):
+            ch = ctx.guild.get_channel(cid)
+            if isinstance(ch, discord.ForumChannel):
+                forums.append(ch)
+        if not forums:
+            await ctx.send("⚠️ Character forums not configured.")
+            return
+
+        backup_dir = Path(config.CHARACTER_BACKUP_DIR)
+        backup_dir.mkdir(exist_ok=True)
+
+        saved = 0
+        for forum in forums:
+            async for thread in self._iter_all_threads(forum):
+                data = {
+                    "id": thread.id,
+                    "title": thread.name,
+                    "tags": [t.name for t in thread.applied_tags],
+                    "messages": [],
+                }
+                async for msg in thread.history(limit=None, oldest_first=True):
+                    data["messages"].append(
+                        {
+                            "author_id": msg.author.id,
+                            "author": getattr(msg.author, "display_name", ""),
+                            "content": msg.content or "",
+                            "created_at": msg.created_at.isoformat(),
+                        }
+                    )
+
+                filename = f"{safe_filename(thread.name)}_{thread.id}.json"
+                await save_json_file(backup_dir / filename, data)
+                saved += 1
+
+        await ctx.send(f"✅ Backed up {saved} sheet(s) to `{backup_dir.name}`.")

@@ -44,6 +44,7 @@ TEST_MODULES = {
     "test_balance_backup": "Ensures collect_rent backs up balances before processing.",
     "test_backup_balance_command": "Runs !backup_balance for a single user.",
     "test_backup_balances_command": "Runs !backup_balances and saves a snapshot.",
+    "test_backup_sheets_command": "Runs !backup_sheets to archive character threads.",
     "test_restore_balance_command": "Restores a single user's balance from backup.",
     "test_restore_balance_latest": "Restores the latest entry from a user's backup log.",
     "test_restore_balance_label": "Restores a user's balance using a label.",
