@@ -64,6 +64,7 @@ TEST_MODULES = {
     "test_eviction_on_baseline_failure": "Eviction notices sent when baseline deduction fails.",
     "test_negative_cash": "Handles baseline deduction when cash is negative.",
     "test_character_manager": "Moves retired threads and searches sheets.",
+    "test_copy_thread_truncate": "Ensures long thread posts are truncated when archived.",
 }
 
 for name in TEST_MODULES:
