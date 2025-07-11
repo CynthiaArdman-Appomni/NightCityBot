@@ -35,12 +35,13 @@ async def run(suite, ctx) -> List[str]:
         side_effect=lambda cid: (
             src_forum if cid == config.CHARACTER_SHEETS_CHANNEL_ID else dest_forum
         ),
-    ), patch.object(cog, "_iter_all_threads", iter_threads), patch.object(
-        cog, "_move_thread", new=AsyncMock()
-    ) as mock_move:
+    ), patch.object(cog, "_iter_all_threads", iter_threads):
+        dest_forum.create_thread = AsyncMock(return_value=MagicMock(spec=discord.Thread))
+        thread.delete = AsyncMock()
         ctx.send = AsyncMock()
         await cog.retire(ctx)
-        suite.assert_called(logs, mock_move, "_move_thread")
+        suite.assert_called(logs, dest_forum.create_thread, "create_thread")
+        suite.assert_called(logs, thread.delete, "thread.delete")
 
     with patch.object(
         cog.bot, "fetch_channel", new=AsyncMock(return_value=thread)
