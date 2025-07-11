@@ -38,7 +38,9 @@ class CharacterManager(commands.Cog):
         Returns ``True`` if the thread was moved successfully.
         """
         try:
-            await thread.edit(parent_id=destination.id)
+            await thread._state.http.edit_channel(
+                thread.id, parent_id=str(destination.id)
+            )
         except Exception as e:  # discord.Forbidden, discord.NotFound, HTTPException
             logger.warning(
                 "Failed to move thread %s (%s) to %s: %s",
