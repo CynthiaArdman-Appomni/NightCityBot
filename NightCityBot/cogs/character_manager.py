@@ -61,6 +61,52 @@ class CharacterManager(commands.Cog):
         )
         return True
 
+    async def _copy_thread(
+        self, thread: discord.Thread, destination: discord.ForumChannel
+    ) -> bool:
+        """Copy ``thread`` messages to a new thread in ``destination`` and delete the original."""
+        try:
+            messages = [
+                msg
+                async for msg in thread.history(limit=None, oldest_first=True)
+            ]
+
+            files = []
+            content = None
+            if messages:
+                first = messages.pop(0)
+                content = first.content or None
+                files = [await a.to_file() for a in first.attachments]
+
+            created = await destination.create_thread(
+                name=thread.name, content=content, files=files or None
+            )
+            new_thread = created.thread if hasattr(created, "thread") else created
+
+            for msg in messages:
+                msg_files = [await a.to_file() for a in msg.attachments]
+                if msg.content or msg_files:
+                    await new_thread.send(content=msg.content or None, files=msg_files or None)
+
+            await thread.delete()
+        except Exception as e:  # pragma: no cover - network/permission errors
+            logger.warning(
+                "Failed to copy thread %s (%s) to %s: %s",
+                thread.name,
+                thread.id,
+                destination.name,
+                e,
+            )
+            return False
+
+        logger.info(
+            "Archived thread %s (%s) to %s",
+            thread.name,
+            thread.id,
+            destination.name,
+        )
+        return True
+
     async def _iter_all_threads(self, forum: discord.ForumChannel):
         """Yield all threads from ``forum`` including archived ones."""
         for t in forum.threads:
@@ -124,7 +170,7 @@ class CharacterManager(commands.Cog):
         failed = 0
         async for thread in self._iter_all_threads(src):
             if any(tag.id == retired_tag.id for tag in thread.applied_tags):
-                if await self._move_thread(thread, dest):
+                if await self._copy_thread(thread, dest):
                     moved += 1
                 else:
                     failed += 1
