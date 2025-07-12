@@ -82,9 +82,12 @@ class CharacterManager(commands.Cog):
             else:
                 remainder = None
 
-            created = await destination.create_thread(
-                name=thread.name, content=content, files=files or None
-            )
+            kwargs = {"name": thread.name}
+            if content is not None:
+                kwargs["content"] = content
+            if files:
+                kwargs["files"] = files
+            created = await destination.create_thread(**kwargs)
             new_thread = created.thread if hasattr(created, "thread") else created
 
             if remainder:
