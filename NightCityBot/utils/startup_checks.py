@@ -34,6 +34,50 @@ CHANNEL_ID_FIELDS: Iterable[str] = [
     "GROUP_AUDIT_LOG_CHANNEL_ID",
 ]
 
+# Additional config values that should not be empty
+REQUIRED_FIELDS: Iterable[str] = [
+    "AUDIT_LOG_CHANNEL_ID",
+    "GROUP_AUDIT_LOG_CHANNEL_ID",
+    "FIXER_ROLE_NAME",
+    "FIXER_ROLE_ID",
+    "DM_INBOX_CHANNEL_ID",
+    "GUILD_ID",
+    "TEST_USER_ID",
+    "REPORT_USER_ID",
+    "BUSINESS_ACTIVITY_CHANNEL_ID",
+    "ATTENDANCE_CHANNEL_ID",
+    "RENT_LOG_CHANNEL_ID",
+    "EVICTION_CHANNEL_ID",
+    "TRAUMA_TEAM_ROLE_ID",
+    "TRAUMA_FORUM_CHANNEL_ID",
+    "TRAUMA_NOTIFICATIONS_CHANNEL_ID",
+    "VERIFIED_ROLE_ID",
+    "APPROVED_ROLE_ID",
+    "NPC_ROLE_ID",
+    "THREAD_MAP_FILE",
+    "OPEN_LOG_FILE",
+    "LAST_RENT_FILE",
+    "LAST_PAYMENT_FILE",
+    "BALANCE_BACKUP_DIR",
+    "CHARACTER_BACKUP_DIR",
+    "RENT_AUDIT_DIR",
+    "ATTEND_LOG_FILE",
+    "CYBERWARE_LOG_FILE",
+    "CYBERWARE_WEEKLY_FILE",
+    "SYSTEM_STATUS_FILE",
+    "CYBER_CHECKUP_ROLE_ID",
+    "CYBER_MEDIUM_ROLE_ID",
+    "CYBER_HIGH_ROLE_ID",
+    "CYBER_EXTREME_ROLE_ID",
+    "LOA_ROLE_ID",
+    "RIPPERDOC_ROLE_ID",
+    "RIPPERDOC_LOG_CHANNEL_ID",
+    "TIMEZONE",
+    "RP_IC_CATEGORY_ID",
+    "CHARACTER_SHEETS_CHANNEL_ID",
+    "RETIRED_SHEETS_CHANNEL_ID",
+]
+
 LOG_FILES = [
     config.THREAD_MAP_FILE,
     config.OPEN_LOG_FILE,
@@ -48,6 +92,13 @@ async def verify_config(bot: discord.Client) -> None:
         return
 
     issues = False
+    # Ensure required config values are populated
+    for field in REQUIRED_FIELDS:
+        val = getattr(config, field, None)
+        logger.info("Checking value %s: %s", field, val)
+        if val in (None, "", 0):
+            logger.warning("\u26a0\ufe0f Missing value for %s", field)
+            issues = True
     for field in ROLE_ID_FIELDS:
         role_id = getattr(config, field, 0)
         logger.info("Checking role %s: %s", field, role_id)
