@@ -4,6 +4,7 @@ import json
 from datetime import datetime, timedelta
 import asyncio
 from typing import Optional, List, Dict, Callable, Awaitable
+from zoneinfo import ZoneInfo
 
 import discord
 from discord.ext import commands
@@ -44,6 +45,7 @@ class Economy(commands.Cog):
         self.open_log_lock = asyncio.Lock()
         self.attend_lock = asyncio.Lock()
         self.event_expires_at: Optional[datetime] = None
+        self.event_started_at: Optional[datetime] = None
 
     @staticmethod
     def _split_deduction(cash: int, amount: int) -> tuple[int, int]:
@@ -57,6 +59,16 @@ class Economy(commands.Cog):
         if self.event_expires_at is None:
             return False
         return helpers.get_tz_now() < self.event_expires_at
+
+    def _sunday_event_start(self, now: datetime) -> datetime:
+        """Return the start time of the current Sunday event in the configured timezone."""
+        tz = ZoneInfo(getattr(config, "TIMEZONE", "UTC"))
+        local_now = now.astimezone(tz)
+        days_since_sun = (local_now.weekday() - 6) % 7
+        sunday = (local_now - timedelta(days=days_since_sun)).replace(
+            hour=15, minute=0, second=0, microsecond=0
+        )
+        return sunday
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -162,7 +174,9 @@ class Economy(commands.Cog):
             mention = ch.mention if ch else "#attendance"
             await ctx.send(f"❌ Please use {mention} for this command.")
             return
-        self.event_expires_at = helpers.get_tz_now() + timedelta(hours=4)
+        now = helpers.get_tz_now()
+        self.event_started_at = now
+        self.event_expires_at = now + timedelta(hours=4)
         expires = self.event_expires_at.strftime("%I:%M %p %Z")
         await ctx.send(
             f"🟢 Event started! Temporary attendance and shop opens allowed until {expires}."
@@ -263,9 +277,24 @@ class Economy(commands.Cog):
             return
 
         now = helpers.get_tz_now()
-        if now.weekday() != 6 and not self.event_active():
-            await ctx.send("❌ Attendance can only be logged on Sundays.")
-            return
+        if self.event_active():
+            event_start = self.event_started_at or now
+        else:
+            if now.weekday() != 6:
+                await ctx.send(
+                    "❌ Attendance is only allowed during Sunday events (3pm to 6pm Pacific)."
+                )
+                return
+            tz = ZoneInfo(getattr(config, "TIMEZONE", "UTC"))
+            local_now = now.astimezone(tz)
+            start = self._sunday_event_start(now)
+            end = start + timedelta(hours=3)
+            if not (start <= local_now <= end):
+                await ctx.send(
+                    "❌ Attendance is only allowed during Sunday events (3pm to 6pm Pacific)."
+                )
+                return
+            event_start = start
 
         user_id = str(ctx.author.id)
         now_str = now.isoformat()
@@ -275,8 +304,8 @@ class Economy(commands.Cog):
 
             all_logs = data.get(user_id, [])
             parsed = [datetime.fromisoformat(ts) for ts in all_logs]
-            if parsed and (now - max(parsed)).days < 7:
-                await ctx.send("❌ You've already logged attendance this week.")
+            if any(ts >= event_start for ts in parsed):
+                await ctx.send("❌ You've already logged attendance for this event.")
                 return
 
             all_logs.append(now_str)

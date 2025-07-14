@@ -45,15 +45,15 @@ async def run(suite, ctx) -> List[str]:
     ):
         await economy.attend(ctx)
         msg = ctx.send.await_args[0][0]
-        if "only be logged on Sundays" in msg:
+        if "only allowed during Sunday events" in msg:
             logs.append("✅ attend rejected on non-Sunday")
         else:
             logs.append("❌ attend did not reject non-Sunday")
     ctx.send.reset_mock()
 
-    # Already attended this week should be rejected
-    sunday = datetime(2025, 6, 15)
-    prev = sunday - timedelta(days=3)
+    # Already attended this event should be rejected
+    sunday = datetime(2025, 6, 15, 16)
+    prev = sunday - timedelta(hours=1)
     with (
         patch("NightCityBot.utils.helpers.get_tz_now", return_value=sunday),
         patch(
@@ -64,13 +64,13 @@ async def run(suite, ctx) -> List[str]:
     ):
         await economy.attend(ctx)
         msg = ctx.send.await_args[0][0]
-        if "already logged attendance this week" in msg:
-            logs.append("✅ attend rejected when used twice")
+        if "already logged attendance for this event" in msg:
+            logs.append("✅ attend rejected when used twice in same event")
         else:
-            logs.append("❌ attend did not enforce weekly limit")
+            logs.append("❌ attend did not enforce event limit")
     ctx.send.reset_mock()
 
-    # Success when a week has passed
+    # Success on new event when last log was previous week
     prev2 = sunday - timedelta(days=7)
     with (
         patch("NightCityBot.utils.helpers.get_tz_now", return_value=sunday),
