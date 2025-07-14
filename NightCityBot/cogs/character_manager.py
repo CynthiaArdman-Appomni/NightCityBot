@@ -306,9 +306,11 @@ class CharacterManager(commands.Cog):
 
         backup_dir = Path(config.CHARACTER_BACKUP_DIR)
         backup_dir.mkdir(exist_ok=True)
+        logger.info("Backing up character sheets to %s", backup_dir)
 
         saved = 0
         for forum in forums:
+            logger.debug("Processing forum: %s (%s)", forum.name, forum.id)
             async for thread in self._iter_all_threads(forum):
                 data = {
                     "id": thread.id,
@@ -328,7 +330,16 @@ class CharacterManager(commands.Cog):
                     )
 
                 filename = f"{safe_filename(thread.name)}_{thread.id}.json"
-                await save_json_file(backup_dir / filename, data)
-                saved += 1
+                path = backup_dir / filename
+                logger.debug(
+                    "Saving thread %s (%s) with %s message(s) to %s",
+                    thread.name,
+                    thread.id,
+                    len(data["messages"]),
+                    path,
+                )
+                if await save_json_file(path, data):
+                    saved += 1
 
+        logger.info("Backed up %s sheet(s) to %s", saved, backup_dir)
         await ctx.send(f"✅ Backed up {saved} sheet(s) to `{backup_dir.name}`.")
