@@ -7,6 +7,8 @@ from discord.ext import commands
 
 print("✅ discord.ext.commands imported")
 import os
+import signal
+import asyncio
 
 print("✅ os imported")
 import sys
@@ -160,6 +162,29 @@ def keep_alive():
     t.start()
 
 
+def register_shutdown(bot: NightCityBot):
+    """Register signal handlers for a graceful shutdown."""
+
+    async def shutdown():
+        print("🛑 Shutdown signal received. Cleaning up...")
+        logger.info("Shutdown signal received")
+        admin = bot.get_cog("Admin")
+        if admin:
+            try:
+                await admin.log_audit(bot.user, "🛑 Bot shutting down.")
+            except Exception:
+                logger.exception("Failed to log shutdown audit")
+        await bot.close()
+        print("✅ Shutdown complete")
+        logger.info("Shutdown complete")
+
+    def handler(signum, frame):
+        bot.loop.create_task(shutdown())
+
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, handler)
+
+
 def main():
     # Add startup logging
     logging.basicConfig(
@@ -182,6 +207,7 @@ def main():
     print("🤖 Creating bot instance...")
     try:
         bot = NightCityBot()
+        register_shutdown(bot)
         print("✅ Bot instance created successfully")
     except Exception as e:
         print(f"❌ Failed to create bot instance: {e}")
