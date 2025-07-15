@@ -11,6 +11,7 @@ async def run(suite, ctx) -> List[str]:
     thread = MagicMock(spec=discord.Thread)
     thread.id = 9999
     thread.name = f"{user.name}-{user.id}"
+    thread.parent_id = config.DM_INBOX_CHANNEL_ID
     message = MagicMock()
     message.channel = thread
     message.content = "Hello"
