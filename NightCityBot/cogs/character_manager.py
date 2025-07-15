@@ -305,7 +305,9 @@ class CharacterManager(commands.Cog):
             return
 
         backup_dir = Path(config.CHARACTER_BACKUP_DIR)
-        backup_dir.mkdir(exist_ok=True)
+        # Ensure the entire path exists in case CHARACTER_BACKUP_DIR contains
+        # intermediate directories that haven't been created yet.
+        backup_dir.mkdir(parents=True, exist_ok=True)
         logger.info("Backing up character sheets to %s", backup_dir)
 
         saved = 0
