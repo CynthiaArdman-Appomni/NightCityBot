@@ -140,6 +140,7 @@ Utilities for the character sheet forums.
 
 * `!retire` – move all threads tagged "Retired" from the main sheet forum to the retired forum. *(Fixers only)*
   Reports the number of threads moved and logs any failures.
+* `!move_npcs` – move all threads tagged "NPC" from the main sheet forum to the NPC forum. *(Fixers only)*
 * `!unretire <thread id>` – move a specific thread back to the main forum. *(Fixers only)*
 * `!search_characters <keyword> [-depth N]` – fuzzy search thread titles, tags and posts. Depth controls how many messages per thread are scanned (default 20). *(Fixers only)*
 

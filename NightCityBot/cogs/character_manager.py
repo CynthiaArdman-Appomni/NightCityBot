@@ -192,6 +192,34 @@ class CharacterManager(commands.Cog):
 
     @commands.command()
     @is_fixer()
+    async def move_npcs(self, ctx: commands.Context) -> None:
+        """Move all threads tagged "NPC" to the NPC forum."""
+        src = ctx.guild.get_channel(config.CHARACTER_SHEETS_CHANNEL_ID)
+        dest = ctx.guild.get_channel(config.NPC_SHEETS_CHANNEL_ID)
+        if not isinstance(src, discord.ForumChannel) or not isinstance(
+            dest, discord.ForumChannel
+        ):
+            await ctx.send("⚠️ Character forums not configured.")
+            return
+        npc_tag = discord.utils.get(src.available_tags, name="NPC")
+        if not npc_tag:
+            await ctx.send("⚠️ 'NPC' tag not found.")
+            return
+        moved = 0
+        failed = 0
+        async for thread in self._iter_all_threads(src):
+            if any(tag.id == npc_tag.id for tag in thread.applied_tags):
+                if await self._copy_thread(thread, dest):
+                    moved += 1
+                else:
+                    failed += 1
+        message = f"✅ Moved {moved} thread(s) to {dest.name}."
+        if failed:
+            message += f" ❌ Failed to move {failed} thread(s). Check logs."
+        await ctx.send(message)
+
+    @commands.command()
+    @is_fixer()
     async def unretire(self, ctx: commands.Context, thread_id: int) -> None:
         """Move a single thread back to the main forum."""
         src = ctx.guild.get_channel(config.CHARACTER_SHEETS_CHANNEL_ID)

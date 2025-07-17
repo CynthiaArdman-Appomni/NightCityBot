@@ -146,6 +146,7 @@ class Admin(commands.Cog):
             value=(
                 "`!search_characters <keyword> [-depth N]` – search thread titles, tags and posts with fuzzy matching (Fixers only).\n"
                 "`!retire` – move threads tagged 'Retired' to the archive (Fixers only).\n"
+                "`!move_npcs` – move threads tagged 'NPC' to the NPC forum (Fixers only).\n"
                 "`!unretire <thread_id>` – move a retired thread back (Fixers only)."
             ),
             inline=False,
