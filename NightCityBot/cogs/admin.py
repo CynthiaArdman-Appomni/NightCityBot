@@ -10,6 +10,7 @@ from NightCityBot.utils.permissions import is_fixer
 from NightCityBot.utils import constants
 from NightCityBot.utils import startup_checks
 from NightCityBot.utils.helpers import load_json_file, save_json_file
+from NightCityBot.utils import cyberpunk_embed, CYBERPUNK_COLOR
 
 logger = logging.getLogger(__name__)
 
@@ -92,10 +93,9 @@ class Admin(commands.Cog):
     @commands.command(name="helpme")
     async def helpme(self, ctx):
         """Display help for regular users."""
-        embed = discord.Embed(
+        embed = cyberpunk_embed(
             title="📘 NCRP Bot — Player Help",
             description="Basic commands for RP, rent, and rolling dice. Use `!helpfixer` if you're a Fixer.",
-            color=discord.Color.teal(),
         )
 
         embed.add_field(
@@ -209,10 +209,9 @@ class Admin(commands.Cog):
         ]
 
         embeds = []
-        current = discord.Embed(
+        current = cyberpunk_embed(
             title="🛠️ NCRP Bot — Fixer Help",
             description="Advanced commands for messaging, RP management, and rent.",
-            color=discord.Color.purple(),
         )
         for name, value in fields:
             chunks = [value[i : i + 1024] for i in range(0, len(value), 1024)] or [""]
@@ -221,9 +220,8 @@ class Admin(commands.Cog):
                 if embed_len(current) + len(field_name) + len(chunk) > 5800:
                     current.set_footer(text="Fixer tools by MedusaCascade | v1.2")
                     embeds.append(current)
-                    current = discord.Embed(
+                    current = cyberpunk_embed(
                         title="🛠️ NCRP Bot — Fixer Help (cont.)",
-                        color=discord.Color.purple(),
                     )
                 current.add_field(name=field_name, value=chunk, inline=False)
 
@@ -276,10 +274,9 @@ class Admin(commands.Cog):
         ]
 
         embeds = []
-        current = discord.Embed(
+        current = cyberpunk_embed(
             title="🛠️ NCRP Bot — Admin Help",
             description="Commands for admins only.",
-            color=discord.Color.dark_gold(),
         )
         for name, value in fields:
             chunks = [value[i : i + 1024] for i in range(0, len(value), 1024)] or [""]
@@ -288,9 +285,8 @@ class Admin(commands.Cog):
                 if embed_len(current) + len(field_name) + len(chunk) > 5800:
                     current.set_footer(text="Fixer tools by MedusaCascade | v1.2")
                     embeds.append(current)
-                    current = discord.Embed(
+                    current = cyberpunk_embed(
                         title="🛠️ NCRP Bot — Admin Help (cont.)",
-                        color=discord.Color.dark_gold(),
                     )
                 current.add_field(name=field_name, value=chunk, inline=False)
 
@@ -412,7 +408,7 @@ class Admin(commands.Cog):
         audit_channel = self.bot.get_channel(config.AUDIT_LOG_CHANNEL_ID)
 
         if isinstance(audit_channel, discord.TextChannel):
-            embed = discord.Embed(title="📝 Audit Log", color=discord.Color.blue())
+            embed = cyberpunk_embed(title="📝 Audit Log")
             embed.add_field(name="User", value=f"{user} ({user.id})", inline=False)
             chunks = [action_desc[i : i + 1024] for i in range(0, len(action_desc), 1024)] or [""]
             embed.add_field(name="Action", value=chunks[0], inline=False)

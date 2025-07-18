@@ -1,6 +1,6 @@
 # NightCityBot
 
-NightCityBot is a Discord bot built with `discord.py` that provides roleplay utilities, economy management and automated moderation tools for a Cyberpunk themed server.  The bot is organised using *cogs* – modular components that group related commands and background tasks.
+NightCityBot is a Discord bot built with `discord.py` that provides roleplay utilities, economy management and automated moderation tools for a Cyberpunk themed server.  The bot is organised using *cogs* – modular components that group related commands and background tasks. By default it uses a neon magenta embed color for a Cyberpunk 2077 inspired feel.
 
 This document gives an overview of the major modules and how they work.
 
