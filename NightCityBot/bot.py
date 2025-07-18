@@ -150,7 +150,7 @@ app = Flask("")
 
 @app.route("/")
 def home():
-    return "Bot is alive Version 1.2!"
+    return "NCPD Network Link Established // NightCityBot v1.2"
 
 
 def run_flask():
