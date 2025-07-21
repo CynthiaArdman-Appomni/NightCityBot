@@ -1,8 +1,8 @@
 import discord
 from discord.ext import commands, tasks
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Any
 from pathlib import Path
 import os
 
@@ -30,13 +30,27 @@ class CyberwareManager(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.unbelievaboat = UnbelievaBoatAPI(config.UNBELIEVABOAT_API_TOKEN)
-        self.data: Dict[str, int] = {}
+        # Mapping of user ID to the ISO timestamp of their last checkup
+        self.data: Dict[str, str] = {}
         self.bot.loop.create_task(self.load_data())
         self.weekly_check.start()
 
     async def load_data(self):
         path = Path(config.CYBERWARE_LOG_FILE)
-        self.data = await load_json_file(path, default={})
+        raw: Dict[str, Any] = await load_json_file(path, default={})
+        self.data = {}
+        now = get_tz_now().date()
+        for uid, val in raw.items():
+            if isinstance(val, int):
+                # Backwards compatibility with old week counter format
+                last = now - timedelta(weeks=val)
+                self.data[uid] = last.isoformat()
+            elif isinstance(val, dict):
+                self.data[uid] = val.get("last_check", now.isoformat())
+            elif isinstance(val, str):
+                self.data[uid] = val
+        # Ensure all entries are strings
+        self.data = {str(k): str(v) for k, v in self.data.items()}
 
     def cog_unload(self):
         self.weekly_check.cancel()
@@ -120,6 +134,7 @@ class CyberwareManager(commands.Cog):
         results = {"checkup": [], "paid": [], "unpaid": []}
 
         members = [target_member] if target_member else guild.members
+        today = get_tz_now().date()
         for member in members:
             if not any(r.id == config.APPROVED_ROLE_ID for r in member.roles):
                 continue
@@ -134,7 +149,18 @@ class CyberwareManager(commands.Cog):
                 role_level = "medium"
 
             user_id = str(member.id)
-            weeks = self.data.get(user_id, 0)
+            last_str = self.data.get(user_id)
+            if last_str:
+                try:
+                    last_date = datetime.fromisoformat(last_str).date()
+                except ValueError:
+                    last_date = today
+            else:
+                last_date = today
+                if not dry_run:
+                    # Initialize tracking for new users
+                    self.data[user_id] = last_date.isoformat()
+            weeks = max(0, (today - last_date).days // 7)
 
             has_checkup = checkup_role in member.roles if checkup_role else False
 
@@ -143,9 +169,7 @@ class CyberwareManager(commands.Cog):
                 continue
 
             if not has_checkup:
-                # Give the checkup role and reset streak without charging
-                if weeks:
-                    weeks = 0
+                # Give the checkup role without charging
                 if checkup_role:
                     if not dry_run:
                         await member.add_roles(checkup_role, reason="Weekly cyberware check")
@@ -162,8 +186,6 @@ class CyberwareManager(commands.Cog):
                         f"Ripperdoc checkup on <@{member.id}>. No money deducted."
                     )
                 results["checkup"].append(member.id)
-                if not dry_run:
-                    self.data[user_id] = 0
                 continue
 
             # User kept the checkup role for another week → charge them
@@ -237,12 +259,14 @@ class CyberwareManager(commands.Cog):
                             )
                             results["unpaid"].append(member.id)
 
-            if not dry_run:
-                self.data[user_id] = weeks
-                if log is not None:
-                    log.append(f"Streak is now {weeks} week(s) for <@{member.id}>")
-            elif log is not None:
-                log.append(f"Streak would become {weeks} week(s) for <@{member.id}>")
+            if log is not None:
+                log.append(
+                    (
+                        f"Streak would become {weeks} week(s) for <@{member.id}>"
+                        if dry_run
+                        else f"Streak is now {weeks} week(s) for <@{member.id}>"
+                    )
+                )
         if not dry_run:
             await save_json_file(Path(config.CYBERWARE_LOG_FILE), self.data)
             if log is not None:
@@ -355,14 +379,22 @@ class CyberwareManager(commands.Cog):
                 f"Ripperdoc {ctx.author.display_name} did a checkup on {member.display_name}"
             )
 
-        self.data[str(member.id)] = 0
+        self.data[str(member.id)] = get_tz_now().date().isoformat()
         await save_json_file(Path(config.CYBERWARE_LOG_FILE), self.data)
 
     @commands.command(aliases=["weekswithoutcheckup", "wwocup", "wwc"])
     @commands.check_any(is_ripperdoc(), is_fixer())
     async def weeks_without_checkup(self, ctx, member: discord.Member):
         """Show how many weeks a member has gone without a checkup."""
-        weeks = self.data.get(str(member.id), 0)
+        last = self.data.get(str(member.id))
+        if last:
+            try:
+                last_dt = datetime.fromisoformat(last).date()
+            except ValueError:
+                last_dt = get_tz_now().date()
+            weeks = (get_tz_now().date() - last_dt).days // 7
+        else:
+            weeks = 0
         await ctx.send(f"{member.display_name} has gone {weeks} week(s) without a checkup.")
 
     @commands.command(name="give_checkup_role", aliases=["givecheckuprole", "givecheckups", "cuall", "checkupall"])
