@@ -392,20 +392,28 @@ class Economy(commands.Cog):
         return total, details
 
     @commands.command(name="due")
-    async def due(self, ctx):
-        """Show estimated amount you will owe on the 1st of the month.
+    async def due(self, ctx, member: discord.Member | None = None) -> None:
+        """Show estimated amount owed on the 1st of the month.
 
-        Includes upcoming cyberware medication costs if applicable.
+        Optionally provide ``member`` to check someone else's upcoming costs.
         """
+        target = member or ctx.author
         logger.debug(
-            "due command invoked by %s (%s) in %s (%s)",
+            "due command invoked for %s (%s) by %s (%s) in %s (%s)",
+            target,
+            target.id,
             ctx.author,
             ctx.author.id,
             getattr(ctx.channel, "name", ctx.channel.id),
             ctx.channel.id,
         )
-        total, details = self.calculate_due(ctx.author)
-        lines = [f"💸 **Estimated Due:** ${total}"] + [f"• {d}" for d in details]
+        total, details = self.calculate_due(target)
+        header = (
+            f"💸 **Estimated Due for {target.display_name}:** ${total}"
+            if member
+            else f"💸 **Estimated Due:** ${total}"
+        )
+        lines = [header] + [f"• {d}" for d in details]
         await ctx.send("\n".join(lines))
 
     @commands.command(name="last_payment")
