@@ -28,7 +28,9 @@ async def run(suite, ctx) -> List[str]:
         await cyber.checkup.callback(cyber, ctx, member)
     suite.assert_send(logs, member.remove_roles, "remove_roles")
     suite.assert_send(logs, log_channel.send, "log_channel.send")
-    if cyber.data.get(str(member.id), 0) == 0:
+    from datetime import date
+    expected = date.today().isoformat()
+    if cyber.data.get(str(member.id)) == expected:
         logs.append("✅ checkup streak reset")
     else:
         logs.append("❌ checkup streak not reset")

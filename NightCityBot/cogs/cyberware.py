@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands, tasks
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Any
 from pathlib import Path
 import os
 
@@ -150,6 +150,7 @@ class CyberwareManager(commands.Cog):
 
         week_inc = self._week_increment()
         members = [target_member] if target_member else guild.members
+        today = get_tz_now().date()
         for member in members:
             if not any(r.id == config.APPROVED_ROLE_ID for r in member.roles):
                 continue
@@ -184,9 +185,7 @@ class CyberwareManager(commands.Cog):
                 continue
 
             if not has_checkup:
-                # Give the checkup role and reset streak without charging
-                if weeks:
-                    weeks = 0
+                # Give the checkup role without charging
                 if checkup_role:
                     if not dry_run:
                         await member.add_roles(checkup_role, reason="Weekly cyberware check")
