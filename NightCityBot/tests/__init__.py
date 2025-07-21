@@ -37,6 +37,7 @@ TEST_MODULES = {
     "test_dm_unknown_user": "Handles missing user ID when relaying from DM thread.",
     "test_start_rp_multi": "Starts RP with two users and ends it.",
     "test_cyberware_weekly": "Simulates the weekly cyberware task.",
+    "test_cyberware_streak": "Ensures missed weeks increment streak correctly.",
     "test_loa_fixer_other": "Fixer starts and ends LOA for another user.",
     "test_loa_id_check": "Handles LOA with distinct role instances sharing an ID.",
     "test_roll_as_user": "Rolls on behalf of another user.",

@@ -104,7 +104,10 @@ Commands:
 * `!collect_cyberware @user [-v]` – manually charge a member for their meds unless they already paid or did a checkup this week. Without `-v` only the last few log lines are shown.
 * `!paycyberware [-v]` – pay your own cyberware meds manually. Mirrors `!collect_cyberware` but only affects you.
 
-All data is stored in `cyberware_log.json`. Weekly results are appended to `cyberware_weekly.json`.
+All data is stored in `cyberware_log.json`. The file now keeps each user's
+streak together with a ``last`` timestamp indicating when that player was last
+processed. The file also stores a `_last_run` timestamp for the most recent
+weekly task. Weekly results are appended to `cyberware_weekly.json`.
 
 ### RPManager
 *File: `NightCityBot/cogs/rp_manager.py`*
@@ -213,7 +216,8 @@ Several JSON files store runtime data:
 * `thread_map.json` – mapping of user IDs to DM log thread IDs.
 * `business_open_log.json` – timestamps of each user's `!open_shop` usage.
 * `attendance_log.json` – records weekly attendance.
-* `cyberware_log.json` – weeks since last check‑up for each user.
+* `cyberware_log.json` – for each user stores the streak and the last time they
+  were processed, plus the last run timestamp for the weekly task.
 * `system_status.json` – persisted enable/disable flags for subsystems.
 
 These files are loaded on startup via `utils.helpers.load_json_file`.
