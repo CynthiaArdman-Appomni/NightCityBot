@@ -529,6 +529,51 @@ class CyberwareManager(commands.Cog):
         if admin_cog:
             await admin_cog.log_audit(ctx.author, summary)
 
+    @commands.command(name="cyberware_status", aliases=["cstatus", "cstat"])
+    @commands.check_any(is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True))
+    async def cyberware_status(self, ctx: commands.Context) -> None:
+        """Display the current week status for all cyberware users."""
+
+        weekly_data = await load_json_file(Path(config.CYBERWARE_WEEKLY_FILE), default=[])
+        if not weekly_data:
+            await ctx.send("❌ No weekly data recorded yet.")
+            return
+
+        last = weekly_data[-1]
+        checkup_set = set(map(int, last.get("checkup", [])))
+        paid_set = set(map(int, last.get("paid", [])))
+        unpaid_set = set(map(int, last.get("unpaid", [])))
+
+        guild = ctx.guild
+        medium_role = guild.get_role(config.CYBER_MEDIUM_ROLE_ID)
+        high_role = guild.get_role(config.CYBER_HIGH_ROLE_ID)
+        extreme_role = guild.get_role(config.CYBER_EXTREME_ROLE_ID)
+        loa_role = guild.get_role(config.LOA_ROLE_ID)
+
+        lines = [f"**Cyberware Status ({last['timestamp']})**"]
+        for member in guild.members:
+            if loa_role and loa_role in member.roles:
+                continue
+            has_cyber = any(
+                r for r in (medium_role, high_role, extreme_role) if r and r in member.roles
+            )
+            if not has_cyber:
+                continue
+            status: str
+            if member.id in checkup_set:
+                status = "checkup"
+            elif member.id in paid_set:
+                status = "paid"
+            elif member.id in unpaid_set:
+                status = "unpaid"
+            else:
+                status = "pending"
+
+            weeks = self.data.get(str(member.id), {}).get("weeks", 0)
+            lines.append(f"{member.display_name}: {status} (week {weeks})")
+
+        await ctx.send("\n".join(lines))
+
     @commands.command(name="paycyberware", aliases=["pay_cyberware"])
     async def pay_cyberware(self, ctx: commands.Context, *args: str) -> None:
         """Pay your cyberware medication cost manually.

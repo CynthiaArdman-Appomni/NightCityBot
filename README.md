@@ -101,6 +101,7 @@ Commands:
 * `!weeks_without_checkup @user` – show how many weeks the specified player has kept the check‑up role without visiting a ripperdoc.
 * `!give_checkup_role [@user]` – give the check-up role to a member or all cyberware users.
 * `!checkup_report` – list who did a checkup last week, who paid their meds and who couldn't pay.
+* `!cyberware_status` – show the current week status for all cyberware users.
 * `!collect_cyberware @user [-v]` – manually charge a member for their meds unless they already paid or did a checkup this week. Without `-v` only the last few log lines are shown.
 * `!paycyberware [-v]` – pay your own cyberware meds manually. Mirrors `!collect_cyberware` but only affects you.
 
