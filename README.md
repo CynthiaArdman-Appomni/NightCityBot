@@ -91,7 +91,7 @@ The cog stores logs in JSON files such as `business_open_log.json` and `attendan
 
 Implements weekly check‑up reminders and medication costs for players with cyberware. A background task runs every Saturday:
 
-1. Gives the `CYBER_CHECKUP_ROLE_ID` role each week.
+1. Gives the `CYBER_CHECKUP_ROLE_ID` role each week (Ripperdocs are skipped).
 2. If the role is kept the following week, deducts a cost based on the cyberware level (medium/high/extreme).
 
 Commands:

@@ -144,6 +144,7 @@ class CyberwareManager(commands.Cog):
         high_role = guild.get_role(config.CYBER_HIGH_ROLE_ID)
         extreme_role = guild.get_role(config.CYBER_EXTREME_ROLE_ID)
         loa_role = guild.get_role(config.LOA_ROLE_ID)
+        ripper_role = guild.get_role(config.RIPPERDOC_ROLE_ID)
         log_channel = guild.get_channel(config.RIPPERDOC_LOG_CHANNEL_ID)
 
         results = {"checkup": [], "paid": [], "unpaid": []}
@@ -155,6 +156,8 @@ class CyberwareManager(commands.Cog):
             if not any(r.id == config.APPROVED_ROLE_ID for r in member.roles):
                 continue
             if loa_role and loa_role in member.roles:
+                continue
+            if ripper_role and ripper_role in member.roles:
                 continue
             role_level = None
             if extreme_role and extreme_role in member.roles:
@@ -432,6 +435,7 @@ class CyberwareManager(commands.Cog):
         high_role = guild.get_role(config.CYBER_HIGH_ROLE_ID)
         extreme_role = guild.get_role(config.CYBER_EXTREME_ROLE_ID)
         loa_role = guild.get_role(config.LOA_ROLE_ID)
+        ripper_role = guild.get_role(config.RIPPERDOC_ROLE_ID)
         if checkup_role is None:
             await ctx.send("⚠️ Checkup role is not configured.")
             return
@@ -440,6 +444,8 @@ class CyberwareManager(commands.Cog):
         count = 0
         for m in members:
             if loa_role and loa_role in m.roles:
+                continue
+            if ripper_role and ripper_role in m.roles:
                 continue
             has_cyber = any(
                 r for r in (medium_role, high_role, extreme_role) if r and r in m.roles
