@@ -54,6 +54,17 @@ class Economy(commands.Cog):
         bank_deduct = max(0, amount - cash_deduct)
         return cash_deduct, bank_deduct
 
+    @staticmethod
+    def _get_cyber_weeks(entry: Any) -> int:
+        """Return the medication streak weeks stored in ``entry``."""
+        if isinstance(entry, dict):
+            return int(entry.get("weeks", 0))
+        if isinstance(entry, int):
+            return entry
+        if isinstance(entry, str) and entry.isdigit():
+            return int(entry)
+        return 0
+
     def event_active(self) -> bool:
         """Return ``True`` if a fixer event is currently active."""
         if self.event_expires_at is None:
@@ -369,7 +380,7 @@ class Economy(commands.Cog):
                     level = "medium"
 
                 if level:
-                    weeks = cyber.data.get(str(member.id), 0)
+                    weeks = self._get_cyber_weeks(cyber.data.get(str(member.id)))
                     if checkup_role and checkup_role in member.roles:
                         upcoming = weeks + 1
                         cost = cyber.calculate_cost(level, upcoming)
@@ -453,7 +464,7 @@ class Economy(commands.Cog):
                     level = "medium"
 
                 if level:
-                    weeks = cyber.data.get(str(member.id), 0)
+                    weeks = self._get_cyber_weeks(cyber.data.get(str(member.id)))
                     if checkup_role and checkup_role in member.roles:
                         upcoming = weeks + 1
                         cost = cyber.calculate_cost(level, upcoming)
@@ -1688,7 +1699,7 @@ class Economy(commands.Cog):
                     level = "medium"
 
                 if level:
-                    weeks = cyber.data.get(str(target_user.id), 0)
+                    weeks = self._get_cyber_weeks(cyber.data.get(str(target_user.id)))
                     if checkup and checkup in target_user.roles:
                         upcoming = weeks + 1
                         cost = cyber.calculate_cost(level, upcoming)
@@ -1871,7 +1882,7 @@ class Economy(commands.Cog):
             elif medium and medium in member.roles:
                 level = "medium"
             if level and checkup and checkup in member.roles:
-                weeks = cyber.data.get(str(member.id), 0) + 1
+                weeks = self._get_cyber_weeks(cyber.data.get(str(member.id))) + 1
                 cost = cyber.calculate_cost(level, weeks)
                 log.append(f"💊 Cyberware meds week {weeks}: ${cost}")
                 total = (cash or 0) + (bank or 0)
