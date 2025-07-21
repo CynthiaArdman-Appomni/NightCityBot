@@ -14,7 +14,8 @@ async def run(suite, ctx) -> List[str]:
     checkup = discord.Object(id=config.CYBER_CHECKUP_ROLE_ID)
     approved = discord.Object(id=config.APPROVED_ROLE_ID)
     user.roles = [medium, checkup, approved]
-    cyber.data[str(user.id)] = 0
+    from datetime import date, timedelta
+    cyber.data[str(user.id)] = (date.today() - timedelta(days=7)).isoformat()
     ctx.send = AsyncMock()
     with (
         patch.object(economy.unbelievaboat, "get_balance", new=AsyncMock(return_value={"cash": 1000, "bank": 0})),

@@ -20,7 +20,8 @@ async def run(suite, ctx) -> List[str]:
     medium = discord.Object(id=config.CYBER_MEDIUM_ROLE_ID)
     checkup = discord.Object(id=config.CYBER_CHECKUP_ROLE_ID)
     user.roles = [role_h, role_b, medium, checkup]
-    cyber.data[str(user.id)] = 0
+    from datetime import date, timedelta
+    cyber.data[str(user.id)] = (date.today() - timedelta(days=7)).isoformat()
     ctx.guild.members = [user]
     ctx.send = AsyncMock()
 
