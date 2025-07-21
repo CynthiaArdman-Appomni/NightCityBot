@@ -3,7 +3,7 @@ import os
 import json
 from datetime import datetime, timedelta
 import asyncio
-from typing import Optional, List, Dict, Callable, Awaitable
+from typing import Optional, List, Dict, Callable, Awaitable, Any
 from zoneinfo import ZoneInfo
 
 import discord
