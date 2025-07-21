@@ -79,8 +79,8 @@ class CyberwareManager(commands.Cog):
     @tasks.loop(time=time(hour=0, tzinfo=ZoneInfo(getattr(config, "TIMEZONE", "UTC"))))
     async def weekly_check(self):
         """Run every day and trigger processing each Monday."""
-        control = self.bot.get_cog('SystemControl')
-        if control and not control.is_enabled('cyberware'):
+        control = self.bot.get_cog("SystemControl")
+        if control and not control.is_enabled("cyberware"):
             return
         if get_tz_now().weekday() != 0:  # Monday
             return
@@ -115,7 +115,9 @@ class CyberwareManager(commands.Cog):
         summary = "\n".join(logs) if logs else "✅ No actions performed."
         if notify_user:
             try:
-                await notify_user.send(f"✅ Weekly cyberware processing complete:\n{summary}")
+                await notify_user.send(
+                    f"✅ Weekly cyberware processing complete:\n{summary}"
+                )
             except Exception:
                 pass
 
@@ -132,8 +134,8 @@ class CyberwareManager(commands.Cog):
         ``paid`` (kept the role and paid) and ``unpaid`` (kept the role but
         couldn't pay).
         """
-        control = self.bot.get_cog('SystemControl')
-        if control and not control.is_enabled('cyberware'):
+        control = self.bot.get_cog("SystemControl")
+        if control and not control.is_enabled("cyberware"):
             return
         guild = self.bot.get_guild(config.GUILD_ID)
         if not guild:
@@ -191,7 +193,9 @@ class CyberwareManager(commands.Cog):
                 # Give the checkup role without charging
                 if checkup_role:
                     if not dry_run:
-                        await member.add_roles(checkup_role, reason="Weekly cyberware check")
+                        await member.add_roles(
+                            checkup_role, reason="Weekly cyberware check"
+                        )
                     if log is not None:
                         log.append(
                             f"{'Would give' if dry_run else 'Gave'} checkup role to <@{member.id}>"
@@ -230,7 +234,11 @@ class CyberwareManager(commands.Cog):
             if dry_run:
                 check = await self.unbelievaboat.verify_balance_ops(member.id)
                 if log is not None:
-                    log.append("🔄 Balance check passed." if check else "⚠️ Balance update check failed.")
+                    log.append(
+                        "🔄 Balance check passed."
+                        if check
+                        else "⚠️ Balance update check failed."
+                    )
 
             total = balance.get("cash", 0) + balance.get("bank", 0)
             if total < cost:
@@ -304,7 +312,9 @@ class CyberwareManager(commands.Cog):
         return results
 
     @commands.command()
-    @commands.check_any(is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True))
+    @commands.check_any(
+        is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True)
+    )
     async def simulate_cyberware(
         self,
         ctx,
@@ -338,8 +348,12 @@ class CyberwareManager(commands.Cog):
             except commands.BadArgument:
                 await ctx.send("❌ Could not resolve user.")
                 return
-        if resolved_member and not any(r.id == config.APPROVED_ROLE_ID for r in resolved_member.roles):
-            await ctx.send(f"⏭️ {resolved_member.display_name} has no approved character.")
+        if resolved_member and not any(
+            r.id == config.APPROVED_ROLE_ID for r in resolved_member.roles
+        ):
+            await ctx.send(
+                f"⏭️ {resolved_member.display_name} has no approved character."
+            )
             return
 
         # Specific user/week cost preview
@@ -374,7 +388,7 @@ class CyberwareManager(commands.Cog):
             await ctx.send(summary)
         else:
             await ctx.send("✅ Simulation complete.")
-        admin_cog = self.bot.get_cog('Admin')
+        admin_cog = self.bot.get_cog("Admin")
         if admin_cog:
             await admin_cog.log_audit(ctx.author, summary)
 
@@ -382,8 +396,8 @@ class CyberwareManager(commands.Cog):
     @is_ripperdoc()
     async def checkup(self, ctx, member: discord.Member):
         """Remove the weekly cyberware checkup role from a member."""
-        control = self.bot.get_cog('SystemControl')
-        if control and not control.is_enabled('cyberware'):
+        control = self.bot.get_cog("SystemControl")
+        if control and not control.is_enabled("cyberware"):
             await ctx.send("⚠️ The cyberware system is currently disabled.")
             return
         guild = ctx.guild
@@ -398,7 +412,6 @@ class CyberwareManager(commands.Cog):
 
         await member.remove_roles(role, reason="Cyberware check-up completed")
         await ctx.send(f"✅ Removed checkup role from {member.display_name}.")
-
 
         log_channel = ctx.guild.get_channel(config.RIPPERDOC_LOG_CHANNEL_ID)
         if log_channel:
@@ -418,14 +431,23 @@ class CyberwareManager(commands.Cog):
         """Show how many weeks a member has gone without a checkup."""
         entry = self.data.get(str(member.id))
         weeks = entry.get("weeks", 0) if isinstance(entry, dict) else int(entry or 0)
-        await ctx.send(f"{member.display_name} has gone {weeks} week(s) without a checkup.")
+        await ctx.send(
+            f"{member.display_name} has gone {weeks} week(s) without a checkup."
+        )
 
-    @commands.command(name="give_checkup_role", aliases=["givecheckuprole", "givecheckups", "cuall", "checkupall"])
-    @commands.check_any(is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True))
-    async def give_checkup_role(self, ctx: commands.Context, member: Optional[discord.Member] = None) -> None:
+    @commands.command(
+        name="give_checkup_role",
+        aliases=["givecheckuprole", "givecheckups", "cuall", "checkupall"],
+    )
+    @commands.check_any(
+        is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True)
+    )
+    async def give_checkup_role(
+        self, ctx: commands.Context, member: Optional[discord.Member] = None
+    ) -> None:
         """Give the checkup role to a member or everyone with cyberware."""
-        control = self.bot.get_cog('SystemControl')
-        if control and not control.is_enabled('cyberware'):
+        control = self.bot.get_cog("SystemControl")
+        if control and not control.is_enabled("cyberware"):
             await ctx.send("⚠️ The cyberware system is currently disabled.")
             return
 
@@ -459,7 +481,9 @@ class CyberwareManager(commands.Cog):
         await ctx.send(f"✅ Gave the checkup role to {count} member(s).")
 
     @commands.command(name="checkup_report", aliases=["cu_report", "cur"])
-    @commands.check_any(is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True))
+    @commands.check_any(
+        is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True)
+    )
     async def checkup_report(self, ctx: commands.Context) -> None:
         """Show who did a checkup and who paid or failed to pay this week."""
         data = await load_json_file(Path(config.CYBERWARE_WEEKLY_FILE), default=[])
@@ -484,7 +508,9 @@ class CyberwareManager(commands.Cog):
         await ctx.send("\n".join(lines))
 
     @commands.command(name="collect_cyberware", aliases=["collectcyberware"])
-    @commands.check_any(is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True))
+    @commands.check_any(
+        is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True)
+    )
     async def collect_cyberware(
         self, ctx: commands.Context, member: discord.Member, *args: str
     ) -> None:
@@ -505,10 +531,14 @@ class CyberwareManager(commands.Cog):
             await ctx.send(f"⏭️ {member.display_name} has no approved character.")
             return
 
-        weekly_data = await load_json_file(Path(config.CYBERWARE_WEEKLY_FILE), default=[])
+        weekly_data = await load_json_file(
+            Path(config.CYBERWARE_WEEKLY_FILE), default=[]
+        )
         if weekly_data:
             last = weekly_data[-1]
-            if member.id in last.get("checkup", []) or member.id in last.get("paid", []):
+            if member.id in last.get("checkup", []) or member.id in last.get(
+                "paid", []
+            ):
                 await ctx.send("⏭️ Member already processed this week.")
                 return
 
@@ -536,19 +566,33 @@ class CyberwareManager(commands.Cog):
             await admin_cog.log_audit(ctx.author, summary)
 
     @commands.command(name="cyberware_status", aliases=["cstatus", "cstat"])
-    @commands.check_any(is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True))
+    @commands.check_any(
+        is_ripperdoc(), is_fixer(), commands.has_permissions(administrator=True)
+    )
     async def cyberware_status(self, ctx: commands.Context) -> None:
         """Display the current week status for all cyberware users."""
 
-        weekly_data = await load_json_file(Path(config.CYBERWARE_WEEKLY_FILE), default=[])
-        if not weekly_data:
-            await ctx.send("❌ No weekly data recorded yet.")
-            return
-
-        last = weekly_data[-1]
-        checkup_set = set(map(int, last.get("checkup", [])))
-        paid_set = set(map(int, last.get("paid", [])))
-        unpaid_set = set(map(int, last.get("unpaid", [])))
+        weekly_data = await load_json_file(
+            Path(config.CYBERWARE_WEEKLY_FILE), default=[]
+        )
+        if weekly_data:
+            last = weekly_data[-1]
+            timestamp = last.get("timestamp")
+            checkup_set = set(map(int, last.get("checkup", [])))
+            paid_set = set(map(int, last.get("paid", [])))
+            unpaid_set = set(map(int, last.get("unpaid", [])))
+        else:
+            last = {}
+            timestamp = None
+            checkup_set: set[int] = set()
+            paid_set: set[int] = set()
+            unpaid_set: set[int] = set()
+            # Fall back to the last_run value so the status output is still
+            # meaningful even before the first weekly entry is created.
+            if self.last_run:
+                timestamp = self.last_run.isoformat()
+        if timestamp is None:
+            timestamp = "N/A"
 
         guild = ctx.guild
         medium_role = guild.get_role(config.CYBER_MEDIUM_ROLE_ID)
@@ -556,12 +600,14 @@ class CyberwareManager(commands.Cog):
         extreme_role = guild.get_role(config.CYBER_EXTREME_ROLE_ID)
         loa_role = guild.get_role(config.LOA_ROLE_ID)
 
-        lines = [f"**Cyberware Status ({last['timestamp']})**"]
+        lines = [f"**Cyberware Status ({timestamp})**"]
         for member in guild.members:
             if loa_role and loa_role in member.roles:
                 continue
             has_cyber = any(
-                r for r in (medium_role, high_role, extreme_role) if r and r in member.roles
+                r
+                for r in (medium_role, high_role, extreme_role)
+                if r and r in member.roles
             )
             if not has_cyber:
                 continue
@@ -590,14 +636,20 @@ class CyberwareManager(commands.Cog):
 
         verbose = any(a.lower() in {"-v", "--verbose", "verbose"} for a in args)
 
-        weekly_data = await load_json_file(Path(config.CYBERWARE_WEEKLY_FILE), default=[])
+        weekly_data = await load_json_file(
+            Path(config.CYBERWARE_WEEKLY_FILE), default=[]
+        )
         if weekly_data:
             last = weekly_data[-1]
-            if ctx.author.id in last.get("checkup", []) or ctx.author.id in last.get("paid", []):
+            if ctx.author.id in last.get("checkup", []) or ctx.author.id in last.get(
+                "paid", []
+            ):
                 await ctx.send("⏭️ You already processed your cyberware this week.")
                 return
 
-        log_lines: List[str] = [f"💊 Manual cyberware collection for <@{ctx.author.id}>"]
+        log_lines: List[str] = [
+            f"💊 Manual cyberware collection for <@{ctx.author.id}>"
+        ]
         result = await self.process_week(log=log_lines, target_member=ctx.author)
 
         if weekly_data:
