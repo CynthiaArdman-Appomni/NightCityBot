@@ -67,6 +67,7 @@ TEST_MODULES = {
     "test_character_manager": "Moves retired threads and searches sheets.",
     "test_move_npcs_command": "Moves NPC threads to the NPC forum.",
     "test_copy_thread_truncate": "Ensures long thread posts are truncated when archived.",
+    "test_manual_cyberware_log": "Adds manual cyberware payment to weekly log when empty.",
 }
 
 for name in TEST_MODULES:
