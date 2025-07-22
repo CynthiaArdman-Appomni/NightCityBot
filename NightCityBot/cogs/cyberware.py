@@ -543,6 +543,16 @@ class CyberwareManager(commands.Cog):
                 return
 
         log_lines: List[str] = [f"💊 Manual cyberware collection for <@{member.id}>"]
+
+        # Report whether the member already exists in cyberware_log.json
+        user_key = str(member.id)
+        if user_key in self.data:
+            msg = f"Found existing entry for {member.display_name} ({member.id})"
+        else:
+            msg = f"No entry found for {member.display_name} ({member.id}) – will add"
+        print(f"[collect_cyberware] {msg}")
+        log_lines.append(msg)
+
         result = await self.process_week(log=log_lines, target_member=member)
 
         if weekly_data:
