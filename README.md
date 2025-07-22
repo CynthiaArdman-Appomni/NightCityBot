@@ -68,7 +68,7 @@ Main commands:
 * `!open_shop` – used by business owners on Sundays. Logs a shop opening and immediately awards passive income based on the business tier. Each player can record up to four openings per month.
 * `!attend` – every verified player can run this on Sundays to receive a weekly $250 attendance reward. The command refuses to run more than once per week.
 * `!event_start` – fixers can activate this in the attendance channel to temporarily allow `!attend` and `!open_shop` for four hours outside of Sunday.
-* `!due` – displays a full breakdown of the baseline fee, housing and business rent, Trauma Team subscription and upcoming cyberware medication costs that will be charged on the 1st.
+* `!due [@user]` – show a full breakdown of the baseline fee, housing and business rent, Trauma Team subscription and upcoming cyberware medication costs that will be charged on the 1st. When a user is supplied the estimate is for that member.
 * `!last_payment` – show the details of your last automated payment.
 * `!collect_rent [@user] [-v] [-force]` – run the monthly rent cycle. Supply a user mention to limit the collection to that member. Use `-force` to ignore the 30 day cooldown. With `-v`, each step is announced as it happens and balance backup progress for each member is shown so you can track the cycle live.
 * `!paydue [-v]` – pay your monthly obligations early. Works like `!collect_rent` but only for yourself. Use `-v` for a detailed summary.
