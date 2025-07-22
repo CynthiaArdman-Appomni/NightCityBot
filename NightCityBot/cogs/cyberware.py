@@ -534,13 +534,13 @@ class CyberwareManager(commands.Cog):
         weekly_data = await load_json_file(
             Path(config.CYBERWARE_WEEKLY_FILE), default=[]
         )
-        if weekly_data:
-            last = weekly_data[-1]
-            if member.id in last.get("checkup", []) or member.id in last.get(
-                "paid", []
-            ):
-                await ctx.send("⏭️ Member already processed this week.")
-                return
+        last = weekly_data[-1] if weekly_data else None
+        if last and (
+            member.id in last.get("checkup", [])
+            or member.id in last.get("paid", [])
+        ):
+            await ctx.send("⏭️ Member already processed this week.")
+            return
 
         log_lines: List[str] = [f"💊 Manual cyberware collection for <@{member.id}>"]
 
@@ -555,18 +555,27 @@ class CyberwareManager(commands.Cog):
 
         result = await self.process_week(log=log_lines, target_member=member)
 
-        if weekly_data:
-            last = weekly_data[-1]
-            paid_set = set(map(int, last.get("paid", [])))
-            unpaid_set = set(map(int, last.get("unpaid", [])))
-            if member.id in result.get("paid", []):
-                paid_set.add(member.id)
-                unpaid_set.discard(member.id)
-            elif member.id in result.get("unpaid", []):
-                unpaid_set.add(member.id)
-            last["paid"] = list(paid_set)
-            last["unpaid"] = list(unpaid_set)
-            await save_json_file(Path(config.CYBERWARE_WEEKLY_FILE), weekly_data)
+        if not weekly_data:
+            weekly_data.append(
+                {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "checkup": [],
+                    "paid": [],
+                    "unpaid": [],
+                }
+            )
+
+        last = weekly_data[-1]
+        paid_set = set(map(int, last.get("paid", [])))
+        unpaid_set = set(map(int, last.get("unpaid", [])))
+        if member.id in result.get("paid", []):
+            paid_set.add(member.id)
+            unpaid_set.discard(member.id)
+        elif member.id in result.get("unpaid", []):
+            unpaid_set.add(member.id)
+        last["paid"] = list(paid_set)
+        last["unpaid"] = list(unpaid_set)
+        await save_json_file(Path(config.CYBERWARE_WEEKLY_FILE), weekly_data)
 
         summary = "\n".join(log_lines) if log_lines else "✅ Completed."
         display = summary if verbose else "\n".join(log_lines[-3:])
@@ -649,31 +658,40 @@ class CyberwareManager(commands.Cog):
         weekly_data = await load_json_file(
             Path(config.CYBERWARE_WEEKLY_FILE), default=[]
         )
-        if weekly_data:
-            last = weekly_data[-1]
-            if ctx.author.id in last.get("checkup", []) or ctx.author.id in last.get(
-                "paid", []
-            ):
-                await ctx.send("⏭️ You already processed your cyberware this week.")
-                return
+        last = weekly_data[-1] if weekly_data else None
+        if last and (
+            ctx.author.id in last.get("checkup", [])
+            or ctx.author.id in last.get("paid", [])
+        ):
+            await ctx.send("⏭️ You already processed your cyberware this week.")
+            return
 
         log_lines: List[str] = [
             f"💊 Manual cyberware collection for <@{ctx.author.id}>"
         ]
         result = await self.process_week(log=log_lines, target_member=ctx.author)
 
-        if weekly_data:
-            last = weekly_data[-1]
-            paid_set = set(map(int, last.get("paid", [])))
-            unpaid_set = set(map(int, last.get("unpaid", [])))
-            if ctx.author.id in result.get("paid", []):
-                paid_set.add(ctx.author.id)
-                unpaid_set.discard(ctx.author.id)
-            elif ctx.author.id in result.get("unpaid", []):
-                unpaid_set.add(ctx.author.id)
-            last["paid"] = list(paid_set)
-            last["unpaid"] = list(unpaid_set)
-            await save_json_file(Path(config.CYBERWARE_WEEKLY_FILE), weekly_data)
+        if not weekly_data:
+            weekly_data.append(
+                {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "checkup": [],
+                    "paid": [],
+                    "unpaid": [],
+                }
+            )
+
+        last = weekly_data[-1]
+        paid_set = set(map(int, last.get("paid", [])))
+        unpaid_set = set(map(int, last.get("unpaid", [])))
+        if ctx.author.id in result.get("paid", []):
+            paid_set.add(ctx.author.id)
+            unpaid_set.discard(ctx.author.id)
+        elif ctx.author.id in result.get("unpaid", []):
+            unpaid_set.add(ctx.author.id)
+        last["paid"] = list(paid_set)
+        last["unpaid"] = list(unpaid_set)
+        await save_json_file(Path(config.CYBERWARE_WEEKLY_FILE), weekly_data)
 
         summary = "\n".join(log_lines) if log_lines else "✅ Completed."
         display = summary if verbose else "\n".join(log_lines[-3:])
