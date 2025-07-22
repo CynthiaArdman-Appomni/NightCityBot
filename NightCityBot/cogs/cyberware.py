@@ -1,3 +1,4 @@
+import asyncio
 import discord
 from discord.ext import commands, tasks
 from datetime import datetime, time, timedelta
@@ -32,7 +33,8 @@ class CyberwareManager(commands.Cog):
         self.unbelievaboat = UnbelievaBoatAPI(config.UNBELIEVABOAT_API_TOKEN)
         self.data: Dict[str, Dict[str, Optional[str] | int]] = {}
         self.last_run: Optional[datetime] = None
-        self.bot.loop.create_task(self.load_data())
+        self.load_event = asyncio.Event()
+        self.load_task = self.bot.loop.create_task(self.load_data())
         self.weekly_check.start()
 
     async def load_data(self):
@@ -58,6 +60,7 @@ class CyberwareManager(commands.Cog):
                     self.data[k] = {"weeks": int(v), "last": None}
         else:
             self.data = {}
+        self.load_event.set()
 
     def cog_unload(self):
         self.weekly_check.cancel()
@@ -79,6 +82,7 @@ class CyberwareManager(commands.Cog):
     @tasks.loop(time=time(hour=0, tzinfo=ZoneInfo(getattr(config, "TIMEZONE", "UTC"))))
     async def weekly_check(self):
         """Run every day and trigger processing each Monday."""
+        await self.load_event.wait()
         control = self.bot.get_cog("SystemControl")
         if control and not control.is_enabled("cyberware"):
             return
@@ -134,6 +138,7 @@ class CyberwareManager(commands.Cog):
         ``paid`` (kept the role and paid) and ``unpaid`` (kept the role but
         couldn't pay).
         """
+        await self.load_event.wait()
         control = self.bot.get_cog("SystemControl")
         if control and not control.is_enabled("cyberware"):
             return
@@ -396,6 +401,7 @@ class CyberwareManager(commands.Cog):
     @is_ripperdoc()
     async def checkup(self, ctx, member: discord.Member):
         """Remove the weekly cyberware checkup role from a member."""
+        await self.load_event.wait()
         control = self.bot.get_cog("SystemControl")
         if control and not control.is_enabled("cyberware"):
             await ctx.send("⚠️ The cyberware system is currently disabled.")
@@ -429,6 +435,7 @@ class CyberwareManager(commands.Cog):
     @commands.check_any(is_ripperdoc(), is_fixer())
     async def weeks_without_checkup(self, ctx, member: discord.Member):
         """Show how many weeks a member has gone without a checkup."""
+        await self.load_event.wait()
         entry = self.data.get(str(member.id))
         weeks = entry.get("weeks", 0) if isinstance(entry, dict) else int(entry or 0)
         await ctx.send(
@@ -446,6 +453,7 @@ class CyberwareManager(commands.Cog):
         self, ctx: commands.Context, member: Optional[discord.Member] = None
     ) -> None:
         """Give the checkup role to a member or everyone with cyberware."""
+        await self.load_event.wait()
         control = self.bot.get_cog("SystemControl")
         if control and not control.is_enabled("cyberware"):
             await ctx.send("⚠️ The cyberware system is currently disabled.")
@@ -521,6 +529,7 @@ class CyberwareManager(commands.Cog):
         shown. Use ``-v`` for the complete processing log.
         """
 
+        await self.load_event.wait()
         verbose = any(a.lower() in {"-v", "--verbose", "verbose"} for a in args)
 
         if not any(r.id == config.APPROVED_ROLE_ID for r in ctx.author.roles):
@@ -590,6 +599,7 @@ class CyberwareManager(commands.Cog):
     )
     async def cyberware_status(self, ctx: commands.Context) -> None:
         """Display the current week status for all cyberware users."""
+        await self.load_event.wait()
 
         weekly_data = await load_json_file(
             Path(config.CYBERWARE_WEEKLY_FILE), default=[]
@@ -653,6 +663,7 @@ class CyberwareManager(commands.Cog):
         for a full processing log.
         """
 
+        await self.load_event.wait()
         verbose = any(a.lower() in {"-v", "--verbose", "verbose"} for a in args)
 
         weekly_data = await load_json_file(
